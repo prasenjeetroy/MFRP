@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Differential Notebook — a math quiz</title>
+<style>
+  :root{
+    --board: #1E2B24;
+    --board-2: #182219;
+    --board-line: rgba(237,234,224,0.07);
+    --chalk: #EDEAE0;
+    --chalk-dim: #A9B4A6;
+    --yellow: #E7C260;
+    --coral: #E2775A;
+    --blue: #7FA8C9;
+    --serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Times New Roman', serif;
+    --mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+    --sans: -apple-system, 'Segoe UI', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background-color: var(--board);
+    background-image:
+      repeating-linear-gradient(var(--board-line) 0 1px, transparent 1px 32px),
+      radial-gradient(ellipse at 20% -10%, rgba(237,234,224,0.05), transparent 55%),
+      radial-gradient(ellipse at 90% 110%, rgba(237,234,224,0.04), transparent 50%);
+    color: var(--chalk);
+    font-family: var(--sans);
+    min-height: 100vh;
+    padding: 28px 16px 80px;
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{ animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
+  }
+  .wrap{ max-width: 760px; margin: 0 auto; }
+
+  header.top{ margin-bottom: 22px; }
+  .eyebrow{
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--yellow); margin: 0 0 6px;
+  }
+  h1{
+    font-family: var(--serif); font-weight: 400; font-style: italic;
+    font-size: clamp(28px, 6vw, 40px); margin: 0 0 8px; line-height: 1.1;
+    color: var(--chalk);
+  }
+  .sub{ color: var(--chalk-dim); font-size: 14.5px; margin: 0; max-width: 52ch; }
+
+  .modebar{
+    display:flex; gap:10px; margin: 20px 0 18px; flex-wrap: wrap;
+    align-items:center; justify-content: space-between;
+  }
+  .tabs{ display:flex; gap:8px; flex-wrap:wrap; }
+  .tab, .modebtn, .btn{
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: 0.02em;
+    background: transparent; color: var(--chalk-dim);
+    border: 1px solid rgba(237,234,224,0.22); border-radius: 3px;
+    padding: 7px 12px; cursor: pointer; transition: all .15s ease;
+  }
+  .tab:hover, .modebtn:hover, .btn:hover{ border-color: var(--chalk); color: var(--chalk); }
+  .tab.active{ background: rgba(231,194,96,0.14); border-color: var(--yellow); color: var(--yellow); }
+  .modebtn.active{ background: rgba(127,168,201,0.16); border-color: var(--blue); color: var(--blue); }
+  .btn:focus-visible, .tab:focus-visible, .modebtn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{
+    outline: 2px solid var(--yellow); outline-offset: 2px;
+  }
+  .btn.primary{ border-color: var(--yellow); color: var(--yellow); }
+  .btn.primary:hover{ background: rgba(231,194,96,0.14); }
+  .btn.danger{ border-color: var(--coral); color: var(--coral); }
+  .btn.danger:hover{ background: rgba(226,119,90,0.14); }
+
+  .card{
+    background: var(--board-2); border: 1px solid rgba(237,234,224,0.10);
+    border-radius: 6px; padding: 18px 18px 16px; margin-bottom: 14px;
+    position: relative;
+  }
+  .card.correct{ border-color: rgba(231,194,96,0.55); }
+  .card.wrong{ border-color: rgba(226,119,90,0.55); }
+
+  .qmeta{ display:flex; align-items:center; gap:10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .qnum{ font-family: var(--mono); color: var(--chalk-dim); font-size: 12px; }
+  .tag{
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor;
+  }
+  .tag.diffeq{ color: var(--blue); }
+  .tag.calculus{ color: var(--yellow); }
+  .tag.other{ color: var(--coral); }
+  .pts{ margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--chalk-dim); }
+
+  .qtext{ font-family: var(--mono); font-size: 16px; line-height: 1.55; margin: 0 0 14px; }
+
+  .options{ display:flex; flex-direction: column; gap: 8px; }
+  .option{
+    display:flex; align-items:center; gap: 10px; padding: 9px 10px;
+    border: 1px solid rgba(237,234,224,0.14); border-radius: 4px; cursor: pointer;
+    font-family: var(--mono); font-size: 14.5px; transition: border-color .15s ease, background .15s ease;
+  }
+  .option:hover{ border-color: rgba(237,234,224,0.4); }
+  .option input{ accent-color: var(--yellow); width: 15px; height: 15px; flex-shrink: 0; }
+  .option.picked{ border-color: var(--yellow); background: rgba(231,194,96,0.08); }
+  fieldset[disabled] .option{ cursor: default; }
+  .option.reveal-correct{ border-color: var(--yellow); background: rgba(231,194,96,0.12); }
+  .option.reveal-wrong{ border-color: var(--coral); background: rgba(226,119,90,0.1); }
+
+  .shortinput{
+    width: 100%; max-width: 260px; font-family: var(--mono); font-size: 15px;
+    background: transparent; border: none; border-bottom: 1px solid rgba(237,234,224,0.35);
+    color: var(--chalk); padding: 6px 2px; outline: none;
+  }
+  .shortinput:focus{ border-bottom-color: var(--yellow); }
+  .shortinput:disabled{ color: var(--chalk-dim); }
+
+  .fb{ margin-top: 10px; font-family: var(--mono); font-size: 12.5px; }
+  .fb.correct{ color: var(--yellow); }
+  .fb.wrong{ color: var(--coral); }
+
+  .timerbar{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase;
+    color: var(--chalk-dim); border: 1px solid rgba(237,234,224,0.16); border-radius: 6px;
+    padding: 10px 14px; margin-bottom: 14px; background: var(--board-2);
+  }
+  .timerbar .timerVal{ font-family: var(--mono); font-size: 17px; letter-spacing: 0.04em; color: var(--yellow); text-transform: none; }
+  .timerbar.timerbar-low .timerVal{ color: var(--coral); }
+  .timerbar.timerbar-done .timerVal{ color: var(--chalk-dim); }
+
+  .gradeBadge{
+    font-family: var(--mono); font-size: 12px; padding: 4px 10px; border-radius: 4px;
+    border: 1px solid currentColor; white-space: nowrap;
+  }
+  .gradeBadge.grade-good{ color: var(--yellow); }
+  .gradeBadge.grade-mid{ color: var(--blue); }
+  .gradeBadge.grade-poor{ color: var(--coral); }
+
+  .scorebar{
+    position: sticky; bottom: 12px; margin-top: 22px;
+    background: var(--board-2); border: 1px solid rgba(237,234,224,0.16);
+    border-radius: 8px; padding: 14px 18px; display:flex; align-items:center;
+    justify-content: space-between; gap: 14px; flex-wrap: wrap;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  }
+  .scoreDisplay{ display:flex; align-items:center; gap: 12px; flex-wrap: wrap; }
+  .scoreLabel{ font-family: var(--mono); font-size: 12px; color: var(--chalk-dim); }
+  .scoreNum-wrap{ position: relative; display:inline-flex; align-items:center; justify-content:center; }
+  .scoreNum{
+    font-family: var(--serif); font-style: italic; font-size: 26px; color: var(--chalk);
+    padding: 2px 12px;
+  }
+  .circleSvg{ position:absolute; top:50%; left:50%; transform: translate(-50%,-50%);
+    width: 100%; height: 190%; pointer-events: none; overflow: visible; }
+  .circleSvg path{
+    fill: none; stroke: var(--yellow); stroke-width: 2.5; stroke-linecap: round;
+    stroke-dasharray: 300; stroke-dashoffset: 300;
+  }
+  .circleSvg.draw path{ animation: draw 0.9s ease forwards; }
+  @keyframes draw{ to{ stroke-dashoffset: 0; } }
+
+  .empty{ color: var(--chalk-dim); font-family: var(--mono); font-size: 13.5px; padding: 30px 6px; text-align:center; }
+
+  /* Edit mode */
+  .editcard{ display:flex; flex-direction: column; gap: 10px; }
+  .row{ display:flex; gap: 10px; flex-wrap: wrap; }
+  .field{ display:flex; flex-direction:column; gap: 4px; flex: 1; min-width: 140px; }
+  .field label{ font-family: var(--mono); font-size: 10.5px; color: var(--chalk-dim); text-transform: uppercase; letter-spacing: 0.06em; }
+  .field input[type=text], .field input[type=number], .field select, .field textarea{
+    background: var(--board); border: 1px solid rgba(237,234,224,0.22); border-radius: 4px;
+    color: var(--chalk); font-family: var(--mono); font-size: 13.5px; padding: 8px 9px; width: 100%;
+  }
+  .field textarea{ resize: vertical; min-height: 46px; }
+  .optEditRow{ display:flex; align-items:center; gap: 8px; }
+  .optEditRow input[type=text]{ flex:1; }
+  .optEditRow input[type=radio]{ accent-color: var(--yellow); }
+  .optEditRow input[type=checkbox]{ accent-color: var(--yellow); width:15px; height:15px; }
+  .optEditRow label.inline{ font-family: var(--mono); font-size: 13.5px; color: var(--chalk); }
+  .rowActions{ display:flex; justify-content: space-between; align-items:center; margin-top: 4px; }
+  .smallbtn{
+    font-family: var(--mono); font-size: 11.5px; background: transparent; color: var(--chalk-dim);
+    border: 1px solid rgba(237,234,224,0.2); border-radius: 3px; padding: 4px 9px; cursor: pointer;
+  }
+  .smallbtn:hover{ color: var(--chalk); border-color: var(--chalk); }
+  .hint{ color: var(--chalk-dim); font-family: var(--mono); font-size: 12px; margin: -2px 0 2px; line-height: 1.5; }
+  .sectionTitle{ font-family: var(--serif); font-style: italic; font-size: 19px; margin: 0 0 6px; color: var(--chalk); }
+
+  footer{ text-align:center; color: var(--chalk-dim); font-family: var(--mono); font-size: 11px; margin-top: 40px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <p class="eyebrow">chalk &amp; calculus</p>
+    <h1>The Differential Notebook</h1>
+    <p class="sub">Questions in differential equations, calculus, and a few other calculations. Switch to edit mode to write your own questions, and to settings to set a time limit or turn on negative marking.</p>
+  </header>
+
+  <div class="modebar">
+    <div class="tabs" id="categoryTabs"></div>
+    <div style="display:flex; gap:8px;">
+      <button class="modebtn active" id="quizModeBtn" type="button">Quiz</button>
+      <button class="modebtn" id="editModeBtn" type="button">Edit</button>
+      <button class="modebtn" id="settingsModeBtn" type="button">Settings</button>
+    </div>
+  </div>
+
+  <main id="quizView"></main>
+  <main id="editView" style="display:none;"></main>
+  <main id="settingsView" style="display:none;"></main>
+
+</div>
+<footer>your work here is saved to this browser automatically</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  var STORAGE_KEY = 'diffnotebook_questions_v1';
+  var SETTINGS_KEY = 'diffnotebook_settings_v1';
+  var uidCounter = 1;
+  function uid(){ return 'q' + (uidCounter++) + '_' + Math.random().toString(36).slice(2,7); }
+
+  var CATEGORIES = [
+    { id: 'diffeq', label: 'Differential Eq.' },
+    { id: 'calculus', label: 'Calculus' },
+    { id: 'other', label: 'Other' }
+  ];
+
+  var GRADE_SCALE = [
+    { min: 90, letter: 'A+', note: 'Exceptional' },
+    { min: 80, letter: 'A',  note: 'Excellent' },
+    { min: 70, letter: 'B',  note: 'Good' },
+    { min: 60, letter: 'C',  note: 'Fair' },
+    { min: 50, letter: 'D',  note: 'Passing' },
+    { min: 0,  letter: 'F',  note: 'Needs work' }
+  ];
+
+  function defaultQuestions(){
+    return [
+      { id: uid(), category:'diffeq', type:'mcq', text:'General solution of dy/dx = y', points:2,
+        options:['y = C·e^x','y = Cx','y = C·e^(-x)','y = x + C'], correctIndex:0 },
+      { id: uid(), category:'diffeq', type:'mcq', text:'Order of the equation d²y/dx² + 3(dy/dx) + 2y = 0', points:1,
+        options:['1','2','3','0'], correctIndex:1 },
+      { id: uid(), category:'diffeq', type:'mcq', text:'Integrating factor for dy/dx + (1/x)y = x', points:2,
+        options:['x','1/x','e^x','ln x'], correctIndex:0 },
+      { id: uid(), category:'diffeq', type:'mcq', text:'Solution of the separable equation dy/dx = xy', points:2,
+        options:['y = C·e^(x²/2)','y = Cx²','y = C·e^(-x²/2)','y = x² + C'], correctIndex:0 },
+      { id: uid(), category:'diffeq', type:'mcq', text:'dy/dx + y² = 0 is classified as', points:1,
+        options:['Linear','Nonlinear','Exact','Homogeneous only'], correctIndex:1 },
+      { id: uid(), category:'calculus', type:'mcq', text:'d/dx (x³) =', points:1,
+        options:['3x²','x²','3x','x³'], correctIndex:0 },
+      { id: uid(), category:'calculus', type:'mcq', text:'∫ x dx =', points:1,
+        options:['x²/2 + C','x² + C','2x + C','x + C'], correctIndex:0 },
+      { id: uid(), category:'calculus', type:'short', text:'lim (x→0) of sin(x)/x =', points:1, answer:'1' },
+      { id: uid(), category:'calculus', type:'mcq', text:'d/dx (e^(2x)) =', points:1,
+        options:['2e^(2x)','e^(2x)','2e^x','e^(2x)/2'], correctIndex:0 },
+      { id: uid(), category:'calculus', type:'short', text:'∫ from 0 to 1 of 2x dx =', points:2, answer:'1' },
+      { id: uid(), category:'other', type:'short', text:'Solve for x: 2x + 5 = 15', points:1, answer:'5' },
+      { id: uid(), category:'other', type:'mcq', text:'(3²)(3³) =', points:1,
+        options:['243','729','59049','9'], correctIndex:0 },
+      { id: uid(), category:'other', type:'short', text:'sin(90°) =', points:1, answer:'1' },
+      { id: uid(), category:'other', type:'short', text:'Roots of x² − 5x + 6 = 0 (comma separated)', points:2, answer:'2,3' },
+      { id: uid(), category:'other', type:'short', text:'π to 2 decimal places', points:1, answer:'3.14' }
+    ];
+  }
+
+  function defaultSettings(){
+    return { timeLimitMinutes: 0, negativeMarking: false, negativePercent: 25 };
+  }
+
+  var state = {
+    questions: [],
+    settings: defaultSettings(),
+    filter: 'all',
+    mode: 'quiz',
+    userAnswers: {},
+    graded: false,
+    timeExpired: false,
+    endsAt: null
+  };
+
+  function loadQuestions(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(Array.isArray(parsed) && parsed.length){ return parsed; }
+      }
+    }catch(e){}
+    return defaultQuestions();
+  }
+  function saveQuestions(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state.questions)); }catch(e){}
+  }
+
+  function loadSettings(){
+    try{
+      var raw = localStorage.getItem(SETTINGS_KEY);
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(parsed && typeof parsed === 'object'){
+          return {
+            timeLimitMinutes: Number(parsed.timeLimitMinutes) || 0,
+            negativeMarking: !!parsed.negativeMarking,
+            negativePercent: Number(parsed.negativePercent) || 0
+          };
+        }
+      }
+    }catch(e){}
+    return defaultSettings();
+  }
+  function saveSettings(){
+    try{ localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings)); }catch(e){}
+  }
+
+  function normalize(str){
+    return String(str == null ? '' : str).toLowerCase().replace(/\s+/g,'').replace(/^\+/,'');
+  }
+  function checkShortAnswer(userVal, correctVal){
+    var u = normalize(userVal), c = normalize(correctVal);
+    if(!u) return false;
+    if(c.indexOf(',') !== -1){
+      var uSet = u.split(',').filter(Boolean).sort().join(',');
+      var cSet = c.split(',').filter(Boolean).sort().join(',');
+      return uSet === cSet;
+    }
+    return u === c;
+  }
+
+  function categoryLabel(id){
+    for(var i=0;i<CATEGORIES.length;i++){ if(CATEGORIES[i].id===id) return CATEGORIES[i].label; }
+    return id;
+  }
+
+  function letterGrade(pct){
+    for(var i=0;i<GRADE_SCALE.length;i++){
+      if(pct >= GRADE_SCALE[i].min) return GRADE_SCALE[i];
+    }
+    return GRADE_SCALE[GRADE_SCALE.length-1];
+  }
+
+  function formatTime(ms){
+    var totalSec = Math.max(0, Math.ceil(ms/1000));
+    var m = Math.floor(totalSec/60);
+    var s = totalSec%60;
+    return (m<10?'0':'')+m+':'+(s<10?'0':'')+s;
+  }
+
+  function resetTimerForAttempt(){
+    if(state.settings.timeLimitMinutes > 0){
+      state.endsAt = Date.now() + state.settings.timeLimitMinutes*60000;
+    } else {
+      state.endsAt = null;
+    }
+    state.timeExpired = false;
+  }
+
+  function tickTimer(){
+    if(state.mode !== 'quiz' || state.graded || !state.endsAt) return;
+    var remainingMs = state.endsAt - Date.now();
+    if(remainingMs <= 0){
+      state.timeExpired = true;
+      state.graded = true;
+      render();
+      return;
+    }
+    var el = document.getElementById('timerDisplay');
+    if(el){
+      el.textContent = formatTime(remainingMs);
+      var bar = document.getElementById('timerBarEl');
+      if(bar) bar.classList.toggle('timerbar-low', remainingMs <= 60000);
+    }
+  }
+
+  // ---------- Category tabs ----------
+  function renderTabs(){
+    var el = document.getElementById('categoryTabs');
+    el.innerHTML = '';
+    el.style.display = state.mode === 'settings' ? 'none' : '';
+    var all = document.createElement('button');
+    all.type = 'button';
+    all.className = 'tab' + (state.filter === 'all' ? ' active' : '');
+    all.textContent = 'All';
+    all.addEventListener('click', function(){ state.filter='all'; render(); });
+    el.appendChild(all);
+    CATEGORIES.forEach(function(cat){
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'tab' + (state.filter === cat.id ? ' active' : '');
+      b.textContent = cat.label;
+      b.addEventListener('click', function(){ state.filter = cat.id; render(); });
+      el.appendChild(b);
+    });
+  }
+
+  // ---------- Quiz view ----------
+  function visibleQuestions(){
+    if(state.filter === 'all') return state.questions;
+    return state.questions.filter(function(q){ return q.category === state.filter; });
+  }
+
+  function isAttempted(q){
+    var ua = state.userAnswers[q.id];
+    if(q.type === 'mcq') return ua !== undefined && ua !== null;
+    return !!String(ua == null ? '' : ua).trim();
+  }
+
+  function isAnswerCorrect(q){
+    var ua = state.userAnswers[q.id];
+    if(q.type === 'mcq'){
+      return ua === q.correctIndex;
+    }
+    return checkShortAnswer(ua, q.answer);
+  }
+
+  function renderTimerBar(){
+    if(!state.settings.timeLimitMinutes || state.settings.timeLimitMinutes <= 0) return null;
+    var bar = document.createElement('div');
+    bar.id = 'timerBarEl';
+    bar.className = 'timerbar' + (state.graded ? ' timerbar-done' : '');
+    var label = document.createElement('span');
+    label.textContent = state.graded
+      ? (state.timeExpired ? "time's up — quiz auto-submitted" : 'time stopped')
+      : 'time remaining';
+    var val = document.createElement('span');
+    val.id = 'timerDisplay';
+    val.className = 'timerVal';
+    var remainingMs = state.graded ? 0 : Math.max(0, state.endsAt - Date.now());
+    val.textContent = formatTime(remainingMs);
+    if(!state.graded && remainingMs <= 60000) bar.className += ' timerbar-low';
+    bar.appendChild(label);
+    bar.appendChild(val);
+    return bar;
+  }
+
+  function renderQuiz(){
+    var view = document.getElementById('quizView');
+    view.innerHTML = '';
+
+    var timerBar = renderTimerBar();
+    if(timerBar) view.appendChild(timerBar);
+
+    var qs = visibleQuestions();
+
+    if(!qs.length){
+      var empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = 'No questions here yet. Switch to Edit to add some.';
+      view.appendChild(empty);
+      return;
+    }
+
+    qs.forEach(function(q, idx){
+      var card = document.createElement('div');
+      card.className = 'card';
+
+      if(state.graded){
+        var correct = isAnswerCorrect(q);
+        card.className += correct ? ' correct' : ' wrong';
+      }
+
+      var meta = document.createElement('div');
+      meta.className = 'qmeta';
+      var num = document.createElement('span');
+      num.className = 'qnum';
+      num.textContent = '№ ' + (idx+1);
+      meta.appendChild(num);
+      var tag = document.createElement('span');
+      tag.className = 'tag ' + q.category;
+      tag.textContent = categoryLabel(q.category);
+      meta.appendChild(tag);
+      var pts = document.createElement('span');
+      pts.className = 'pts';
+      pts.textContent = q.points + (q.points === 1 ? ' point' : ' points');
+      meta.appendChild(pts);
+      card.appendChild(meta);
+
+      var qtext = document.createElement('p');
+      qtext.className = 'qtext';
+      qtext.textContent = q.text;
+      card.appendChild(qtext);
+
+      var fieldset = document.createElement('fieldset');
+      fieldset.style.border = 'none';
+      fieldset.style.margin = '0';
+      fieldset.style.padding = '0';
+      if(state.graded) fieldset.disabled = true;
+
+      if(q.type === 'mcq'){
+        var opts = document.createElement('div');
+        opts.className = 'options';
+        (q.options||[]).forEach(function(optText, oi){
+          var label = document.createElement('label');
+          label.className = 'option';
+          if(state.userAnswers[q.id] === oi) label.className += ' picked';
+          if(state.graded){
+            if(oi === q.correctIndex) label.className += ' reveal-correct';
+            else if(state.userAnswers[q.id] === oi) label.className += ' reveal-wrong';
+          }
+          var radio = document.createElement('input');
+          radio.type = 'radio';
+          radio.name = q.id;
+          radio.value = oi;
+          radio.checked = state.userAnswers[q.id] === oi;
+          radio.addEventListener('change', function(){
+            state.userAnswers[q.id] = oi;
+            renderQuiz();
+          });
+          var span = document.createElement('span');
+          span.textContent = optText;
+          label.appendChild(radio);
+          label.appendChild(span);
+          opts.appendChild(label);
+        });
+        fieldset.appendChild(opts);
+      } else {
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'shortinput';
+        input.placeholder = 'your answer';
+        input.value = state.userAnswers[q.id] || '';
+        input.addEventListener('input', function(e){
+          state.userAnswers[q.id] = e.target.value;
+        });
+        fieldset.appendChild(input);
+      }
+      card.appendChild(fieldset);
+
+      if(state.graded){
+        var fb = document.createElement('p');
+        var ok = isAnswerCorrect(q);
+        var attempted = isAttempted(q);
+        var correctText = q.type === 'mcq' ? (q.options[q.correctIndex]||'') : q.answer;
+        if(ok){
+          fb.className = 'fb correct';
+          fb.textContent = 'Correct — +' + q.points + (q.points===1?' point':' points');
+        } else if(!attempted){
+          fb.className = 'fb wrong';
+          fb.textContent = 'Not answered. Correct answer: ' + correctText;
+        } else if(state.settings.negativeMarking){
+          var penalty = Math.round((Number(q.points)||0) * (state.settings.negativePercent/100) * 100) / 100;
+          fb.className = 'fb wrong';
+          fb.textContent = 'Not quite. −' + penalty + (penalty===1?' point':' points') + '. Correct answer: ' + correctText;
+        } else {
+          fb.className = 'fb wrong';
+          fb.textContent = 'Not quite. Correct answer: ' + correctText;
+        }
+        card.appendChild(fb);
+      }
+
+      view.appendChild(card);
+    });
+
+    view.appendChild(renderScoreBar());
+  }
+
+  function totalPossiblePoints(){
+    return visibleQuestions().reduce(function(sum,q){ return sum + (Number(q.points)||0); }, 0);
+  }
+  function earnedPoints(){
+    var sum = visibleQuestions().reduce(function(acc,q){
+      if(!state.graded || !isAttempted(q)) return acc;
+      if(isAnswerCorrect(q)) return acc + (Number(q.points)||0);
+      if(state.settings.negativeMarking) return acc - (Number(q.points)||0) * (state.settings.negativePercent/100);
+      return acc;
+    }, 0);
+    sum = Math.max(0, Math.round(sum*100)/100);
+    return sum;
+  }
+
+  function renderScoreBar(){
+    var bar = document.createElement('div');
+    bar.className = 'scorebar';
+
+    var left = document.createElement('div');
+    left.className = 'scoreDisplay';
+    var label = document.createElement('span');
+    label.className = 'scoreLabel';
+    label.textContent = state.graded ? 'your score' : 'total available';
+    left.appendChild(label);
+
+    var wrap = document.createElement('span');
+    wrap.className = 'scoreNum-wrap';
+    var numEl = document.createElement('span');
+    numEl.className = 'scoreNum';
+    numEl.textContent = state.graded
+      ? (earnedPoints() + ' / ' + totalPossiblePoints())
+      : (totalPossiblePoints() + ' pts possible');
+    wrap.appendChild(numEl);
+
+    if(state.graded){
+      var svgNS = 'http://www.w3.org/2000/svg';
+      var svg = document.createElementNS(svgNS,'svg');
+      svg.setAttribute('viewBox','0 0 160 60');
+      svg.setAttribute('class','circleSvg draw');
+      var path = document.createElementNS(svgNS,'path');
+      path.setAttribute('d','M14,32 C10,14 40,4 80,5 C124,6 152,16 148,32 C144,50 108,56 78,55 C42,54 18,48 15,33');
+      svg.appendChild(path);
+      wrap.appendChild(svg);
+    }
+    left.appendChild(wrap);
+
+    if(state.graded){
+      var possible = totalPossiblePoints();
+      var pct = possible > 0 ? (earnedPoints() / possible * 100) : 0;
+      var grade = letterGrade(pct);
+      var tier = pct >= 80 ? 'good' : (pct >= 60 ? 'mid' : 'poor');
+      var gradeBadge = document.createElement('span');
+      gradeBadge.className = 'gradeBadge grade-' + tier;
+      gradeBadge.textContent = grade.letter + ' — ' + grade.note + ' (' + Math.round(pct) + '%)';
+      left.appendChild(gradeBadge);
+    }
+
+    bar.appendChild(left);
+
+    var right = document.createElement('div');
+    right.style.display = 'flex';
+    right.style.gap = '8px';
+    if(!state.graded){
+      var submitBtn = document.createElement('button');
+      submitBtn.type = 'button';
+      submitBtn.className = 'btn primary';
+      submitBtn.textContent = 'Grade quiz';
+      submitBtn.addEventListener('click', function(){
+        state.graded = true;
+        render();
+      });
+      right.appendChild(submitBtn);
+    } else {
+      var retakeBtn = document.createElement('button');
+      retakeBtn.type = 'button';
+      retakeBtn.className = 'btn';
+      retakeBtn.textContent = 'Retake';
+      retakeBtn.addEventListener('click', function(){
+        state.graded = false;
+        state.userAnswers = {};
+        resetTimerForAttempt();
+        render();
+      });
+      right.appendChild(retakeBtn);
+    }
+    bar.appendChild(right);
+    return bar;
+  }
+
+  // ---------- Edit view ----------
+  function renderEdit(){
+    var view = document.getElementById('editView');
+    view.innerHTML = '';
+
+    var qs = visibleQuestions();
+    if(!qs.length){
+      var empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.textContent = 'No questions in this category yet.';
+      view.appendChild(empty);
+    }
+
+    qs.forEach(function(q){
+      view.appendChild(buildEditCard(q));
+    });
+
+    var addRow = document.createElement('div');
+    addRow.style.display = 'flex';
+    addRow.style.justifyContent = 'space-between';
+    addRow.style.marginTop = '18px';
+
+    var addBtn = document.createElement('button');
+    addBtn.type = 'button';
+    addBtn.className = 'btn primary';
+    addBtn.textContent = '+ Add question';
+    addBtn.addEventListener('click', function(){
+      var cat = state.filter === 'all' ? 'diffeq' : state.filter;
+      var newQ = { id: uid(), category:cat, type:'mcq', text:'', points:1,
+        options:['',''], correctIndex:0 };
+      state.questions.push(newQ);
+      saveQuestions();
+      render();
+    });
+    addRow.appendChild(addBtn);
+
+    var resetBtn = document.createElement('button');
+    resetBtn.type = 'button';
+    resetBtn.className = 'btn danger';
+    resetBtn.textContent = 'Restore default question bank';
+    resetBtn.addEventListener('click', function(){
+      if(confirm('Replace all questions with the original default set? This cannot be undone.')){
+        state.questions = defaultQuestions();
+        saveQuestions();
+        render();
+      }
+    });
+    addRow.appendChild(resetBtn);
+
+    view.appendChild(addRow);
+  }
+
+  function buildEditCard(q){
+    var card = document.createElement('div');
+    card.className = 'card editcard';
+
+    var row1 = document.createElement('div');
+    row1.className = 'row';
+
+    var catField = document.createElement('div');
+    catField.className = 'field';
+    var catLabel = document.createElement('label');
+    catLabel.textContent = 'Category';
+    var catSelect = document.createElement('select');
+    CATEGORIES.forEach(function(c){
+      var opt = document.createElement('option');
+      opt.value = c.id; opt.textContent = c.label;
+      if(q.category === c.id) opt.selected = true;
+      catSelect.appendChild(opt);
+    });
+    catSelect.addEventListener('change', function(e){
+      q.category = e.target.value; saveQuestions(); render();
+    });
+    catField.appendChild(catLabel); catField.appendChild(catSelect);
+    row1.appendChild(catField);
+
+    var typeField = document.createElement('div');
+    typeField.className = 'field';
+    var typeLabel = document.createElement('label');
+    typeLabel.textContent = 'Answer type';
+    var typeSelect = document.createElement('select');
+    ['mcq','short'].forEach(function(t){
+      var opt = document.createElement('option');
+      opt.value = t; opt.textContent = t === 'mcq' ? 'Multiple choice' : 'Short answer';
+      if(q.type === t) opt.selected = true;
+      typeSelect.appendChild(opt);
+    });
+    typeSelect.addEventListener('change', function(e){
+      q.type = e.target.value;
+      if(q.type === 'mcq' && !q.options){ q.options = ['','']; q.correctIndex = 0; }
+      if(q.type === 'short' && q.answer === undefined){ q.answer = ''; }
+      saveQuestions(); render();
+    });
+    typeField.appendChild(typeLabel); typeField.appendChild(typeSelect);
+    row1.appendChild(typeField);
+
+    var ptsField = document.createElement('div');
+    ptsField.className = 'field';
+    ptsField.style.maxWidth = '110px';
+    var ptsLabel = document.createElement('label');
+    ptsLabel.textContent = 'Points';
+    var ptsInput = document.createElement('input');
+    ptsInput.type = 'number';
+    ptsInput.min = '0';
+    ptsInput.value = q.points;
+    ptsInput.addEventListener('input', function(e){
+      q.points = Number(e.target.value) || 0; saveQuestions();
+    });
+    ptsInput.addEventListener('change', render);
+    ptsField.appendChild(ptsLabel); ptsField.appendChild(ptsInput);
+    row1.appendChild(ptsField);
+
+    card.appendChild(row1);
+
+    var textField = document.createElement('div');
+    textField.className = 'field';
+    var textLabel = document.createElement('label');
+    textLabel.textContent = 'Question';
+    var textArea = document.createElement('textarea');
+    textArea.value = q.text;
+    textArea.addEventListener('input', function(e){ q.text = e.target.value; saveQuestions(); });
+    textField.appendChild(textLabel); textField.appendChild(textArea);
+    card.appendChild(textField);
+
+    if(q.type === 'mcq'){
+      var optsWrap = document.createElement('div');
+      optsWrap.className = 'field';
+      var optsLabel = document.createElement('label');
+      optsLabel.textContent = 'Options — mark the correct one';
+      optsWrap.appendChild(optsLabel);
+      (q.options||[]).forEach(function(optText, oi){
+        var r = document.createElement('div');
+        r.className = 'optEditRow';
+        var radio = document.createElement('input');
+        radio.type = 'radio';
+        radio.name = 'correct_' + q.id;
+        radio.checked = q.correctIndex === oi;
+        radio.addEventListener('change', function(){ q.correctIndex = oi; saveQuestions(); });
+        var input = document.createElement('input');
+        input.type = 'text';
+        input.value = optText;
+        input.placeholder = 'option text';
+        input.addEventListener('input', function(e){ q.options[oi] = e.target.value; saveQuestions(); });
+        var del = document.createElement('button');
+        del.type = 'button'; del.className = 'smallbtn'; del.textContent = '×';
+        del.title = 'Remove option';
+        del.addEventListener('click', function(){
+          if(q.options.length <= 2){ alert('A multiple choice question needs at least two options.'); return; }
+          q.options.splice(oi,1);
+          if(q.correctIndex >= q.options.length) q.correctIndex = 0;
+          saveQuestions(); render();
+        });
+        r.appendChild(radio); r.appendChild(input); r.appendChild(del);
+        optsWrap.appendChild(r);
+      });
+      var addOpt = document.createElement('button');
+      addOpt.type = 'button'; addOpt.className = 'smallbtn'; addOpt.textContent = '+ add option';
+      addOpt.style.alignSelf = 'flex-start'; addOpt.style.marginTop = '4px';
+      addOpt.addEventListener('click', function(){
+        q.options.push(''); saveQuestions(); render();
+      });
+      optsWrap.appendChild(addOpt);
+      card.appendChild(optsWrap);
+    } else {
+      var ansField = document.createElement('div');
+      ansField.className = 'field';
+      var ansLabel = document.createElement('label');
+      ansLabel.textContent = 'Correct answer (for multiple values, separate with commas)';
+      var ansInput = document.createElement('input');
+      ansInput.type = 'text';
+      ansInput.value = q.answer || '';
+      ansInput.addEventListener('input', function(e){ q.answer = e.target.value; saveQuestions(); });
+      ansField.appendChild(ansLabel); ansField.appendChild(ansInput);
+      card.appendChild(ansField);
+    }
+
+    var actions = document.createElement('div');
+    actions.className = 'rowActions';
+    var spacer = document.createElement('span');
+    actions.appendChild(spacer);
+    var delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'btn danger';
+    delBtn.textContent = 'Delete question';
+    delBtn.addEventListener('click', function(){
+      if(confirm('Delete this question?')){
+        state.questions = state.questions.filter(function(x){ return x.id !== q.id; });
+        saveQuestions(); render();
+      }
+    });
+    actions.appendChild(delBtn);
+    card.appendChild(actions);
+
+    return card;
+  }
+
+  // ---------- Settings view ----------
+  function renderSettings(){
+    var view = document.getElementById('settingsView');
+    view.innerHTML = '';
+
+    var card = document.createElement('div');
+    card.className = 'card editcard';
+
+    var title = document.createElement('p');
+    title.className = 'sectionTitle';
+    title.textContent = 'Timing';
+    card.appendChild(title);
+
+    var timeField = document.createElement('div');
+    timeField.className = 'field';
+    timeField.style.maxWidth = '220px';
+    var timeLabel = document.createElement('label');
+    timeLabel.textContent = 'Time limit (minutes, 0 = no limit)';
+    var timeInput = document.createElement('input');
+    timeInput.type = 'number';
+    timeInput.min = '0';
+    timeInput.value = state.settings.timeLimitMinutes;
+    timeInput.addEventListener('input', function(e){
+      var v = Math.max(0, Number(e.target.value) || 0);
+      state.settings.timeLimitMinutes = v;
+      saveSettings();
+      if(!state.graded){ resetTimerForAttempt(); }
+    });
+    timeField.appendChild(timeLabel); timeField.appendChild(timeInput);
+    card.appendChild(timeField);
+
+    var timeHint = document.createElement('p');
+    timeHint.className = 'hint';
+    timeHint.textContent = 'Changing this restarts the countdown for your current attempt. When time runs out, the quiz is graded automatically.';
+    card.appendChild(timeHint);
+
+    var title2 = document.createElement('p');
+    title2.className = 'sectionTitle';
+    title2.style.marginTop = '8px';
+    title2.textContent = 'Negative marking';
+    card.appendChild(title2);
+
+    var negRow = document.createElement('div');
+    negRow.className = 'optEditRow';
+    var negCheck = document.createElement('input');
+    negCheck.type = 'checkbox';
+    negCheck.id = 'negMarkCheck';
+    negCheck.checked = !!state.settings.negativeMarking;
+    var negLabel = document.createElement('label');
+    negLabel.className = 'inline';
+    negLabel.setAttribute('for','negMarkCheck');
+    negLabel.textContent = 'Enable negative marking';
+    negRow.appendChild(negCheck); negRow.appendChild(negLabel);
+    card.appendChild(negRow);
+
+    var negField = document.createElement('div');
+    negField.className = 'field';
+    negField.style.maxWidth = '260px';
+    var negPctLabel = document.createElement('label');
+    negPctLabel.textContent = 'Penalty per wrong answer (% of question points)';
+    var negPctInput = document.createElement('input');
+    negPctInput.type = 'number';
+    negPctInput.min = '0'; negPctInput.max = '100';
+    negPctInput.value = state.settings.negativePercent;
+    negPctInput.disabled = !state.settings.negativeMarking;
+    negPctInput.addEventListener('input', function(e){
+      var v = Math.min(100, Math.max(0, Number(e.target.value) || 0));
+      state.settings.negativePercent = v;
+      saveSettings();
+    });
+    negField.appendChild(negPctLabel); negField.appendChild(negPctInput);
+    card.appendChild(negField);
+
+    negCheck.addEventListener('change', function(e){
+      state.settings.negativeMarking = e.target.checked;
+      negPctInput.disabled = !state.settings.negativeMarking;
+      saveSettings();
+    });
+
+    var negHint = document.createElement('p');
+    negHint.className = 'hint';
+    negHint.textContent = 'Only attempted, incorrect answers lose points. Unanswered questions are never penalized, and your total score never drops below zero.';
+    card.appendChild(negHint);
+
+    view.appendChild(card);
+
+    var gradeCard = document.createElement('div');
+    gradeCard.className = 'card';
+    var gTitle = document.createElement('p');
+    gTitle.className = 'sectionTitle';
+    gTitle.textContent = 'Grade scale';
+    gradeCard.appendChild(gTitle);
+    var scale = document.createElement('div');
+    scale.style.fontFamily = 'var(--mono)';
+    scale.style.fontSize = '13px';
+    scale.style.color = 'var(--chalk-dim)';
+    scale.style.lineHeight = '2';
+    GRADE_SCALE.forEach(function(g){
+      var line = document.createElement('div');
+      var pctSpan = document.createElement('span');
+      pctSpan.textContent = g.min + '% and up → ';
+      var letterSpan = document.createElement('span');
+      letterSpan.style.color = 'var(--yellow)';
+      letterSpan.textContent = g.letter;
+      var noteSpan = document.createElement('span');
+      noteSpan.textContent = ' — ' + g.note;
+      line.appendChild(pctSpan); line.appendChild(letterSpan); line.appendChild(noteSpan);
+      scale.appendChild(line);
+    });
+    gradeCard.appendChild(scale);
+    view.appendChild(gradeCard);
+  }
+
+  // ---------- Mode switching ----------
+  function setMode(mode){
+    state.mode = mode;
+    document.getElementById('quizModeBtn').classList.toggle('active', mode==='quiz');
+    document.getElementById('editModeBtn').classList.toggle('active', mode==='edit');
+    document.getElementById('settingsModeBtn').classList.toggle('active', mode==='settings');
+    document.getElementById('quizView').style.display = mode==='quiz' ? '' : 'none';
+    document.getElementById('editView').style.display = mode==='edit' ? '' : 'none';
+    document.getElementById('settingsView').style.display = mode==='settings' ? '' : 'none';
+    render();
+  }
+  document.getElementById('quizModeBtn').addEventListener('click', function(){ setMode('quiz'); });
+  document.getElementById('editModeBtn').addEventListener('click', function(){ setMode('edit'); });
+  document.getElementById('settingsModeBtn').addEventListener('click', function(){ setMode('settings'); });
+
+  function render(){
+    renderTabs();
+    if(state.mode === 'quiz') renderQuiz();
+    else if(state.mode === 'edit') renderEdit();
+    else renderSettings();
+  }
+
+  // ---------- Init ----------
+  state.questions = loadQuestions();
+  state.settings = loadSettings();
+  resetTimerForAttempt();
+  render();
+  setInterval(tickTimer, 1000);
+
+})();
+</script>
+</body>
+</html>
