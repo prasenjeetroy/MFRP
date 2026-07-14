@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Technology Trends 2025–2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Lora:ital@1&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/2.40.0/iconfont/tabler-icons.min.css">
+<style>
+  :root {
+    --bg: #f7f7f5;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.10);
+    --border-strong: rgba(0,0,0,0.18);
+    --text-primary: #1a1a18;
+    --text-secondary: #5f5e5a;
+    --text-muted: #888780;
+    --accent: #534AB7;
+    --accent-light: #EEEDFE;
+    --accent-mid: #7F77DD;
+    --teal: #0F6E56;
+    --teal-light: #E1F5EE;
+    --coral: #993C1D;
+    --coral-light: #FAECE7;
+    --amber: #854F0B;
+    --amber-light: #FAEEDA;
+    --green: #3B6D11;
+    --green-light: #EAF3DE;
+    --blue: #185FA5;
+    --blue-light: #E6F1FB;
+    --pink: #993556;
+    --pink-light: #FBEAF0;
+    --red: #A32D2D;
+    --red-light: #FCEBEB;
+    /* finance chart — validated categorical pair (2 series, light surface) */
+    --fin-income: #2a78d6;
+    --fin-income-light: #E7F0FC;
+    --fin-tax: #e34948;
+    --fin-tax-light: #FCEAEA;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: radial-gradient(1200px 480px at 100% -10%, rgba(83,74,183,0.06), transparent), var(--bg);
+    color: var(--text-primary);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ── Header ── */
+  header {
+    background: linear-gradient(180deg, #ffffff 0%, #fdfdfc 100%);
+    border-bottom: 0.5px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 58px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .logo-dot {
+    width: 12px; height: 12px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent-mid));
+    box-shadow: 0 0 0 4px var(--accent-light);
+  }
+  .header-title { font-size: 15px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.01em; }
+  .header-badge {
+    font-size: 11px;
+    background: linear-gradient(135deg, var(--accent-light), var(--fin-income-light));
+    color: var(--accent);
+    padding: 2px 9px; border-radius: 20px; font-weight: 600;
+  }
+  .header-actions { display: flex; gap: 8px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: var(--radius-sm);
+    border: 0.5px solid var(--border-strong); background: var(--surface);
+    font-size: 13px; color: var(--text-primary); cursor: pointer;
+    font-family: inherit; font-weight: 500; transition: background 0.15s, transform 0.1s;
+  }
+  .btn:hover { background: var(--bg); }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--accent), #453fa0);
+    color: #fff; border-color: transparent;
+    box-shadow: 0 1px 2px rgba(83,74,183,0.35);
+  }
+  .btn-primary:hover { background: linear-gradient(135deg, #5d54c4, var(--accent)); }
+  .btn i { font-size: 15px; }
+
+  /* ── Layout ── */
+  .page { display: flex; height: calc(100vh - 58px); }
+
+  /* ── Sidebar ── */
+  aside {
+    width: 240px; min-width: 240px; background: var(--surface);
+    border-right: 0.5px solid var(--border);
+    padding: 1.25rem 1rem; overflow-y: auto;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .sidebar-section {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.08em;
+    color: var(--text-muted); text-transform: uppercase;
+    padding: 8px 8px 4px; margin-top: 8px;
+  }
+  .sidebar-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 8px; border-radius: var(--radius-sm);
+    cursor: pointer; font-size: 13px; color: var(--text-secondary);
+    transition: background 0.12s, color 0.12s; border: none; background: none;
+    font-family: inherit; width: 100%; text-align: left;
+  }
+  .sidebar-item:hover { background: var(--bg); color: var(--text-primary); }
+  .sidebar-item.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+  .sidebar-item i { font-size: 16px; }
+  .cat-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  /* ── Main ── */
+  main {
+    flex: 1; overflow-y: auto; padding: 2rem 2.5rem;
+    display: flex; flex-direction: column; gap: 2rem;
+  }
+
+  /* ── Page header ── */
+  .page-header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .page-header h1 {
+    font-size: 23px; font-weight: 800; letter-spacing: -0.02em;
+    background: linear-gradient(100deg, var(--text-primary) 40%, var(--accent) 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    outline: none;
+  }
+  .page-header p { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
+  .controls { display: flex; gap: 8px; align-items: center; }
+  .search-wrap {
+    position: relative;
+  }
+  .search-wrap i {
+    position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+    font-size: 15px; color: var(--text-muted); pointer-events: none;
+  }
+  #searchInput {
+    padding: 7px 12px 7px 32px; border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm); background: var(--surface);
+    font-size: 13px; font-family: inherit; color: var(--text-primary);
+    width: 200px; outline: none;
+  }
+  #searchInput:focus { border-color: var(--accent); }
+  select.filter-select {
+    padding: 7px 10px; border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm); background: var(--surface);
+    font-size: 13px; font-family: inherit; color: var(--text-primary);
+    cursor: pointer; outline: none;
+  }
+
+  /* ── Stats row ── */
+  .stats-row, .fin-stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .stat-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-top: 3px solid var(--accent);
+    border-radius: var(--radius); padding: 1rem 1.25rem;
+    box-shadow: var(--shadow); transition: transform 0.12s, box-shadow 0.12s;
+  }
+  .stat-card:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.07); }
+  .stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; font-weight: 600; }
+  .stat-value { font-size: 26px; font-weight: 700; letter-spacing: -0.01em; }
+  .stat-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── Trends grid ── */
+  .section-header {
+    display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;
+  }
+  .section-header h2 { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+  .trends-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px;
+  }
+
+  /* ── Trend card ── */
+  .trend-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); padding: 1.25rem;
+    box-shadow: var(--shadow); position: relative;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.12s;
+  }
+  .trend-card:hover { border-color: var(--border-strong); box-shadow: 0 6px 18px rgba(0,0,0,0.09); transform: translateY(-2px); }
+  .trend-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
+  .trend-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+  }
+  .trend-card-actions { display: flex; gap: 4px; opacity: 0; transition: opacity 0.15s; }
+  .trend-card:hover .trend-card-actions { opacity: 1; }
+  .icon-btn {
+    width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+    border: none; background: none; cursor: pointer; color: var(--text-muted);
+    border-radius: var(--radius-sm); transition: background 0.12s, color 0.12s; font-size: 15px;
+  }
+  .icon-btn:hover { background: var(--bg); color: var(--text-primary); }
+  .icon-btn.danger:hover { background: var(--red-light); color: var(--red); }
+  .trend-title {
+    font-size: 15px; font-weight: 600; margin-bottom: 6px; letter-spacing: -0.01em;
+    outline: none; border-bottom: 1px solid transparent; transition: border-color 0.12s;
+    cursor: text;
+  }
+  .trend-title:focus { border-color: var(--accent); }
+  .trend-desc {
+    font-size: 13px; color: var(--text-secondary); line-height: 1.55;
+    outline: none; border-left: 2px solid transparent; padding-left: 6px;
+    transition: border-color 0.12s; cursor: text;
+  }
+  .trend-desc:focus { border-color: var(--accent-mid); }
+  .trend-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; gap: 8px; }
+  .tag {
+    font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px;
+    cursor: pointer; border: none; font-family: inherit;
+  }
+  .maturity-wrap { display: flex; align-items: center; gap: 6px; }
+  .maturity-label { font-size: 11px; color: var(--text-muted); }
+  .maturity-bar { display: flex; gap: 3px; }
+  .maturity-pip {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--border); transition: background 0.1s;
+  }
+  .maturity-pip.filled { background: var(--accent-mid); }
+  .maturity-pip.high { background: var(--teal); }
+  .impact-badge {
+    font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px;
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .trend-fin-line {
+    margin-top: 8px; font-size: 11px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 5px; font-variant-numeric: tabular-nums;
+  }
+  .trend-fin-line b { color: var(--fin-income); font-weight: 600; }
+  .trend-fin-line .fin-tax-mini { color: var(--fin-tax); font-weight: 600; }
+
+  /* ── Financial overview ── */
+  .fin-chart-card {
+    background: var(--surface); border: 0.5px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 1.25rem 1.25rem 0.5rem;
+  }
+  .fin-chart-legend { display: flex; gap: 16px; margin-bottom: 14px; }
+  .fin-legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); font-weight: 500; }
+  .fin-dot { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+  .fin-chart-scroll { max-height: 420px; overflow-y: auto; padding-bottom: 0.75rem; }
+  .fin-bar-row {
+    display: grid; grid-template-columns: 168px 1fr 108px;
+    align-items: center; gap: 12px; padding: 6px 4px;
+    border-radius: var(--radius-sm); cursor: pointer;
+    transition: background 0.12s;
+  }
+  .fin-bar-row:hover { background: var(--bg); }
+  .fin-bar-label {
+    font-size: 12.5px; color: var(--text-primary); font-weight: 500;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .fin-bar-track-wrap { width: 100%; }
+  .fin-bar-track {
+    display: flex; gap: 2px; height: 20px; min-width: 6px;
+  }
+  .fin-seg { height: 100%; }
+  .fin-bar-value {
+    font-size: 12px; color: var(--text-secondary); font-weight: 600;
+    text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .fin-bar-share { color: var(--text-muted); font-weight: 500; }
+
+  #finTooltip {
+    position: fixed; z-index: 300; background: #1a1a18; color: #fff;
+    padding: 8px 11px; border-radius: 8px; font-size: 12px;
+    pointer-events: none; opacity: 0; transform: translateY(4px);
+    transition: opacity 0.12s, transform 0.12s; min-width: 170px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+  }
+  #finTooltip.show { opacity: 1; transform: translateY(0); }
+  .fin-tip-title { font-weight: 700; margin-bottom: 5px; }
+  .fin-tip-row { display: flex; justify-content: space-between; gap: 14px; color: rgba(255,255,255,0.75); }
+  .fin-tip-row b { color: #fff; font-variant-numeric: tabular-nums; }
+
+  /* ── Edit overlay ── */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.35);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200; padding: 1rem;
+  }
+  .overlay.hidden { display: none; }
+  .modal {
+    background: var(--surface); border-radius: 14px; border: 0.5px solid var(--border);
+    width: 100%; max-width: 520px; padding: 1.75rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  }
+  .modal h2 { font-size: 17px; font-weight: 700; margin-bottom: 1.25rem; }
+  .field-group { display: flex; flex-direction: column; gap: 14px; margin-bottom: 1.5rem; }
+  .field label { font-size: 12px; font-weight: 600; color: var(--text-secondary); display: block; margin-bottom: 5px; }
+  .field input, .field textarea, .field select {
+    width: 100%; padding: 8px 10px; border: 0.5px solid var(--border-strong);
+    border-radius: var(--radius-sm); font-size: 14px; font-family: inherit;
+    color: var(--text-primary); background: var(--surface); outline: none;
+    resize: vertical;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus { border-color: var(--accent); }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* ── Add trend prompt ── */
+  .add-card {
+    border: 1px dashed var(--border-strong); border-radius: var(--radius);
+    padding: 1.25rem; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 8px; cursor: pointer; color: var(--text-muted);
+    font-size: 13px; transition: border-color 0.15s, color 0.15s; min-height: 160px;
+    background: none;
+  }
+  .add-card:hover { border-color: var(--accent); color: var(--accent); }
+  .add-card i { font-size: 22px; }
+
+  /* ── Toast ── */
+  #toast {
+    position: fixed; bottom: 1.5rem; right: 1.5rem;
+    background: #1a1a18; color: #fff; padding: 10px 18px; border-radius: 8px;
+    font-size: 13px; opacity: 0; transform: translateY(6px);
+    transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 999;
+  }
+  #toast.show { opacity: 1; transform: translateY(0); }
+
+  .hidden { display: none; }
+
+  @media (max-width: 900px) {
+    aside { display: none; }
+    .stats-row, .fin-stats-row { grid-template-columns: repeat(2, 1fr); }
+    .fin-bar-row { grid-template-columns: 110px 1fr 88px; }
+  }
+  @media (max-width: 600px) {
+    main { padding: 1.25rem; }
+    .stats-row, .fin-stats-row { grid-template-columns: 1fr 1fr; }
+    .page-header { flex-direction: column; gap: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header>
+  <div class="header-left">
+    <div class="logo-dot"></div>
+    <span class="header-title">Technology Trends</span>
+    <span class="header-badge">2025 – 2026</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn" onclick="exportHTML()"><i class="ti ti-download"></i> Export HTML</button>
+    <button class="btn btn-primary" onclick="openAddModal()"><i class="ti ti-plus"></i> Add Trend</button>
+  </div>
+</header>
+
+<div class="page">
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div class="sidebar-section">Categories</div>
+    <button class="sidebar-item active" data-filter="all" onclick="filterCat(this,'all')">
+      <i class="ti ti-layout-grid"></i> All trends
+    </button>
+    <!-- Dynamically populated -->
+    <div id="sidebarCats"></div>
+
+    <div class="sidebar-section">Maturity</div>
+    <button class="sidebar-item" data-filter="mat-emerging" onclick="filterMat(this,'Emerging')">
+      <span class="cat-dot" style="background:#EF9F27"></span> Emerging
+    </button>
+    <button class="sidebar-item" data-filter="mat-growing" onclick="filterMat(this,'Growing')">
+      <span class="cat-dot" style="background:#1D9E75"></span> Growing
+    </button>
+    <button class="sidebar-item" data-filter="mat-mainstream" onclick="filterMat(this,'Mainstream')">
+      <span class="cat-dot" style="background:#534AB7"></span> Mainstream
+    </button>
+  </aside>
+
+  <!-- Main -->
+  <main>
+    <div class="page-header">
+      <div>
+        <h1 id="pageTitle" contenteditable="true" spellcheck="false">Technology Trends</h1>
+        <p id="pageSubtitle" contenteditable="true" spellcheck="false" style="outline:none">Key innovations shaping the industry in 2025–2026. Click any field to edit.</p>
+      </div>
+      <div class="controls">
+        <div class="search-wrap">
+          <i class="ti ti-search"></i>
+          <input type="text" id="searchInput" placeholder="Search trends…" oninput="applyFilters()">
+        </div>
+        <select class="filter-select" id="impactFilter" onchange="applyFilters()">
+          <option value="">All impact</option>
+          <option value="High">High</option>
+          <option value="Medium">Medium</option>
+          <option value="Low">Low</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row" id="statsRow"></div>
+
+    <!-- Financial overview -->
+    <div>
+      <div class="section-header">
+        <div>
+          <h2>Financial Overview</h2>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:2px">Estimated income &amp; tax per trend ($B) — totals and shares recalculate automatically. Edit any trend to update its figures.</p>
+        </div>
+      </div>
+      <div class="fin-stats-row" id="finStatsRow"></div>
+      <div style="height:14px"></div>
+      <div class="fin-chart-card">
+        <div class="fin-chart-legend" id="finLegend"></div>
+        <div class="fin-chart-scroll" id="finChart"></div>
+      </div>
+    </div>
+
+    <!-- Trends -->
+    <div>
+      <div class="section-header">
+        <h2 id="gridLabel">All Trends</h2>
+        <span id="countLabel" style="font-size:13px;color:var(--text-muted)"></span>
+      </div>
+      <div class="trends-grid" id="trendsGrid"></div>
+    </div>
+  </main>
+</div>
+
+<!-- Add/Edit Modal -->
+<div class="overlay hidden" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h2 id="modalTitle">Add New Trend</h2>
+    <div class="field-group">
+      <div class="field">
+        <label>Trend name</label>
+        <input type="text" id="m-name" placeholder="e.g. Quantum Computing">
+      </div>
+      <div class="field">
+        <label>Description</label>
+        <textarea id="m-desc" rows="3" placeholder="Brief description of this trend…"></textarea>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Category</label>
+          <input type="text" id="m-cat" placeholder="e.g. AI, Cloud, Security">
+        </div>
+        <div class="field">
+          <label>Impact level</label>
+          <select id="m-impact">
+            <option value="High">High</option>
+            <option value="Medium">Medium</option>
+            <option value="Low">Low</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Maturity stage</label>
+          <select id="m-maturity">
+            <option value="Emerging">Emerging</option>
+            <option value="Growing">Growing</option>
+            <option value="Mainstream">Mainstream</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Time horizon</label>
+          <select id="m-horizon">
+            <option value="0–1 yr">0–1 yr</option>
+            <option value="1–3 yrs">1–3 yrs</option>
+            <option value="3–5 yrs">3–5 yrs</option>
+            <option value="5+ yrs">5+ yrs</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Income ($B)</label>
+          <input type="number" id="m-income" min="0" step="0.1" placeholder="e.g. 42.5">
+        </div>
+        <div class="field">
+          <label>Tax ($B)</label>
+          <input type="number" id="m-tax" min="0" step="0.1" placeholder="e.g. 6.0">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTrend()"><i class="ti ti-check"></i> Save trend</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+<div id="finTooltip"></div>
+
+<script>
+// ── Data ────────────────────────────────────────────────
+const CATEGORY_COLORS = {
+  'AI & ML': { bg: '#EEEDFE', color: '#534AB7' },
+  'Cloud & Infra': { bg: '#E1F5EE', color: '#0F6E56' },
+  'Security': { bg: '#FCEBEB', color: '#A32D2D' },
+  'Web & Dev': { bg: '#E6F1FB', color: '#185FA5' },
+  'Data': { bg: '#FAEEDA', color: '#854F0B' },
+  'Hardware': { bg: '#FBEAF0', color: '#993556' },
+  'Sustainability': { bg: '#EAF3DE', color: '#3B6D11' },
+  'Connectivity': { bg: '#FAECE7', color: '#993C1D' },
+  'AR/VR & XR': { bg: '#EEEDFE', color: '#7F77DD' },
+};
+
+const MATURITY_MAP = { 'Emerging': 1, 'Growing': 2, 'Mainstream': 3 };
+const IMPACT_COLORS = {
+  'High':   { bg: '#FCEBEB', color: '#A32D2D' },
+  'Medium': { bg: '#FAEEDA', color: '#854F0B' },
+  'Low':    { bg: '#EAF3DE', color: '#3B6D11' },
+};
+const CAT_ICONS = {
+  'AI & ML': 'ti-brain', 'Cloud & Infra': 'ti-cloud', 'Security': 'ti-shield-lock',
+  'Web & Dev': 'ti-code', 'Data': 'ti-database', 'Hardware': 'ti-cpu',
+  'Sustainability': 'ti-leaf', 'Connectivity': 'ti-wifi', 'AR/VR & XR': 'ti-augmented-reality',
+};
+
+let trends = [
+  { id: 1, name: 'Generative AI', category: 'AI & ML', desc: 'Large language models and diffusion models enabling text, image, code, and video generation at scale. Transforming how knowledge work is done across industries.', maturity: 'Mainstream', impact: 'High', horizon: '0–1 yr', income: 180, tax: 32 },
+  { id: 2, name: 'AI Agents & Automation', category: 'AI & ML', desc: 'Autonomous software agents that plan, reason, and execute multi-step tasks with minimal human intervention — reshaping workflows from customer service to software development.', maturity: 'Growing', impact: 'High', horizon: '1–3 yrs', income: 95, tax: 15 },
+  { id: 3, name: 'Edge AI Inference', category: 'AI & ML', desc: 'Running AI models directly on end devices (phones, sensors, vehicles) to reduce latency, cost, and privacy risk while enabling offline capabilities.', maturity: 'Growing', impact: 'High', horizon: '1–3 yrs', income: 42, tax: 6 },
+  { id: 4, name: 'Serverless & FinOps', category: 'Cloud & Infra', desc: 'Infrastructure shifts toward consumption-based pricing models. FinOps disciplines help teams govern cloud spend, optimize waste, and align cost to business outcomes.', maturity: 'Mainstream', impact: 'Medium', horizon: '0–1 yr', income: 38, tax: 7 },
+  { id: 5, name: 'Multi-Cloud Orchestration', category: 'Cloud & Infra', desc: 'Organizations running workloads across AWS, Azure, and GCP simultaneously. Kubernetes-native control planes and service meshes becoming the connective tissue.', maturity: 'Mainstream', impact: 'High', horizon: '0–1 yr', income: 66, tax: 11 },
+  { id: 6, name: 'Zero Trust Architecture', category: 'Security', desc: 'Never trust, always verify. Identity becomes the new perimeter as organizations eliminate implicit network trust and adopt continuous verification for every access request.', maturity: 'Growing', impact: 'High', horizon: '1–3 yrs', income: 54, tax: 9 },
+  { id: 7, name: 'AI-Powered Threat Detection', category: 'Security', desc: 'Machine learning models analyzing billions of signals in real time to detect anomalies, surface threats, and automate incident response faster than human analysts.', maturity: 'Growing', impact: 'High', horizon: '1–3 yrs', income: 47, tax: 8 },
+  { id: 8, name: 'WebAssembly (WASM)', category: 'Web & Dev', desc: 'Near-native performance in browsers and server environments. WASM is unlocking new classes of web applications and becoming a universal runtime for edge compute.', maturity: 'Growing', impact: 'Medium', horizon: '1–3 yrs', income: 12, tax: 1.5 },
+  { id: 9, name: 'Platform Engineering', category: 'Web & Dev', desc: 'Internal developer platforms (IDPs) that abstract infrastructure complexity and give product teams self-service access to environments, pipelines, and observability tooling.', maturity: 'Growing', impact: 'Medium', horizon: '1–3 yrs', income: 21, tax: 3 },
+  { id: 10, name: 'Real-Time Data Streaming', category: 'Data', desc: 'Event-driven architectures using Kafka, Flink, and cloud-native streaming services to process and act on data within milliseconds of generation — replacing batch ETL.', maturity: 'Growing', impact: 'High', horizon: '1–3 yrs', income: 29, tax: 4.5 },
+  { id: 11, name: 'Data Mesh', category: 'Data', desc: 'Decentralized data ownership model where domain teams manage their own data products. Shifts from centralized lakes to federated, self-serve data infrastructure.', maturity: 'Emerging', impact: 'Medium', horizon: '3–5 yrs', income: 9, tax: 1.2 },
+  { id: 12, name: 'Quantum Computing', category: 'Hardware', desc: 'Early quantum hardware reaching commercial viability for specific optimization and simulation problems. Companies building hybrid classical-quantum algorithms to gain advantage.', maturity: 'Emerging', impact: 'High', horizon: '5+ yrs', income: 15, tax: 2 },
+  { id: 13, name: 'Neuromorphic Chips', category: 'Hardware', desc: 'Chips that mimic the structure of the brain to process information with extreme energy efficiency. Promising for always-on edge inference and robotics at micro-watt power budgets.', maturity: 'Emerging', impact: 'Medium', horizon: '5+ yrs', income: 6, tax: 0.8 },
+  { id: 14, name: 'Green Software Engineering', category: 'Sustainability', desc: 'Measuring and reducing the carbon footprint of software systems through energy-efficient algorithms, carbon-aware scheduling, and sustainable infrastructure choices.', maturity: 'Emerging', impact: 'Medium', horizon: '3–5 yrs', income: 8, tax: 1 },
+  { id: 15, name: '5G & Private Networks', category: 'Connectivity', desc: 'Enterprise 5G deployments enabling ultra-low latency connectivity for factories, hospitals, and campuses — unlocking real-time robotics, AR, and IoT at scale.', maturity: 'Growing', impact: 'High', horizon: '1–3 yrs', income: 58, tax: 9.5 },
+  { id: 16, name: 'Spatial Computing & XR', category: 'AR/VR & XR', desc: 'The convergence of AR, VR, and mixed reality into wearable spatial computers. Apple Vision Pro and next-gen headsets redefining interaction models for work and collaboration.', maturity: 'Emerging', impact: 'High', horizon: '3–5 yrs', income: 34, tax: 5 },
+];
+
+let nextId = Math.max(...trends.map(t => t.id)) + 1;
+let activeFilter = { type: 'all', value: 'all' };
+let editingId = null;
+
+// ── Render ──────────────────────────────────────────────
+function render() {
+  renderStats();
+  renderFinance();
+  renderSidebar();
+  applyFilters();
+}
+
+function renderStats() {
+  const counts = {};
+  trends.forEach(t => { counts[t.category] = (counts[t.category] || 0) + 1; });
+  const topCat = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+  const highImpact = trends.filter(t => t.impact === 'High').length;
+  const emerging = trends.filter(t => t.maturity === 'Emerging').length;
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card" style="border-top-color:var(--accent)">
+      <div class="stat-label">Total trends</div>
+      <div class="stat-value" style="color:var(--accent)">${trends.length}</div>
+      <div class="stat-sub">tracked right now</div>
+    </div>
+    <div class="stat-card" style="border-top-color:var(--red)">
+      <div class="stat-label">High impact</div>
+      <div class="stat-value" style="color:var(--red)">${highImpact}</div>
+      <div class="stat-sub">${trends.length ? Math.round(highImpact/trends.length*100) : 0}% of all trends</div>
+    </div>
+    <div class="stat-card" style="border-top-color:var(--amber)">
+      <div class="stat-label">Emerging</div>
+      <div class="stat-value" style="color:var(--amber)">${emerging}</div>
+      <div class="stat-sub">early-stage to watch</div>
+    </div>
+    <div class="stat-card" style="border-top-color:var(--teal)">
+      <div class="stat-label">Top category</div>
+      <div class="stat-value" style="font-size:18px;color:var(--teal)">${topCat ? topCat[0] : '—'}</div>
+      <div class="stat-sub">${topCat ? topCat[1] + ' trends' : ''}</div>
+    </div>
+  `;
+}
+
+// ── Financial overview: totals, percentages & chart ──────
+function fmtUSD(v) {
+  const n = Number(v) || 0;
+  return '$' + (Math.round(n * 10) / 10).toFixed(1) + 'B';
+}
+
+function computeFinancials() {
+  const totalIncome = trends.reduce((s, t) => s + (Number(t.income) || 0), 0);
+  const totalTax = trends.reduce((s, t) => s + (Number(t.tax) || 0), 0);
+  const totalNet = totalIncome - totalTax;
+  const effRate = totalIncome ? (totalTax / totalIncome * 100) : 0;
+  return { totalIncome, totalTax, totalNet, effRate };
+}
+
+function renderFinance() {
+  const { totalIncome, totalTax, totalNet, effRate } = computeFinancials();
+
+  document.getElementById('finStatsRow').innerHTML = `
+    <div class="stat-card" style="border-top-color:var(--fin-income)">
+      <div class="stat-label">Total income</div>
+      <div class="stat-value" style="color:var(--fin-income)">${fmtUSD(totalIncome)}</div>
+      <div class="stat-sub">across ${trends.length} trend${trends.length !== 1 ? 's' : ''}</div>
+    </div>
+    <div class="stat-card" style="border-top-color:var(--fin-tax)">
+      <div class="stat-label">Total tax</div>
+      <div class="stat-value" style="color:var(--fin-tax)">${fmtUSD(totalTax)}</div>
+      <div class="stat-sub">${effRate.toFixed(1)}% of income</div>
+    </div>
+    <div class="stat-card" style="border-top-color:var(--green)">
+      <div class="stat-label">Net income</div>
+      <div class="stat-value" style="color:var(--green)">${fmtUSD(totalNet)}</div>
+      <div class="stat-sub">income minus tax</div>
+    </div>
+    <div class="stat-card" style="border-top-color:var(--amber)">
+      <div class="stat-label">Effective tax rate</div>
+      <div class="stat-value" style="color:var(--amber)">${effRate.toFixed(1)}%</div>
+      <div class="stat-sub">weighted across all trends</div>
+    </div>
+  `;
+
+  document.getElementById('finLegend').innerHTML = `
+    <span class="fin-legend-item"><span class="fin-dot" style="background:var(--fin-income)"></span>Net income</span>
+    <span class="fin-legend-item"><span class="fin-dot" style="background:var(--fin-tax)"></span>Tax</span>
+  `;
+
+  const maxIncome = Math.max(1, ...trends.map(t => Number(t.income) || 0));
+
+  const rows = [...trends]
+    .sort((a, b) => (Number(b.income) || 0) - (Number(a.income) || 0))
+    .map(t => {
+      const income = Number(t.income) || 0;
+      const tax = Math.min(Math.max(Number(t.tax) || 0, 0), income);
+      const net = Math.max(0, income - tax);
+      const share = totalIncome ? (income / totalIncome * 100) : 0;
+      const widthPct = income / maxIncome * 100;
+      const netRadius = tax > 0 ? '0' : '4px';
+      const taxRadius = '0 4px 4px 0';
+
+      const netSeg = `<div class="fin-seg" style="flex:${net || 0.0001} 0 auto;background:var(--fin-income);border-radius:${netRadius}"
+             onmousemove="showFinTip(event,${t.id})" onmouseleave="hideFinTip()"></div>`;
+      const taxSeg = tax > 0
+        ? `<div class="fin-seg" style="flex:${tax} 0 auto;background:var(--fin-tax);border-radius:${taxRadius}"
+             onmousemove="showFinTip(event,${t.id})" onmouseleave="hideFinTip()"></div>`
+        : '';
+
+      return `
+        <div class="fin-bar-row" onclick="openEditModal(${t.id})">
+          <div class="fin-bar-label" title="${escHtml(t.name)}">${escHtml(t.name)}</div>
+          <div class="fin-bar-track-wrap">
+            <div class="fin-bar-track" style="width:${widthPct}%" onmousemove="showFinTip(event,${t.id})" onmouseleave="hideFinTip()">
+              ${netSeg}${taxSeg}
+            </div>
+          </div>
+          <div class="fin-bar-value">${fmtUSD(income)} <span class="fin-bar-share">· ${share.toFixed(1)}%</span></div>
+        </div>
+      `;
+    }).join('');
+
+  document.getElementById('finChart').innerHTML = rows ||
+    `<div style="padding:1rem;color:var(--text-muted);font-size:13px">No trends yet — add one to see the chart.</div>`;
+}
+
+function showFinTip(e, id) {
+  const t = trends.find(x => x.id === id);
+  if (!t) return;
+  const income = Number(t.income) || 0;
+  const tax = Math.min(Math.max(Number(t.tax) || 0, 0), income);
+  const net = income - tax;
+  const { totalIncome } = computeFinancials();
+  const share = totalIncome ? (income / totalIncome * 100) : 0;
+  const rate = income ? (tax / income * 100) : 0;
+
+  const tip = document.getElementById('finTooltip');
+  tip.innerHTML = `
+    <div class="fin-tip-title">${escHtml(t.name)}</div>
+    <div class="fin-tip-row"><span>Income</span><b>${fmtUSD(income)}</b></div>
+    <div class="fin-tip-row"><span>Tax</span><b>${fmtUSD(tax)} (${rate.toFixed(1)}%)</b></div>
+    <div class="fin-tip-row"><span>Net income</span><b>${fmtUSD(net)}</b></div>
+    <div class="fin-tip-row"><span>Share of total</span><b>${share.toFixed(1)}%</b></div>
+  `;
+  const pad = 14;
+  let left = e.clientX + pad;
+  let top = e.clientY + pad;
+  if (left + 190 > window.innerWidth) left = e.clientX - 190 - pad;
+  tip.style.left = left + 'px';
+  tip.style.top = top + 'px';
+  tip.classList.add('show');
+}
+
+function hideFinTip() {
+  document.getElementById('finTooltip').classList.remove('show');
+}
+
+function renderSidebar() {
+  const cats = [...new Set(trends.map(t => t.category))].sort();
+  const el = document.getElementById('sidebarCats');
+  el.innerHTML = cats.map(c => {
+    const col = CATEGORY_COLORS[c] || { bg: '#F1EFE8', color: '#5f5e5a' };
+    const icon = CAT_ICONS[c] || 'ti-tag';
+    return `<button class="sidebar-item" data-filter="cat-${c}" onclick="filterCat(this,'${c}')">
+      <i class="ti ${icon}" style="color:${col.color}"></i> ${c}
+    </button>`;
+  }).join('');
+}
+
+function applyFilters() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const imp = document.getElementById('impactFilter').value;
+
+  let filtered = trends.filter(t => {
+    const matchSearch = !q || t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q) || t.category.toLowerCase().includes(q);
+    const matchImpact = !imp || t.impact === imp;
+    let matchFilter = true;
+    if (activeFilter.type === 'cat') matchFilter = t.category === activeFilter.value;
+    if (activeFilter.type === 'mat') matchFilter = t.maturity === activeFilter.value;
+    return matchSearch && matchImpact && matchFilter;
+  });
+
+  document.getElementById('countLabel').textContent = `${filtered.length} trend${filtered.length !== 1 ? 's' : ''}`;
+
+  const grid = document.getElementById('trendsGrid');
+  grid.innerHTML = filtered.map(t => cardHTML(t)).join('') +
+    `<button class="add-card" onclick="openAddModal()"><i class="ti ti-plus"></i> Add a new trend</button>`;
+
+  // Attach inline edit listeners
+  filtered.forEach(t => {
+    const titleEl = document.getElementById(`title-${t.id}`);
+    const descEl = document.getElementById(`desc-${t.id}`);
+    if (titleEl) titleEl.addEventListener('input', e => { t.name = e.target.innerText.trim(); debounceSave(); });
+    if (descEl) descEl.addEventListener('input', e => { t.desc = e.target.innerText.trim(); debounceSave(); });
+  });
+
+  renderStats();
+}
+
+function cardHTML(t) {
+  const col = CATEGORY_COLORS[t.category] || { bg: '#F1EFE8', color: '#5f5e5a' };
+  const imp = IMPACT_COLORS[t.impact] || IMPACT_COLORS['Low'];
+  const icon = CAT_ICONS[t.category] || 'ti-tag';
+  const matLevel = MATURITY_MAP[t.maturity] || 1;
+  const pipColor = t.maturity === 'Mainstream' ? 'high' : 'filled';
+
+  const pips = [1,2,3].map(i =>
+    `<span class="maturity-pip ${i <= matLevel ? pipColor : ''}"></span>`
+  ).join('');
+
+  const income = Number(t.income) || 0;
+  const tax = Math.min(Math.max(Number(t.tax) || 0, 0), income);
+  const rate = income ? (tax / income * 100) : 0;
+
+  return `
+    <div class="trend-card" id="card-${t.id}">
+      <div class="trend-card-header">
+        <div class="trend-icon" style="background:${col.bg}">
+          <i class="ti ${icon}" style="color:${col.color}"></i>
+        </div>
+        <div class="trend-card-actions">
+          <button class="icon-btn" title="Edit" onclick="openEditModal(${t.id})"><i class="ti ti-edit"></i></button>
+          <button class="icon-btn danger" title="Delete" onclick="deleteTrend(${t.id})"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+      <div class="trend-title" id="title-${t.id}" contenteditable="true" spellcheck="false">${escHtml(t.name)}</div>
+      <div class="trend-desc" id="desc-${t.id}" contenteditable="true" spellcheck="false">${escHtml(t.desc)}</div>
+      <div class="trend-footer">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span class="tag" style="background:${col.bg};color:${col.color}">${t.category}</span>
+          <span class="tag" style="background:${imp.bg};color:${imp.color}" title="Impact">${t.impact}</span>
+        </div>
+        <div class="maturity-wrap">
+          <span class="maturity-label">${t.maturity}</span>
+          <div class="maturity-bar">${pips}</div>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:11px;color:var(--text-muted)">
+        <i class="ti ti-clock" style="font-size:12px;vertical-align:-2px"></i> ${t.horizon}
+      </div>
+      <div class="trend-fin-line">
+        <i class="ti ti-currency-dollar" style="font-size:12px"></i>
+        <b>${fmtUSD(income)}</b> income · <span class="fin-tax-mini">${fmtUSD(tax)} tax</span> (${rate.toFixed(1)}%)
+      </div>
+    </div>
+  `;
+}
+
+// ── Filters ─────────────────────────────────────────────
+function filterCat(el, cat) {
+  activeFilter = cat === 'all' ? { type: 'all', value: 'all' } : { type: 'cat', value: cat };
+  document.getElementById('gridLabel').textContent = cat === 'all' ? 'All Trends' : cat;
+  setActiveSidebar(el);
+  applyFilters();
+}
+
+function filterMat(el, mat) {
+  activeFilter = { type: 'mat', value: mat };
+  document.getElementById('gridLabel').textContent = mat + ' Trends';
+  setActiveSidebar(el);
+  applyFilters();
+}
+
+function setActiveSidebar(el) {
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── Modal ────────────────────────────────────────────────
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'Add new trend';
+  document.getElementById('m-name').value = '';
+  document.getElementById('m-desc').value = '';
+  document.getElementById('m-cat').value = '';
+  document.getElementById('m-impact').value = 'High';
+  document.getElementById('m-maturity').value = 'Emerging';
+  document.getElementById('m-horizon').value = '1–3 yrs';
+  document.getElementById('m-income').value = 0;
+  document.getElementById('m-tax').value = 0;
+  document.getElementById('modalOverlay').classList.remove('hidden');
+  setTimeout(() => document.getElementById('m-name').focus(), 50);
+}
+
+function openEditModal(id) {
+  const t = trends.find(x => x.id === id);
+  if (!t) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'Edit trend';
+  document.getElementById('m-name').value = t.name;
+  document.getElementById('m-desc').value = t.desc;
+  document.getElementById('m-cat').value = t.category;
+  document.getElementById('m-impact').value = t.impact;
+  document.getElementById('m-maturity').value = t.maturity;
+  document.getElementById('m-horizon').value = t.horizon;
+  document.getElementById('m-income').value = Number(t.income) || 0;
+  document.getElementById('m-tax').value = Number(t.tax) || 0;
+  document.getElementById('modalOverlay').classList.remove('hidden');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.add('hidden');
+}
+
+function closeModalOutside(e) {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+}
+
+function saveTrend() {
+  const name = document.getElementById('m-name').value.trim();
+  const desc = document.getElementById('m-desc').value.trim();
+  const cat = document.getElementById('m-cat').value.trim() || 'Other';
+  const impact = document.getElementById('m-impact').value;
+  const maturity = document.getElementById('m-maturity').value;
+  const horizon = document.getElementById('m-horizon').value;
+  const income = Math.max(0, parseFloat(document.getElementById('m-income').value) || 0);
+  const tax = Math.max(0, parseFloat(document.getElementById('m-tax').value) || 0);
+
+  if (!name) { document.getElementById('m-name').focus(); return; }
+
+  if (editingId) {
+    const t = trends.find(x => x.id === editingId);
+    if (t) Object.assign(t, { name, desc, category: cat, impact, maturity, horizon, income, tax });
+    toast('Trend updated');
+  } else {
+    trends.push({ id: nextId++, name, desc, category: cat, impact, maturity, horizon, income, tax });
+    toast('Trend added');
+  }
+
+  saveToStorage();
+  closeModal();
+  render();
+}
+
+// ── Delete ───────────────────────────────────────────────
+function deleteTrend(id) {
+  if (!confirm('Delete this trend?')) return;
+  trends = trends.filter(t => t.id !== id);
+  saveToStorage();
+  toast('Trend removed');
+  render();
+}
+
+// ── Export ───────────────────────────────────────────────
+function exportHTML() {
+  // Get the full current HTML of the page
+  const originalHTML = document.documentElement.outerHTML;
+
+  // Inject current trends data so the exported file opens with the latest data
+  const dataScript = `<script id="__saved_data__">
+    window.__SAVED_TRENDS__ = ${JSON.stringify(trends)};
+    window.__SAVED_NEXT_ID__ = ${nextId};
+  <\/script>`;
+
+  // Insert the data script just before </head>
+  const exportedHTML = originalHTML.replace('</head>', dataScript + '\n</head>');
+
+  const blob = new Blob([exportedHTML], { type: 'text/html' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tech-trends.html';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Downloaded as HTML file');
+}
+
+// ── Utils ────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+const LS_KEY = 'techTrendsData';
+
+function saveToStorage() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({ trends, nextId }));
+  } catch(e) {}
+}
+
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) {
+      const saved = JSON.parse(raw);
+      if (Array.isArray(saved.trends) && saved.trends.length) {
+        trends = saved.trends;
+        nextId = saved.nextId || Math.max(...trends.map(t => t.id)) + 1;
+        return true;
+      }
+    }
+  } catch(e) {}
+  return false;
+}
+
+let saveTimer;
+function debounceSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => { saveToStorage(); toast('Changes saved'); }, 800);
+}
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModal();
+});
+
+// Load data: first check if this is an exported HTML file with embedded data,
+// then fall back to localStorage, then use the default hardcoded trends.
+if (window.__SAVED_TRENDS__ && window.__SAVED_TRENDS__.length) {
+  trends = window.__SAVED_TRENDS__;
+  nextId = window.__SAVED_NEXT_ID__ || Math.max(...trends.map(t => t.id)) + 1;
+  // Also sync this into localStorage for future edits
+  saveToStorage();
+} else {
+  loadFromStorage();
+}
+
+render();
+</script>
+</body>
+</html>
