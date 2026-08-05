@@ -1,0 +1,1142 @@
+<!doctype html>
+
+<html lang="en">
+
+ <head><script>window["__codeletBootstrap__"]=JSON.parse('{"A":"A","B":"20260805-03-59e0745","C":{"Abril Fatface":"YACgEZbkUVE,0","Alfa Slab One":"YACgEYS9sJU,0","Anton":"YACgEcYqQ-A,0","Archivo":"YAHO2-t-jNE,0","Arial":"YAGyDvJ_4Ts,0","Bebas Neue":"YACgESME5ew,0","Broken Glyph":"YADZ-exUkv0,0","Canva Sans":"YAFdJjTk5UU,0","Caveat":"YALBs2ploWQ,0","Comic Sans MS":"YAHO2VMiyZo,0","Cormorant Garamond":"YAFdJhX-538,0","Courier New":"YAGzXiGs0_8,0","DM Sans":"YAD1aU3sLnI,0","DM Serif Display":"YAD1aYG82rc,0","Forum":"YACgEcnnqB4,0","Fraunces":"YAEul-FRQw4,0","Georgia":"YAGzXkO0pEM,0","Ghost Mono":"YAHO2EIdDP0,0","Helvetica Neue":"YAFcf6CtJfI,0","Impact":"YAFcfnjI7Vk,0","Inter":"YAFdJvSyp_k,3","Iowan Old Style":"YAGNIFa8j9o,0","Jacques Francois":"YAHO2a5g66Q,0","JetBrains Mono":"YADy3sAhvXQ,0","Oleo Script":"YACgEQQ14jI,0","Playfair Display":"YAFdJhem5V8,1","Poppins":"YAE5fPSY9qM,0","Press Start 2P":"YAFyGr-8pmQ,0","Source Sans 3":"YAG4lO1Mj10,0","Space Grotesk":"YAHO2sjPCSM,0","Times New Roman":"YAGzXW3gftg,0","Times":"YAGzXW3gftg,0","Trebuchet MS":"YAFcfrglpVA,0","Verdana":"YAGzXTctYtQ,0","Work Sans":"YAGXhLOKv44,0","Yellowtail":"YACgEYG4kG4,0"}}');</script><script src="/_sdk/7949ff62d67710d5.telemetry_sdk.js" integrity="sha512-KIvXA82Di44YY/RH9/63A9MuTuavYgDFG8PfErJn7Wli4K0LAOk+coo/aPXk3+ZNL96nHh9VYD4PE+fLes+laQ=="></script>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Ultimate Quiz Platform</title>
+
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&amp;family=Fraunces:wght@700&amp;display=swap" rel="stylesheet">
+
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+  <style>
+
+        body { font-family: 'DM Sans', sans-serif; }
+
+        .heading-font { font-family: 'Fraunces', serif; }
+
+        .opt-btn { transition: all 0.2s; }
+
+        .opt-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+        .opt-correct { background: #059669 !important; color: #fff !important; border-color: #059669 !important; }
+
+        .opt-wrong { background: #dc2626 !important; color: #fff !important; border-color: #dc2626 !important; }
+
+        .timer-bar { transition: width 1s linear; }
+
+        .fade-in { animation: fadeIn 0.3s ease; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        #tab-login, #tab-signup { background:#f3f4f6; color:#374151; }
+
+        .tab-active { background:#6366f1 !important; color:#fff !important; }
+
+    </style>
+
+  <script src="/_sdk/0e8d3a91e1c6f495.data_sdk.js" integrity="sha512-c00oDoGjsMgluCLLEyVl3suwEkgjOGGplVFbsilUoBg4aMKNmsL3mwsc9r0dPn95qiSZyjBousQXgROkAW7p/w=="></script>
+
+  <script src="/_sdk/04cc6185e046f597.resizing_sdk.js" type="text/javascript" integrity="sha512-CiE/G92aQF0nxneFg1kdOvXih8sQ1Z2a2QI3+r/WvzJwQqH6+IyB3iL07OkJmpm3ABAaf07+FnqWny98f5sR6w=="></script>
+
+ </head>
+
+ <body data-template-id="__page-root" class="min-h-screen flex items-center justify-center p-4">
+
+  <main class="w-full max-w-2xl">
+
+   <header class="text-center mb-8">
+
+    <h1 data-template-id="quiz-title" class="canva-text heading-font"></h1>
+
+    <p data-template-id="quiz-subtitle" class="canva-text mt-2"></p>
+
+   </header><!-- Auth Screen -->
+
+   <div id="auth-screen" data-template-id="welcome-card" class="canva-card rounded-2xl p-8 shadow-xl fade-in">
+
+    <div class="flex gap-2 mb-6">
+
+     <button id="tab-login" class="tab-active flex-1 py-2 rounded-lg font-semibold text-sm" onclick="switchAuthTab('login')">Log In</button>
+
+     <button id="tab-signup" class="flex-1 py-2 rounded-lg font-semibold text-sm" onclick="switchAuthTab('signup')">Sign Up</button>
+
+    </div>
+
+    <div id="login-form">
+
+     <h2 class="canva-text heading-font mb-1 text-xl">Welcome back</h2>
+
+     <p class="canva-text mb-4 text-sm opacity-70">Log in to track your quiz progress</p>
+
+     <div class="space-y-3">
+
+      <input id="login-email" type="email" placeholder="Email address" autocomplete="email" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 focus:outline-none text-base">
+
+      <input id="login-password" type="password" placeholder="Password" autocomplete="current-password" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 focus:outline-none text-base">
+
+     </div>
+
+     <button class="canva-button w-full mt-4 py-3 rounded-xl font-semibold" onclick="logIn()">Log In</button>
+
+     <button class="w-full mt-2 text-xs opacity-60 underline" onclick="startForgotPassword()">Forgot password?</button>
+
+    </div>
+
+    <div id="signup-form" class="hidden">
+
+     <h2 class="canva-text heading-font mb-1 text-xl">Create your account</h2>
+
+     <p class="canva-text mb-4 text-sm opacity-70">Sign up to save your quiz stats</p>
+
+     <div class="space-y-3">
+
+      <input id="signup-name" type="text" placeholder="Display name" maxlength="30" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 focus:outline-none text-base">
+
+      <input id="signup-email" type="email" placeholder="Email address" autocomplete="email" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 focus:outline-none text-base">
+
+      <input id="signup-password" type="password" placeholder="Password (min 6 characters)" autocomplete="new-password" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 focus:outline-none text-base">
+
+      <input id="signup-password2" type="password" placeholder="Confirm password" autocomplete="new-password" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 focus:outline-none text-base">
+
+     </div>
+
+     <button class="canva-button w-full mt-4 py-3 rounded-xl font-semibold" onclick="signUp()">Create Account</button>
+
+    </div>
+
+    <p id="auth-message" class="mt-4 text-sm font-medium hidden"></p>
+
+   </div><!-- Reset Code Screen -->
+
+   <div id="reset-screen" class="hidden canva-card rounded-2xl p-8 shadow-xl fade-in">
+
+    <h2 class="canva-text heading-font mb-1 text-xl">Check your email</h2>
+
+    <p class="canva-text mb-4 text-sm opacity-70">We sent a 6-digit code to <span id="reset-email-display" class="font-semibold"></span></p>
+
+    <div class="space-y-3">
+
+     <input id="reset-code" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 focus:outline-none text-base tracking-widest text-center">
+
+     <input id="reset-password" type="password" placeholder="New password (min 6 characters)" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 focus:outline-none text-base">
+
+     <input id="reset-password2" type="password" placeholder="Confirm new password" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 focus:outline-none text-base">
+
+    </div>
+
+    <button class="canva-button w-full mt-4 py-3 rounded-xl font-semibold" onclick="submitResetCode()">Reset Password &amp; Log In</button>
+
+    <div class="flex justify-between mt-3">
+
+     <button id="resend-btn" class="text-xs opacity-60 underline" onclick="resendCode()">Resend code</button>
+
+     <button class="text-xs opacity-60 underline" onclick="cancelReset()">Back to log in</button>
+
+    </div>
+
+    <p id="reset-message" class="mt-3 text-sm font-medium hidden"></p>
+
+   </div><!-- Category Screen -->
+
+   <div id="category-screen" class="hidden fade-in">
+
+    <div class="flex justify-end gap-4 mb-3 text-xs">
+
+     <button class="underline opacity-70" onclick="openChangePassword()">Change password</button>
+
+     <button class="underline opacity-70" onclick="logOut()">Log out</button>
+
+    </div>
+
+    <div data-template-id="stats-card" class="canva-card rounded-2xl p-6 shadow-xl mb-6">
+
+     <h3 data-template-id="stats-heading" class="canva-text heading-font mb-3"></h3>
+
+     <div id="stats-content" class="grid grid-cols-3 gap-4 text-center">
+
+      <div>
+
+       <p id="stat-quizzes" class="text-2xl font-bold" style="color:#6366f1">0</p>
+
+       <p class="text-xs opacity-60">Quizzes</p>
+
+      </div>
+
+      <div>
+
+       <p id="stat-score" class="text-2xl font-bold" style="color:#059669">0</p>
+
+       <p class="text-xs opacity-60">Total Score</p>
+
+      </div>
+
+      <div>
+
+       <p id="stat-accuracy" class="text-2xl font-bold" style="color:#d97706">0%</p>
+
+       <p class="text-xs opacity-60">Accuracy</p>
+
+      </div>
+
+     </div>
+
+    </div>
+
+    <h3 data-template-id="category-heading" class="canva-text text-center mb-4"></h3>
+
+    <div class="grid gap-3"><button class="opt-btn w-full text-left px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium" onclick="startQuiz('basic')"><i data-lucide="calculator" class="inline w-5 h-5 mr-2 opacity-60"></i>Basic ODEs</button> <button class="opt-btn w-full text-left px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium" onclick="startQuiz('linear')"><i data-lucide="trending-up" class="inline w-5 h-5 mr-2 opacity-60"></i>Linear Equations</button> <button class="opt-btn w-full text-left px-5 py-4 rounded-xl border-2 border-gray-200 bg-white font-medium" onclick="startQuiz('integration')"><i data-lucide="sigma" class="inline w-5 h-5 mr-2 opacity-60"></i>Integration Techniques</button>
+
+    </div>
+
+   </div><!-- Quiz Area -->
+
+   <div id="quiz-area" data-template-id="quiz-card" class="canva-card rounded-2xl p-8 shadow-xl hidden fade-in">
+
+    <div class="flex justify-between items-center mb-2"><span id="progress" class="text-sm font-medium opacity-70"></span> <span id="score-display" class="text-sm font-medium opacity-70"></span>
+
+    </div>
+
+    <div class="w-full h-2 bg-gray-200 rounded-full mb-1 overflow-hidden">
+
+     <div id="timer-bar" class="timer-bar h-full rounded-full" style="background:#6366f1;width:100%"></div>
+
+    </div>
+
+    <div class="flex justify-between items-center mb-5"><span data-template-id="timer-label" class="canva-text text-xs"></span> <span id="timer-text" class="text-xs font-mono opacity-60">30s</span>
+
+    </div>
+
+    <div id="difficulty-badge" class="inline-block px-2 py-0.5 rounded text-xs font-medium mb-3" style="background:#e0e7ff;color:#4338ca">
+
+     Level 1
+
+    </div>
+
+    <h2 id="question-text" class="text-lg font-medium mb-6 leading-relaxed"></h2>
+
+    <div id="options" class="grid gap-3"></div>
+
+    <p id="feedback-text" class="mt-3 text-sm font-medium hidden"></p><button id="next-btn" class="mt-6 w-full py-3 rounded-xl font-semibold text-white hidden" style="background:#6366f1" onclick="nextQuestion()">Next →</button>
+
+   </div><!-- Result Screen -->
+
+   <div id="result-area" class="hidden fade-in text-center">
+
+    <div data-template-id="result-card" class="canva-card rounded-2xl p-10 shadow-xl">
+
+     <h2 data-template-id="result-heading" class="canva-text heading-font"></h2>
+
+     <p id="result-score" class="text-5xl font-bold mt-4 mb-2" style="color:#6366f1"></p>
+
+     <p id="result-detail" class="opacity-70 mb-2"></p>
+
+     <p id="result-penalty" class="text-sm opacity-50 mb-6"></p><button data-template-id="restart-btn" class="canva-button px-8 py-3 rounded-xl font-semibold" onclick="goToCategories()"></button>
+
+    </div>
+
+   </div><!-- Change Password Modal -->
+
+   <div id="change-pw-screen" class="hidden fade-in fixed inset-0 bg-black/40 flex items-center justify-center p-4" style="z-index:50">
+
+    <div class="canva-card rounded-2xl p-8 shadow-xl w-full max-w-sm">
+
+     <h2 class="canva-text heading-font mb-4 text-xl">Change password</h2>
+
+     <div class="space-y-3">
+
+      <input id="cp-current" type="password" placeholder="Current password" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 focus:outline-none text-base">
+
+      <input id="cp-new" type="password" placeholder="New password (min 6 characters)" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 focus:outline-none text-base">
+
+      <input id="cp-new2" type="password" placeholder="Confirm new password" class="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-400 focus:outline-none text-base">
+
+     </div>
+
+     <button class="canva-button w-full mt-4 py-3 rounded-xl font-semibold" onclick="submitChangePassword()">Update Password</button>
+
+     <button class="w-full mt-2 text-xs opacity-60 underline" onclick="closeChangePassword()">Cancel</button>
+
+     <p id="cp-message" class="mt-3 text-sm font-medium hidden"></p>
+
+    </div>
+
+   </div>
+
+  </main>
+
+  <script src="/_sdk/b67df6528afa6d57.editing_sdk.js" integrity="sha512-ObK/O8PVNdvePOE833JpZI0oKCuD4dnU+D+5PMwY4U3o0z4/Q4l01EB77zMvgnmBiBHpDMCJTfVYFVrzp7r1lw=="></script>
+
+  <script>
+
+    // ---- EmailJS configuration ----
+    // 1. Create a free account at https://www.emailjs.com
+    // 2. Add an Email Service (e.g. Gmail) and note its Service ID.
+    // 3. Create an Email Template with these variables in the body/subject:
+    //      {{to_name}}  {{to_email}}  {{code}}
+    //    and set the template's "To email" field to {{to_email}}.
+    // 4. Copy your Public Key (Account > General) and paste all three below.
+    const EMAILJS_PUBLIC_KEY = 'YOUR_EMAILJS_PUBLIC_KEY';
+    const EMAILJS_SERVICE_ID = 'YOUR_EMAILJS_SERVICE_ID';
+    const EMAILJS_TEMPLATE_ID = 'YOUR_EMAILJS_TEMPLATE_ID';
+    const RESET_CODE_COOLDOWN_MS = 30 * 1000;
+    const RESET_CODE_EXPIRY_MS = 10 * 60 * 1000;
+
+    const questionBank = {
+
+        basic: [
+
+            { q: "Solve: dy/dx = 2x. What is y?", opts: ["y = x² + C","y = 2x² + C","y = x + C","y = 4x + C"], ans: 0, diff: 1 },
+
+            { q: "Solve: dy/dx = 3. What is y?", opts: ["y = 3x + C","y = 3 + C","y = 1/3 x + C","y = 3x²"], ans: 0, diff: 1 },
+
+            { q: "Solve: dy/dx = 6x². What is y?", opts: ["y = 2x³ + C","y = 6x + C","y = x³ + C","y = 3x⁴ + C"], ans: 0, diff: 1 },
+
+            { q: "Solve: dy/dx = 4x + 1. What is y?", opts: ["y = 2x² + x + C","y = 4x + C","y = x² + x + C","y = 4x² + C"], ans: 0, diff: 2 },
+
+            { q: "Solve: dy/dx = cos(x). What is y?", opts: ["y = sin(x) + C","y = -sin(x) + C","y = cos(x) + C","y = tan(x) + C"], ans: 0, diff: 2 },
+
+            { q: "Solve: dy/dx = eˣ. What is y?", opts: ["y = eˣ + C","y = xeˣ + C","y = ln(x) + C","y = eˣ/x + C"], ans: 0, diff: 2 },
+
+            { q: "Solve: dy/dx = 1/x for x > 0.", opts: ["y = ln|x| + C","y = 1/x² + C","y = x + C","y = -1/x + C"], ans: 0, diff: 3 },
+
+            { q: "Solve: dy/dx = sec²(x).", opts: ["y = tan(x) + C","y = sec(x) + C","y = sin(x) + C","y = -cot(x) + C"], ans: 0, diff: 3 },
+
+        ],
+
+        linear: [
+
+            { q: "The order of dy/dx + 3y = 5 is:", opts: ["0","1","2","3"], ans: 1, diff: 1 },
+
+            { q: "Which is a first-order linear equation?", opts: ["dy/dx + y = x","d²y/dx² + y = 0","dy/dx + y² = x","(dy/dx)² = x"], ans: 0, diff: 1 },
+
+            { q: "What form is dy/dx + P(x)y = Q(x)?", opts: ["Separable","Linear first-order","Homogeneous","Exact"], ans: 1, diff: 1 },
+
+            { q: "For dy/dx + 2y = 0, the integrating factor is:", opts: ["e^(2x)","e^(-2x)","2x","e^x"], ans: 0, diff: 2 },
+
+            { q: "For dy/dx + y/x = x, the integrating factor is:", opts: ["x","1/x","e^x","ln(x)"], ans: 0, diff: 2 },
+
+            { q: "Solve dy/dx - y = 0 with y(0)=1:", opts: ["y = eˣ","y = e⁻ˣ","y = x","y = 1"], ans: 0, diff: 2 },
+
+            { q: "The general solution of dy/dx + y = e⁻ˣ is:", opts: ["y = (x+C)e⁻ˣ","y = Ce⁻ˣ","y = xe⁻ˣ","y = e⁻ˣ + C"], ans: 0, diff: 3 },
+
+            { q: "For dy/dx + 3y = 6, the steady-state solution is:", opts: ["y = 2","y = 3","y = 6","y = 0"], ans: 0, diff: 3 },
+
+        ],
+
+        integration: [
+
+            { q: "∫ x·eˣ dx = ?", opts: ["(x-1)eˣ + C","x·eˣ + C","eˣ/x + C","(x+1)eˣ + C"], ans: 0, diff: 2 },
+
+            { q: "∫ ln(x) dx = ?", opts: ["x·ln(x) - x + C","1/x + C","x² ln(x) + C","ln(x)/x + C"], ans: 0, diff: 2 },
+
+            { q: "∫ sin²(x) dx = ?", opts: ["x/2 - sin(2x)/4 + C","cos²(x) + C","-cos(x) + C","sin(x)cos(x) + C"], ans: 0, diff: 2 },
+
+            { q: "∫ 1/(1+x²) dx = ?", opts: ["arctan(x) + C","ln(1+x²) + C","arcsin(x) + C","1/x + C"], ans: 0, diff: 1 },
+
+            { q: "∫ x²·eˣ dx = ?", opts: ["(x²-2x+2)eˣ + C","x²·eˣ + C","(x²+2x)eˣ + C","2x·eˣ + C"], ans: 0, diff: 3 },
+
+            { q: "∫ eˣ·sin(x) dx = ?", opts: ["eˣ(sin x - cos x)/2 + C","eˣ·sin(x) + C","eˣ·cos(x) + C","-eˣ·cos(x) + C"], ans: 0, diff: 3 },
+
+        ]
+
+    };
+
+
+
+    let currentUser = null;
+
+    let currentUserEmail = null;
+
+    let userData = null;
+
+    let allUsers = [];
+
+    let pendingSignupEmail = null;
+
+    let pendingResetEmail = null;
+
+    let currentCategory = '';
+
+    let questions = [];
+
+    let current = 0, score = 0, answered = false;
+
+    let correctStreak = 0, wrongStreak = 0, diffLevel = 1;
+
+    let timer = null, timeLeft = 30;
+
+    let totalAnswered = 0, totalCorrect = 0;
+
+    let penaltyPoints = 0;
+
+
+
+    const dataHandler = {
+
+        onDataChanged(data) {
+
+            allUsers = data || [];
+
+            if (pendingSignupEmail) {
+
+                const acc = allUsers.find(u => (u.email || '').toLowerCase() === pendingSignupEmail);
+
+                if (acc) { pendingSignupEmail = null; enterApp(acc); }
+
+            } else if (currentUserEmail) {
+
+                const acc = allUsers.find(u => (u.email || '').toLowerCase() === currentUserEmail);
+
+                if (acc) { userData = acc; updateStats(); }
+
+            }
+
+        }
+
+    };
+
+
+
+    async function initApp() {
+
+        if (window.emailjs && EMAILJS_PUBLIC_KEY && !EMAILJS_PUBLIC_KEY.startsWith('YOUR_')) {
+
+            emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+
+        }
+
+        const result = await window.dataSdk.init(dataHandler);
+
+        if (!result.isOk) console.error('SDK init failed');
+
+        lucide.createIcons();
+
+    }
+
+
+
+    function isValidEmail(email) {
+
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    }
+
+
+
+    function randomHex(numBytes) {
+
+        const arr = new Uint8Array(numBytes);
+
+        crypto.getRandomValues(arr);
+
+        return Array.from(arr, b => b.toString(16).padStart(2, '0')).join('');
+
+    }
+
+
+
+    async function sha256Hex(str) {
+
+        const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+
+        return Array.from(new Uint8Array(buf), b => b.toString(16).padStart(2, '0')).join('');
+
+    }
+
+
+
+    function setAuthMessage(msg, kind) {
+
+        const el = document.getElementById('auth-message');
+
+        el.textContent = msg; el.style.color = kind === 'good' ? '#059669' : '#dc2626';
+
+        el.classList.remove('hidden');
+
+    }
+
+    function clearAuthMessage() { document.getElementById('auth-message').classList.add('hidden'); }
+
+
+
+    function setResetMessage(msg, kind) {
+
+        const el = document.getElementById('reset-message');
+
+        el.textContent = msg; el.style.color = kind === 'good' ? '#059669' : '#dc2626';
+
+        el.classList.remove('hidden');
+
+    }
+
+    function clearResetMessage() { document.getElementById('reset-message').classList.add('hidden'); }
+
+
+
+    function setCpMessage(msg, kind) {
+
+        const el = document.getElementById('cp-message');
+
+        el.textContent = msg; el.style.color = kind === 'good' ? '#059669' : '#dc2626';
+
+        el.classList.remove('hidden');
+
+    }
+
+    function clearCpMessage() { document.getElementById('cp-message').classList.add('hidden'); }
+
+
+
+    function switchAuthTab(tab) {
+
+        clearAuthMessage();
+
+        const loginForm = document.getElementById('login-form');
+
+        const signupForm = document.getElementById('signup-form');
+
+        const tabLogin = document.getElementById('tab-login');
+
+        const tabSignup = document.getElementById('tab-signup');
+
+        if (tab === 'login') {
+
+            loginForm.classList.remove('hidden'); signupForm.classList.add('hidden');
+
+            tabLogin.classList.add('tab-active'); tabSignup.classList.remove('tab-active');
+
+        } else {
+
+            loginForm.classList.add('hidden'); signupForm.classList.remove('hidden');
+
+            tabSignup.classList.add('tab-active'); tabLogin.classList.remove('tab-active');
+
+        }
+
+    }
+
+
+
+    async function signUp() {
+
+        clearAuthMessage();
+
+        const name = document.getElementById('signup-name').value.trim();
+
+        const email = document.getElementById('signup-email').value.trim().toLowerCase();
+
+        const pw = document.getElementById('signup-password').value;
+
+        const pw2 = document.getElementById('signup-password2').value;
+
+        if (!name) { setAuthMessage('Please enter a display name.', 'bad'); return; }
+
+        if (!isValidEmail(email)) { setAuthMessage('Please enter a valid email address.', 'bad'); return; }
+
+        if (pw.length < 6) { setAuthMessage('Password must be at least 6 characters.', 'bad'); return; }
+
+        if (pw !== pw2) { setAuthMessage('Passwords do not match.', 'bad'); return; }
+
+        if (allUsers.some(u => (u.email || '').toLowerCase() === email)) { setAuthMessage('An account with that email already exists. Try logging in instead.', 'bad'); return; }
+
+        const salt = randomHex(16);
+
+        const hash = await sha256Hex(salt + pw);
+
+        pendingSignupEmail = email;
+
+        setAuthMessage('Creating your account…', 'good');
+
+        await window.dataSdk.create({ email, display_name: name, password_salt: salt, password_hash: hash, total_score: 0, quizzes_taken: 0, avg_accuracy: 0, last_category: '', difficulty_level: 1, reset_code: null, reset_code_expires: null, last_code_sent_at: null });
+
+    }
+
+
+
+    async function logIn() {
+
+        clearAuthMessage();
+
+        const email = document.getElementById('login-email').value.trim().toLowerCase();
+
+        const pw = document.getElementById('login-password').value;
+
+        if (!isValidEmail(email)) { setAuthMessage('Please enter a valid email address.', 'bad'); return; }
+
+        if (!pw) { setAuthMessage('Please enter your password.', 'bad'); return; }
+
+        const account = allUsers.find(u => (u.email || '').toLowerCase() === email);
+
+        if (!account) { setAuthMessage('No account found for that email. Try signing up instead.', 'bad'); return; }
+
+        const hash = await sha256Hex(account.password_salt + pw);
+
+        if (hash === account.password_hash) {
+
+            enterApp(account);
+
+        } else {
+
+            setAuthMessage('Incorrect password. Sending a verification code to your email…', 'bad');
+
+            await sendResetCode(account);
+
+        }
+
+    }
+
+
+
+    function startForgotPassword() {
+
+        clearAuthMessage();
+
+        const email = document.getElementById('login-email').value.trim().toLowerCase();
+
+        if (!isValidEmail(email)) { setAuthMessage('Enter your email address above first, then click "Forgot password?".', 'bad'); return; }
+
+        const account = allUsers.find(u => (u.email || '').toLowerCase() === email);
+
+        if (!account) { setAuthMessage('No account found for that email.', 'bad'); return; }
+
+        sendResetCode(account);
+
+    }
+
+
+
+    async function sendResetCode(account) {
+
+        const now = Date.now();
+
+        if (account.last_code_sent_at && now - account.last_code_sent_at < RESET_CODE_COOLDOWN_MS) {
+
+            showResetScreen(account.email, 'A code was already sent recently — check your inbox.');
+
+            return;
+
+        }
+
+        const code = String(Math.floor(100000 + Math.random() * 900000));
+
+        const updated = { ...account, reset_code: code, reset_code_expires: now + RESET_CODE_EXPIRY_MS, last_code_sent_at: now };
+
+        await window.dataSdk.update(updated);
+
+        showResetScreen(account.email, '');
+
+        try {
+
+            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, { to_email: account.email, to_name: account.display_name, code });
+
+            setResetMessage('A verification code was sent to your email.', 'good');
+
+        } catch (err) {
+
+            console.error('EmailJS send failed', err);
+
+            setResetMessage('Could not send the email — check the EmailJS configuration at the top of the script.', 'bad');
+
+        }
+
+    }
+
+
+
+    function showResetScreen(email, msg) {
+
+        pendingResetEmail = email;
+
+        document.getElementById('auth-screen').classList.add('hidden');
+
+        document.getElementById('reset-screen').classList.remove('hidden');
+
+        document.getElementById('reset-email-display').textContent = email;
+
+        document.getElementById('reset-code').value = '';
+
+        document.getElementById('reset-password').value = '';
+
+        document.getElementById('reset-password2').value = '';
+
+        if (msg) setResetMessage(msg, 'good'); else clearResetMessage();
+
+    }
+
+
+
+    async function submitResetCode() {
+
+        clearResetMessage();
+
+        const code = document.getElementById('reset-code').value.trim();
+
+        const pw = document.getElementById('reset-password').value;
+
+        const pw2 = document.getElementById('reset-password2').value;
+
+        const account = allUsers.find(u => (u.email || '').toLowerCase() === pendingResetEmail);
+
+        if (!account) { setResetMessage('Something went wrong, please try logging in again.', 'bad'); return; }
+
+        if (!account.reset_code || code !== account.reset_code) { setResetMessage('That code is incorrect.', 'bad'); return; }
+
+        if (!account.reset_code_expires || Date.now() > account.reset_code_expires) { setResetMessage('That code has expired. Please resend a new one.', 'bad'); return; }
+
+        if (pw.length < 6) { setResetMessage('New password must be at least 6 characters.', 'bad'); return; }
+
+        if (pw !== pw2) { setResetMessage('Passwords do not match.', 'bad'); return; }
+
+        const salt = randomHex(16);
+
+        const hash = await sha256Hex(salt + pw);
+
+        const updated = { ...account, password_salt: salt, password_hash: hash, reset_code: null, reset_code_expires: null };
+
+        await window.dataSdk.update(updated);
+
+        enterApp(updated);
+
+    }
+
+
+
+    async function resendCode() {
+
+        const account = allUsers.find(u => (u.email || '').toLowerCase() === pendingResetEmail);
+
+        if (!account) return;
+
+        const btn = document.getElementById('resend-btn');
+
+        btn.disabled = true;
+
+        await sendResetCode(account);
+
+        let secs = 30;
+
+        btn.textContent = `Resend code (${secs}s)`;
+
+        const iv = setInterval(() => {
+
+            secs--;
+
+            if (secs <= 0) { clearInterval(iv); btn.disabled = false; btn.textContent = 'Resend code'; }
+
+            else btn.textContent = `Resend code (${secs}s)`;
+
+        }, 1000);
+
+    }
+
+
+
+    function cancelReset() {
+
+        pendingResetEmail = null;
+
+        document.getElementById('reset-screen').classList.add('hidden');
+
+        document.getElementById('auth-screen').classList.remove('hidden');
+
+        switchAuthTab('login');
+
+    }
+
+
+
+    function enterApp(account) {
+
+        currentUserEmail = account.email;
+
+        userData = account;
+
+        currentUser = account.display_name;
+
+        pendingResetEmail = null;
+
+        document.getElementById('auth-screen').classList.add('hidden');
+
+        document.getElementById('reset-screen').classList.add('hidden');
+
+        document.getElementById('category-screen').classList.remove('hidden');
+
+        updateStats();
+
+    }
+
+
+
+    function logOut() {
+
+        currentUserEmail = null; userData = null; currentUser = null;
+
+        document.getElementById('category-screen').classList.add('hidden');
+
+        document.getElementById('quiz-area').classList.add('hidden');
+
+        document.getElementById('result-area').classList.add('hidden');
+
+        document.getElementById('change-pw-screen').classList.add('hidden');
+
+        document.getElementById('login-email').value = '';
+
+        document.getElementById('login-password').value = '';
+
+        document.getElementById('auth-screen').classList.remove('hidden');
+
+        switchAuthTab('login');
+
+    }
+
+
+
+    function openChangePassword() {
+
+        document.getElementById('change-pw-screen').classList.remove('hidden');
+
+        document.getElementById('cp-current').value = '';
+
+        document.getElementById('cp-new').value = '';
+
+        document.getElementById('cp-new2').value = '';
+
+        clearCpMessage();
+
+    }
+
+    function closeChangePassword() { document.getElementById('change-pw-screen').classList.add('hidden'); }
+
+
+
+    async function submitChangePassword() {
+
+        clearCpMessage();
+
+        const current = document.getElementById('cp-current').value;
+
+        const pw = document.getElementById('cp-new').value;
+
+        const pw2 = document.getElementById('cp-new2').value;
+
+        const hash = await sha256Hex(userData.password_salt + current);
+
+        if (hash !== userData.password_hash) { setCpMessage('Current password is incorrect.', 'bad'); return; }
+
+        if (pw.length < 6) { setCpMessage('New password must be at least 6 characters.', 'bad'); return; }
+
+        if (pw !== pw2) { setCpMessage('New passwords do not match.', 'bad'); return; }
+
+        const salt = randomHex(16);
+
+        const newHash = await sha256Hex(salt + pw);
+
+        const updated = { ...userData, password_salt: salt, password_hash: newHash };
+
+        await window.dataSdk.update(updated);
+
+        userData = updated;
+
+        setCpMessage('Password updated successfully.', 'good');
+
+    }
+
+
+
+    function updateStats() {
+
+        if (!userData) return;
+
+        document.getElementById('stat-quizzes').textContent = userData.quizzes_taken || 0;
+
+        document.getElementById('stat-score').textContent = Math.round(userData.total_score || 0);
+
+        document.getElementById('stat-accuracy').textContent = (userData.avg_accuracy || 0) + '%';
+
+    }
+
+
+
+    function startQuiz(category) {
+
+        currentCategory = category;
+
+        diffLevel = userData ? (userData.difficulty_level || 1) : 1;
+
+        const bank = questionBank[category];
+
+        questions = shuffleAndSelect(bank, diffLevel);
+
+        current = 0; score = 0; totalAnswered = 0; totalCorrect = 0; penaltyPoints = 0;
+
+        correctStreak = 0; wrongStreak = 0;
+
+        document.getElementById('category-screen').classList.add('hidden');
+
+        document.getElementById('quiz-area').classList.remove('hidden');
+
+        showQuestion();
+
+    }
+
+
+
+    function shuffleAndSelect(bank, level) {
+
+        const suitable = bank.filter(q => Math.abs(q.diff - level) <= 1);
+
+        const pool = suitable.length >= 5 ? suitable : bank;
+
+        const shuffled = [...pool].sort(() => Math.random() - 0.5);
+
+        return shuffled.slice(0, Math.min(8, shuffled.length));
+
+    }
+
+
+
+    function showQuestion() {
+
+        answered = false;
+
+        const qObj = questions[current];
+
+        document.getElementById('progress').textContent = `${current+1}/${questions.length}`;
+
+        document.getElementById('score-display').textContent = `Score: ${score.toFixed(1)}`;
+
+        document.getElementById('question-text').textContent = qObj.q;
+
+        document.getElementById('next-btn').classList.add('hidden');
+
+        document.getElementById('feedback-text').classList.add('hidden');
+
+        document.getElementById('difficulty-badge').textContent = `Level ${diffLevel}`;
+
+        const optsDiv = document.getElementById('options');
+
+        optsDiv.innerHTML = '';
+
+        qObj.opts.forEach((o, i) => {
+
+            const btn = document.createElement('button');
+
+            btn.className = 'opt-btn w-full text-left px-5 py-3 rounded-xl border-2 border-gray-200 font-medium bg-white';
+
+            btn.textContent = o;
+
+            btn.onclick = () => selectAnswer(i, btn);
+
+            optsDiv.appendChild(btn);
+
+        });
+
+        startTimer();
+
+    }
+
+
+
+    function startTimer() {
+
+        timeLeft = 30;
+
+        document.getElementById('timer-bar').style.width = '100%';
+
+        document.getElementById('timer-text').textContent = '30s';
+
+        clearInterval(timer);
+
+        timer = setInterval(() => {
+
+            timeLeft--;
+
+            document.getElementById('timer-bar').style.width = (timeLeft/30*100) + '%';
+
+            document.getElementById('timer-text').textContent = timeLeft + 's';
+
+            if (timeLeft <= 5) document.getElementById('timer-bar').style.background = '#dc2626';
+
+            else document.getElementById('timer-bar').style.background = '#6366f1';
+
+            if (timeLeft <= 0) { clearInterval(timer); timeOut(); }
+
+        }, 1000);
+
+    }
+
+
+
+    function timeOut() {
+
+        if (answered) return;
+
+        answered = true; totalAnswered++;
+
+        wrongStreak++; correctStreak = 0;
+
+        penaltyPoints += 0.25; score -= 0.25;
+
+        const correct = questions[current].ans;
+
+        document.getElementById('options').children[correct].classList.add('opt-correct');
+
+        [...document.getElementById('options').children].forEach(b => b.disabled = true);
+
+        const fb = document.getElementById('feedback-text');
+
+        fb.textContent = '⏱ Time\'s up! -0.25 penalty'; fb.style.color = '#dc2626';
+
+        fb.classList.remove('hidden');
+
+        document.getElementById('score-display').textContent = `Score: ${score.toFixed(1)}`;
+
+        document.getElementById('next-btn').classList.remove('hidden');
+
+        adaptDifficulty();
+
+    }
+
+
+
+    function selectAnswer(i, btn) {
+
+        if (answered) return;
+
+        clearInterval(timer);
+
+        answered = true; totalAnswered++;
+
+        const correct = questions[current].ans;
+
+        if (i === correct) {
+
+            score++; totalCorrect++; correctStreak++; wrongStreak = 0;
+
+            btn.classList.add('opt-correct');
+
+            const fb = document.getElementById('feedback-text');
+
+            fb.textContent = '✓ Correct! +1'; fb.style.color = '#059669';
+
+            fb.classList.remove('hidden');
+
+        } else {
+
+            wrongStreak++; correctStreak = 0;
+
+            penaltyPoints += 0.25; score -= 0.25;
+
+            btn.classList.add('opt-wrong');
+
+            document.getElementById('options').children[correct].classList.add('opt-correct');
+
+            const fb = document.getElementById('feedback-text');
+
+            fb.textContent = '✗ Wrong! -0.25 penalty'; fb.style.color = '#dc2626';
+
+            fb.classList.remove('hidden');
+
+        }
+
+        [...document.getElementById('options').children].forEach(b => b.disabled = true);
+
+        document.getElementById('score-display').textContent = `Score: ${score.toFixed(1)}`;
+
+        document.getElementById('next-btn').classList.remove('hidden');
+
+        adaptDifficulty();
+
+    }
+
+
+
+    function adaptDifficulty() {
+
+        if (correctStreak >= 3 && diffLevel < 3) { diffLevel++; correctStreak = 0; }
+
+        if (wrongStreak >= 2 && diffLevel > 1) { diffLevel--; wrongStreak = 0; }
+
+    }
+
+
+
+    function nextQuestion() {
+
+        current++;
+
+        if (current >= questions.length) showResult();
+
+        else showQuestion();
+
+    }
+
+
+
+    async function showResult() {
+
+        clearInterval(timer);
+
+        document.getElementById('quiz-area').classList.add('hidden');
+
+        document.getElementById('result-area').classList.remove('hidden');
+
+        document.getElementById('result-score').textContent = `${score.toFixed(1)}/${questions.length}`;
+
+        const pct = totalAnswered > 0 ? Math.round(totalCorrect/totalAnswered*100) : 0;
+
+        document.getElementById('result-detail').textContent = pct >= 75 ? 'Excellent work!' : pct >= 50 ? 'Good effort!' : 'Keep practising!';
+
+        document.getElementById('result-penalty').textContent = penaltyPoints > 0 ? `(${penaltyPoints.toFixed(2)} penalty points deducted)` : '';
+
+
+
+        if (userData) {
+
+            const newQuizzes = (userData.quizzes_taken || 0) + 1;
+
+            const newTotal = (userData.total_score || 0) + score;
+
+            const oldCorrect = (userData.avg_accuracy || 0) * (userData.quizzes_taken || 0) / 100;
+
+            const newAvg = Math.round((oldCorrect * (totalAnswered > 0 ? 1 : 0) + totalCorrect) / ((userData.quizzes_taken || 0) * 8 + totalAnswered) * 100) || pct;
+
+            const updated = { ...userData, total_score: Math.round(newTotal * 10) / 10, quizzes_taken: newQuizzes, avg_accuracy: newAvg, last_category: currentCategory, difficulty_level: diffLevel };
+
+            userData = updated;
+
+            await window.dataSdk.update(updated);
+
+        }
+
+    }
+
+
+
+    function goToCategories() {
+
+        document.getElementById('result-area').classList.add('hidden');
+
+        document.getElementById('category-screen').classList.remove('hidden');
+
+    }
+
+
+
+    document.addEventListener('DOMContentLoaded', initApp);
+
+    </script>
+
+ </body>
+
+</html>
