@@ -13,16 +13,7 @@ import numpy as np
 from slm.model import GPTConfig, SLM
 from slm.optim import Adam
 from slm.tokenizer import CharTokenizer
-
-
-def sample_batch(data, block_size, batch_size):
-    """Sample `batch_size` random (input, target) chunks of length `block_size`."""
-    batch = []
-    for _ in range(batch_size):
-        start = random.randint(0, len(data) - block_size - 1)
-        chunk = data[start : start + block_size + 1]
-        batch.append((chunk[:-1], chunk[1:]))
-    return batch
+from slm.trainer import train_steps
 
 
 def main():
@@ -63,26 +54,19 @@ def main():
 
     print(f"vocab size: {cfg.vocab_size}, parameters: {model.num_parameters():,}")
 
-    running_loss = None
-    for step in range(1, args.iters + 1):
-        batch = sample_batch(data, args.block_size, args.batch_size)
+    def on_log(step, loss):
+        print(f"step {step:5d}/{args.iters}  loss {loss:.4f}")
 
-        model.zero_grad()
-        total_loss = 0.0
-        for x, y in batch:
-            _, loss = model.forward(x, y)
-            loss.backward()
-            total_loss += loss.item()
-
-        for p in model.parameters():
-            p.grad /= len(batch)
-        optimizer.step()
-
-        avg_loss = total_loss / len(batch)
-        running_loss = avg_loss if running_loss is None else 0.95 * running_loss + 0.05 * avg_loss
-
-        if step == 1 or step % args.log_every == 0:
-            print(f"step {step:5d}/{args.iters}  loss {running_loss:.4f}")
+    train_steps(
+        model,
+        optimizer,
+        data,
+        args.block_size,
+        args.batch_size,
+        args.iters,
+        on_log=on_log,
+        log_every=args.log_every,
+    )
 
     with open(args.out, "wb") as f:
         pickle.dump(

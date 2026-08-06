@@ -16,8 +16,26 @@ class CharTokenizer:
     def vocab_size(self):
         return len(self.stoi)
 
-    def encode(self, s):
+    def add_text(self, text):
+        """Append any characters not seen before, keeping existing ids stable.
+
+        Ids must not shift when the vocabulary grows, otherwise a model
+        trained earlier would suddenly be reading the wrong characters.
+        Returns the number of newly added characters.
+        """
+        new = [ch for ch in sorted(set(text)) if ch not in self.stoi]
+        for ch in new:
+            self.stoi[ch] = len(self.stoi)
+            self.itos[self.stoi[ch]] = ch
+        return len(new)
+
+    def encode(self, s, skip_unknown=False):
+        if skip_unknown:
+            return [self.stoi[ch] for ch in s if ch in self.stoi]
         return [self.stoi[ch] for ch in s]
+
+    def unknown_chars(self, s):
+        return sorted({ch for ch in s if ch not in self.stoi})
 
     def decode(self, ids):
         return "".join(self.itos[i] for i in ids)

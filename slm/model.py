@@ -163,6 +163,32 @@ class SLM:
         loss = cross_entropy(logits, targets) if targets is not None else None
         return logits, loss
 
+    def expand_vocab(self, new_vocab_size):
+        """Grow the token embedding table and output head for newly seen
+        characters, keeping every weight learned so far.
+
+        Rows/columns for the new characters are freshly initialized; the
+        existing ones are copied across untouched, so teaching the model a
+        character it has never seen does not erase its earlier training.
+        """
+        extra = new_vocab_size - self.cfg.vocab_size
+        if extra <= 0:
+            return
+
+        n_embd = self.cfg.n_embd
+        self.tok_emb.data = np.concatenate(
+            [self.tok_emb.data, np.random.normal(0, 0.02, size=(extra, n_embd))], axis=0
+        )
+        self.tok_emb.grad = np.zeros_like(self.tok_emb.data)
+
+        scale = 1.0 / np.sqrt(n_embd)
+        self.head.w.data = np.concatenate(
+            [self.head.w.data, np.random.uniform(-scale, scale, size=(n_embd, extra))], axis=1
+        )
+        self.head.w.grad = np.zeros_like(self.head.w.data)
+
+        self.cfg.vocab_size = new_vocab_size
+
     def zero_grad(self):
         for p in self.parameters():
             p.zero_grad()

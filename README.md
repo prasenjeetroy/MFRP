@@ -16,6 +16,9 @@ or other ML framework. It includes its own reverse-mode autograd engine.
   multi-head self-attention, MLP blocks, layer norm, and an output head.
 - `slm/optim.py` — a small Adam optimizer.
 - `slm/tokenizer.py` — a character-level tokenizer.
+- `slm/trainer.py` — batching and the shared training loop.
+- `teach.py` — **interactive session**: type your own text, train, and ask the
+  model to write something back, all from one prompt.
 - `train.py` — trains the model on a text file.
 - `generate.py` — generates text from a trained checkpoint.
 - `data/corpus.txt` — a small sample training text.
@@ -24,9 +27,32 @@ or other ML framework. It includes its own reverse-mode autograd engine.
 
 ### Usage
 
+#### Interactive: type your own training text
+
 ```bash
 pip install -r requirements.txt
+python teach.py
+```
 
+You get a prompt with these commands:
+
+| command  | what it does |
+| -------- | ------------ |
+| `teach`  | type or paste text for the model to learn from (blank line to finish) |
+| `file`   | load training text from a `.txt` file instead of typing it |
+| `train`  | practice on everything taught so far (Ctrl-C stops early, keeping progress) |
+| `write`  | give it a starting phrase and watch it continue |
+| `status` | how much text it has seen, how much it has practiced, current loss |
+| `save`   | save the model so you can pick up later with `python teach.py --load mymodel.pkl` |
+| `quit`   | leave |
+
+You can keep teaching it new text between training rounds. If the new text
+contains characters it has never seen, the vocabulary and the model grow to
+fit them without losing anything already learned.
+
+#### Non-interactive: train from a file
+
+```bash
 # Train on the sample corpus (or point --data at your own text file)
 python train.py --data data/corpus.txt --iters 2000 --out checkpoint.pkl
 
