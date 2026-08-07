@@ -356,6 +356,17 @@ td.amt, td.bal { text-align: right; font-variant-numeric: tabular-nums; font-wei
   padding: 22px; width: 100%; max-width: 340px; box-shadow: var(--shadow);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
 }
+.dialog {
+  background: var(--surface-1); border: 1px solid var(--border-strong);
+  border-radius: var(--radius); padding: 20px 22px; width: 100%; max-width: 390px;
+  box-shadow: var(--shadow); max-height: 90dvh; overflow-y: auto;
+}
+.dialog h3 { font-size: 16px; }
+.dialog hr { border: 0; border-top: 1px solid var(--border); margin: 18px 0 14px; }
+.sect {
+  font-size: 11.5px; font-weight: 640; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--text-muted); margin-bottom: 10px;
+}
 .receipt h3 { font-family: var(--font); font-size: 15px; margin-bottom: 2px; }
 .receipt .rr { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
 .receipt .rr span:last-child { font-variant-numeric: tabular-nums; }
@@ -426,10 +437,9 @@ td.amt, td.bal { text-align: right; font-variant-numeric: tabular-nums; font-wei
       </div>
 
       <div class="demo-note">
-        <strong style="color:var(--text-primary)">Demo cards</strong> — no real money, everything
-        stays in this browser.<br>
-        <code>1001</code> / PIN <code>1234</code> &nbsp;·&nbsp;
-        <code>2002</code> / PIN <code>4321</code>
+        <strong style="color:var(--text-primary)">Cards on this machine</strong> — no real money,
+        everything stays in this browser.<br>
+        <span id="cardHints"></span>
       </div>
     </div>
   </div>
@@ -446,6 +456,7 @@ td.amt, td.bal { text-align: right; font-variant-numeric: tabular-nums; font-wei
         <div class="brand-sub" id="whoami">—</div>
       </div>
     </div>
+    <button class="btn" id="settingsBtn">Card &amp; PIN</button>
     <button class="btn" id="themeBtn" title="Toggle light / dark">Theme</button>
     <button class="btn" id="resetBtn" title="Wipe local data and re-seed demo accounts">Reset demo</button>
     <button class="btn btn-primary" id="logoutBtn">Log out</button>
@@ -551,7 +562,7 @@ td.amt, td.bal { text-align: right; font-variant-numeric: tabular-nums; font-wei
         </div>
         <div class="legend" id="legend"></div>
         <div class="chart-wrap">
-          <canvas id="chartMain" height="300" role="img"
+          <canvas id="chartMain" height="208" role="img"
                   aria-label="Line chart of cash, investments and net worth over time, with a dashed projection of future levels."></canvas>
           <div class="tooltip" id="ttMain"></div>
         </div>
@@ -564,7 +575,7 @@ td.amt, td.bal { text-align: right; font-variant-numeric: tabular-nums; font-wei
           <div class="hint">deposits minus withdrawals, per month</div>
         </div>
         <div class="chart-wrap">
-          <canvas id="chartFlow" height="180" role="img"
+          <canvas id="chartFlow" height="132" role="img"
                   aria-label="Bar chart of net cash flow per month. Bars above the baseline are surplus months, bars below are deficit months."></canvas>
           <div class="tooltip" id="ttFlow"></div>
         </div>
@@ -616,6 +627,52 @@ td.amt, td.bal { text-align: right; font-variant-numeric: tabular-nums; font-wei
     <code>localStorage</code> on this device — no server, no real accounts, no financial advice.
   </p>
 </main>
+
+<!-- card & PIN settings -->
+<div class="overlay" id="setOverlay">
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="setTitle">
+    <h3 id="setTitle">Card &amp; PIN</h3>
+    <div class="tile-sub" id="setWho" style="margin-bottom:16px">—</div>
+
+    <div class="field">
+      <label for="curPin">Current PIN</label>
+      <input id="curPin" class="input" type="password" inputmode="numeric" maxlength="4"
+             autocomplete="off" placeholder="••••">
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin:-6px 0 0">
+      Required for either change below.
+    </p>
+
+    <hr>
+    <div class="sect">Change PIN</div>
+    <div class="field">
+      <label for="newPin">New PIN</label>
+      <input id="newPin" class="input" type="password" inputmode="numeric" maxlength="4"
+             autocomplete="off" placeholder="4 digits">
+    </div>
+    <div class="field">
+      <label for="newPin2">Confirm new PIN</label>
+      <input id="newPin2" class="input" type="password" inputmode="numeric" maxlength="4"
+             autocomplete="off" placeholder="4 digits">
+    </div>
+    <button class="btn" id="savePinBtn" style="width:100%">Update PIN</button>
+
+    <hr>
+    <div class="sect">Change card number</div>
+    <div class="field">
+      <label for="newCard">New card number</label>
+      <input id="newCard" class="input" inputmode="numeric" maxlength="4"
+             autocomplete="off" placeholder="4 digits">
+    </div>
+    <button class="btn" id="saveCardBtn" style="width:100%">Update card number</button>
+
+    <div class="msg" id="setMsg" role="status" aria-live="polite">
+      <span class="msg-icon" data-icon></span><span data-text></span>
+    </div>
+
+    <button class="btn btn-primary" id="setClose" style="width:100%;margin-top:16px">Done</button>
+  </div>
+</div>
 
 <!-- receipt -->
 <div class="overlay" id="overlay">
@@ -776,6 +833,7 @@ function seed() {
     return {
       card, name, employer,
       pinHash: hashPin(card, pin),
+      defaultPin: pin,        // shown on the login screen until the user changes it
       opening,                 // cash balance before the first transaction
       openedAt: tx[0].ts - DAY,
       tx,
@@ -883,6 +941,41 @@ function login(card, pin) {
 }
 
 const currentUser = () => (session ? db.users[session] : null);
+
+const PIN_RE = /^\d{4}$/;
+
+function changePin(u, currentPin, newPin, confirmPin) {
+  if (u.pinHash !== hashPin(u.card, currentPin)) return { ok: false, why: "Current PIN is incorrect." };
+  if (!PIN_RE.test(newPin))       return { ok: false, why: "The new PIN must be exactly 4 digits." };
+  if (newPin !== confirmPin)      return { ok: false, why: "The two new PINs don't match." };
+  if (newPin === currentPin)      return { ok: false, why: "The new PIN must differ from the current one." };
+  if (/^(\d)\1{3}$/.test(newPin)) return { ok: false, why: "Pick a PIN that isn't four identical digits." };
+
+  u.pinHash = hashPin(u.card, newPin);
+  u.defaultPin = null;            // the on-screen demo hint must stop claiming the old PIN
+  save();
+  return { ok: true };
+}
+
+function changeCard(u, newCard, currentPin) {
+  if (u.pinHash !== hashPin(u.card, currentPin)) return { ok: false, why: "Current PIN is incorrect." };
+  if (!PIN_RE.test(newCard))  return { ok: false, why: "A card number is exactly 4 digits." };
+  if (newCard === u.card)     return { ok: false, why: "That is already your card number." };
+  if (db.users[newCard])      return { ok: false, why: "Another card on this machine already uses that number." };
+
+  const old = u.card;
+  u.card = newCard;
+  // The PIN hash is salted with the card number, so it has to be re-derived —
+  // which is why this operation needs the PIN and not just a confirmation.
+  u.pinHash = hashPin(newCard, currentPin);
+  db.users[newCard] = u;
+  delete db.users[old];
+
+  session = newCard;
+  sessionStorage.setItem("mfrp.session", newCard);
+  save();
+  return { ok: true, old, card: newCard };
+}
 
 /* ==========================================================================
    5. Money operations
@@ -1203,12 +1296,12 @@ function drawMain(hist, proj) {
   const nowIdx = hist.length - 1;
   mainChart.pts = pts; mainChart.hist = nowIdx;
 
-  const padL = 52, padR = 74, padT = 14, padB = 26;
+  const padL = 50, padR = 72, padT = 12, padB = 22;
   const plotW = w - padL - padR, plotH = h - padT - padB;
   if (plotW <= 10) return;
 
   const maxV = Math.max(10, ...pts.map(p => Math.max(p.net, p.cash, p.inv)));
-  const scale = niceScale(maxV, 5);
+  const scale = niceScale(maxV, plotH > 190 ? 5 : 4);
   const yMax = scale.max;
   const t0 = pts[0].t, t1 = pts[pts.length - 1].t;
   const X = t => padL + ((t - t0) / (t1 - t0 || 1)) * plotW;
@@ -1372,7 +1465,7 @@ function drawFlow(buckets) {
   const canvas = el("chartFlow");
   const { ctx, w, h } = setupCanvas(canvas);
   flowChart.buckets = buckets;
-  const padL = 52, padR = 14, padT = 12, padB = 24;
+  const padL = 50, padR = 14, padT = 10, padB = 20;
   const plotW = w - padL - padR, plotH = h - padT - padB;
   if (plotW <= 10 || !buckets.length) return;
 
@@ -1475,6 +1568,16 @@ function flash(node, kind, text) {
 function clearFlash(node) { node.className = "msg"; }
 
 /* ---------- login screen ---------- */
+/* Rendered from the live account list, so a changed card number or PIN is
+   reflected here instead of the hint quietly going stale. */
+function renderCardHints() {
+  el("cardHints").innerHTML = Object.values(db.users)
+    .sort((a, b) => a.card.localeCompare(b.card))
+    .map(u => "<code>" + escapeHTML(u.card) + "</code> / PIN " +
+      (u.defaultPin ? "<code>" + escapeHTML(u.defaultPin) + "</code>" : "the one you set"))
+    .join(" &nbsp;·&nbsp; ");
+}
+
 let pinBuf = "";
 function paintPin() {
   el("pinDots").querySelectorAll(".pin-dot").forEach((d, i) => d.classList.toggle("on", i < pinBuf.length));
@@ -1530,6 +1633,7 @@ function logout() {
   el("login").style.display = "grid";
   el("cardInput").value = ""; pinBuf = ""; paintPin();
   clearFlash(el("loginMsg"));
+  renderCardHints();
 }
 
 /* ---------- transaction panel ---------- */
@@ -1614,6 +1718,45 @@ function showReceipt(u, res) {
   el("rcTerm").textContent = "Terminal 04 · ref " + String(t.id).padStart(6, "0");
   el("overlay").classList.add("on");
 }
+/* ---------- card & PIN settings ---------- */
+function openSettings() {
+  const u = currentUser(); if (!u) return;
+  el("setWho").textContent = u.name + " · card " + u.card;
+  ["curPin", "newPin", "newPin2", "newCard"].forEach(id => { el(id).value = ""; });
+  clearFlash(el("setMsg"));
+  el("setOverlay").classList.add("on");
+  el("curPin").focus();
+}
+function closeSettings() { el("setOverlay").classList.remove("on"); }
+
+el("settingsBtn").addEventListener("click", openSettings);
+el("setClose").addEventListener("click", closeSettings);
+el("setOverlay").addEventListener("click", e => { if (e.target === el("setOverlay")) closeSettings(); });
+
+el("savePinBtn").addEventListener("click", () => {
+  const u = currentUser(); if (!u) return;
+  const res = changePin(u, el("curPin").value.trim(), el("newPin").value.trim(), el("newPin2").value.trim());
+  if (!res.ok) return flash(el("setMsg"), "err", res.why);
+  ["curPin", "newPin", "newPin2"].forEach(id => { el(id).value = ""; });
+  flash(el("setMsg"), "ok", "PIN updated. Use it the next time you log in.");
+});
+
+el("saveCardBtn").addEventListener("click", () => {
+  const u = currentUser(); if (!u) return;
+  const res = changeCard(u, el("newCard").value.trim(), el("curPin").value.trim());
+  if (!res.ok) return flash(el("setMsg"), "err", res.why);
+  el("newCard").value = "";
+  el("setWho").textContent = u.name + " · card " + u.card;
+  el("whoami").textContent = u.name + " · card ••" + u.card.slice(-2);
+  flash(el("setMsg"), "ok", "Card number changed from " + res.old + " to " + res.card + ".");
+});
+
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  closeSettings();
+  el("overlay").classList.remove("on");
+});
+
 el("rcClose").addEventListener("click", () => el("overlay").classList.remove("on"));
 el("rcPrint").addEventListener("click", () => window.print());
 el("overlay").addEventListener("click", e => { if (e.target === el("overlay")) el("overlay").classList.remove("on"); });
@@ -1867,6 +2010,7 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () 
 
   bindMainHover();
   bindFlowHover();
+  renderCardHints();
 
   const s = sessionStorage.getItem("mfrp.session");
   if (s && db.users[s]) { session = s; openApp(); }
