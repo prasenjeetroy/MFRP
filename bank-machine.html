@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MFRP Bank Machine — ATM Simulator</title>
+<title>BDBA Bank Machine — ATM Simulator</title>
 <style>
 /* ============================================================
    Tokens. Light palette on bare :root; dark redefined twice so
@@ -236,7 +236,10 @@ button { font: inherit; color: inherit; }
   color: var(--text-muted); display: flex; align-items: center; gap: 7px;
 }
 .swatch { width: 9px; height: 9px; border-radius: 3px; flex: none; }
-.tile-value { font-size: 27px; font-weight: 640; letter-spacing: -0.025em; margin-top: 7px; }
+.tile-value {
+  font-size: clamp(19px, 1.95vw, 26px); font-weight: 640; letter-spacing: -0.025em;
+  margin-top: 7px; overflow-wrap: anywhere;
+}
 .tile-sub { font-size: 12.5px; color: var(--text-secondary); margin-top: 3px; }
 .delta-up { color: var(--success-text); font-weight: 600; }
 .delta-down { color: var(--critical); font-weight: 600; }
@@ -380,7 +383,7 @@ td.amt, td.bal { text-align: right; font-variant-numeric: tabular-nums; font-wei
 }
 @media (max-width: 520px) {
   .grid-tiles { grid-template-columns: 1fr; }
-  .tile-value { font-size: 24px; }
+  .tile-value { font-size: 22px; }
 }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
@@ -394,9 +397,9 @@ td.amt, td.bal { text-align: right; font-variant-numeric: tabular-nums; font-wei
   <div class="atm-shell">
     <div class="atm-head">
       <div class="brand" style="margin-bottom:12px">
-        <div class="brand-mark">MF</div>
+        <div class="brand-mark">BD</div>
         <div>
-          <div class="brand-name">MFRP Bank</div>
+          <div class="brand-name">BDBA Bank</div>
           <div class="brand-sub">Automated Teller · Terminal 04</div>
         </div>
       </div>
@@ -450,9 +453,9 @@ td.amt, td.bal { text-align: right; font-variant-numeric: tabular-nums; font-wei
 
   <header class="topbar">
     <div class="brand">
-      <div class="brand-mark">MF</div>
+      <div class="brand-mark">BD</div>
       <div>
-        <div class="brand-name">MFRP Bank</div>
+        <div class="brand-name">BDBA Bank</div>
         <div class="brand-sub" id="whoami">—</div>
       </div>
     </div>
@@ -503,7 +506,7 @@ td.amt, td.bal { text-align: right; font-variant-numeric: tabular-nums; font-wei
         <div class="quick" id="quickAmts"></div>
 
         <div class="field">
-          <label for="amtInput">Amount (USD)</label>
+          <label for="amtInput">Amount (Rs.)</label>
           <input id="amtInput" class="input" inputmode="decimal" placeholder="0.00" autocomplete="off">
         </div>
 
@@ -677,7 +680,7 @@ td.amt, td.bal { text-align: right; font-variant-numeric: tabular-nums; font-wei
 <!-- receipt -->
 <div class="overlay" id="overlay">
   <div class="receipt" role="dialog" aria-modal="true" aria-labelledby="rcTitle">
-    <h3 id="rcTitle">MFRP Bank — Receipt</h3>
+    <h3 id="rcTitle">BDBA Bank — Receipt</h3>
     <div style="color:var(--text-muted);font-size:11.5px" id="rcTerm">Terminal 04</div>
     <hr>
     <div id="rcRows"></div>
@@ -692,16 +695,24 @@ td.amt, td.bal { text-align: right; font-variant-numeric: tabular-nums; font-wei
 <script>
 "use strict";
 /* ==========================================================================
-   MFRP Bank Machine — single-file ATM simulator.
+   BDBA Bank Machine — single-file ATM simulator.
    Sections: storage · demo data · auth · money ops · analytics · charts · UI
    ========================================================================== */
 
-const KEY   = "mfrp.atm.v1";
+/* v2: the ledger moved from dollars to rupees, so a v1 store left on the
+   device would render dollar-scaled figures behind a rupee sign. A new key
+   seeds fresh instead. */
+const KEY   = "bdba.atm.v2";
 const DAY   = 86400000;
 const YEAR  = 365.25 * DAY;
 
-const money = new Intl.NumberFormat("en-US", { style:"currency", currency:"USD" });
-const money0 = new Intl.NumberFormat("en-US", { style:"currency", currency:"USD", maximumFractionDigits:0 });
+/* Indian digit grouping (1,00,000 rather than 100,000) with a "Rs." prefix,
+   and the sign kept outside the prefix so negatives read "-Rs. 500.00". */
+const inrExact = new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const inrWhole = new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 });
+const rupees = nf => ({ format: v => (v < 0 ? "-Rs.\u00a0" : "Rs.\u00a0") + nf.format(Math.abs(v)) });
+const money  = rupees(inrExact);   // paise shown
+const money0 = rupees(inrWhole);   // rounded to whole rupees
 const dateFmt = new Intl.DateTimeFormat("en-US", { year:"numeric", month:"short", day:"numeric" });
 const dateTimeFmt = new Intl.DateTimeFormat("en-US", { month:"short", day:"numeric", year:"numeric", hour:"numeric", minute:"2-digit" });
 const monthFmt = new Intl.DateTimeFormat("en-US", { month:"short" });
@@ -713,17 +724,21 @@ const el = id => document.getElementById(id);
 
 /* ---------- policy ---------- */
 const POLICY = {
-  dailyWithdrawLimit: 1000,
-  maxSingleWithdraw: 800,
-  minWithdraw: 5,
-  maxDeposit: 25000,
-  notes: [100, 50, 20, 10, 5],
+  // The daily ceiling sits above the per-transaction one so the single-
+  // withdrawal cap is what actually binds each transaction.
+  dailyWithdrawLimit: 195000000,
+  maxSingleWithdraw: 97500000,
+  minWithdraw: 1,
+  maxDeposit: 250000000,
+  // Down to Rs. 1, so any whole-rupee amount can be made up exactly — there
+  // is no rounding rule on what you may ask for.
+  notes: [500, 200, 100, 50, 20, 10, 5, 2, 1],
   overdraftAllowed: false
 };
 
 const FUNDS = [
   { id:"hysa",   name:"High-yield savings",   rate:0.042 },
-  { id:"index",  name:"Index fund (S&P 500)", rate:0.085 },
+  { id:"index",  name:"Index fund (Nifty 50)", rate:0.085 },
   { id:"bond",   name:"Bond fund",            rate:0.036 },
   { id:"growth", name:"Growth portfolio",     rate:0.110 }
 ];
@@ -737,7 +752,7 @@ const fundById = id => FUNDS.find(f => f.id === id) || FUNDS[0];
    sight in localStorage and nothing more. Never do this in a real product. */
 function hashPin(card, pin) {
   let h = 0x811c9dc5;
-  const s = card + "::" + pin + "::mfrp";
+  const s = card + "::" + pin + "::bdba";
   for (let i = 0; i < s.length; i++) {
     h ^= s.charCodeAt(i);
     h = Math.imul(h, 0x01000193) >>> 0;
@@ -805,7 +820,7 @@ function makeHistory(seedNum, profile) {
   for (let t = start + 3 * DAY; t < now; t += 7 * DAY) {
     const spend = profile.weekly * (0.55 + rnd() * 0.95);
     const labels = ["Groceries", "Fuel & transit", "Dining out", "Utilities", "Pharmacy", "Household"];
-    push(t + rnd() * DAY, "withdrawal", Math.round(spend / 5) * 5, labels[Math.floor(rnd() * labels.length)], { channel: "atm" });
+    push(t + rnd() * DAY, "withdrawal", Math.round(spend / 10) * 10, labels[Math.floor(rnd() * labels.length)], { channel: "atm" });
   }
   // monthly automatic investing
   for (let m = 1; m < 10; m++) {
@@ -846,13 +861,13 @@ function seed() {
   // The two profiles are tuned to land in different advice tiers, so the
   // recommendation engine has something to say either way.
   const users = {};
-  users["1001"] = mk("1001", "1234", "Alex Mercer", "Northwind Labs", 5200, {
-    seed: 20260807, pay: 1950, rent: 1650, weekly: 380, contrib: 400,
-    bigSpend: 720, redeem: 900, refund: 850, funds: ["index", "hysa", "growth"]
+  users["1001"] = mk("1001", "1234", "Alex Mercer", "Northwind Labs", 130000, {
+    seed: 20260807, pay: 48750, rent: 41250, weekly: 9500, contrib: 10000,
+    bigSpend: 18000, redeem: 22500, refund: 21250, funds: ["index", "hysa", "growth"]
   });
-  users["2002"] = mk("2002", "4321", "Jordan Patel", "Cedar Health", 900, {
-    seed: 90210, pay: 1500, rent: 1400, weekly: 330, contrib: 150,
-    bigSpend: 1100, redeem: 0, refund: 0, funds: ["hysa", "bond"]
+  users["2002"] = mk("2002", "4321", "Jordan Patel", "Cedar Health", 22500, {
+    seed: 90210, pay: 37500, rent: 35000, weekly: 8250, contrib: 3750,
+    bigSpend: 27500, redeem: 0, refund: 0, funds: ["hysa", "bond"]
   });
 
   return { version: 1, users, createdAt: Date.now() };
@@ -972,7 +987,7 @@ function changeCard(u, newCard, currentPin) {
   delete db.users[old];
 
   session = newCard;
-  sessionStorage.setItem("mfrp.session", newCard);
+  sessionStorage.setItem("bdba.session", newCard);
   save();
   return { ok: true, old, card: newCard };
 }
@@ -987,9 +1002,11 @@ function withdrawnToday(u) {
              .reduce((s, t) => s + t.amount, 0);
 }
 
-/* Greedy note breakdown against what the terminal actually holds. */
+/* Greedy note breakdown against what the terminal actually holds. With a Rs. 1
+   denomination in the cassette any whole amount can be made up, so there is no
+   "multiples of N" rule — only whole rupees, since cash has no paise. */
 function dispense(amount, cassette, commit) {
-  if (amount % 5 !== 0) return { ok: false, why: "This machine dispenses multiples of $5 only." };
+  if (!Number.isInteger(amount)) return { ok: false, why: "Cash comes in whole rupees — drop the paise." };
   const plan = {};
   let left = amount;
   for (const note of POLICY.notes) {
@@ -1277,10 +1294,13 @@ function niceScale(maxV, ticks) {
   const step = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * mag;
   return { max: Math.ceil(maxV / step) * step, step };
 }
+/* Axis and end-label units follow the Indian scale: thousand, lakh, crore. */
 function shortMoney(v) {
   const a = Math.abs(v);
-  if (a >= 1e6) return (v / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace(/\.0$/, "") + "M";
-  if (a >= 1000) return (v / 1000).toFixed(a >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k";
+  const t = (n, d) => n.toFixed(d).replace(/\.0$/, "");
+  if (a >= 1e7)  return t(v / 1e7, a >= 1e8 ? 0 : 1) + "Cr";
+  if (a >= 1e5)  return t(v / 1e5, a >= 1e6 ? 0 : 1) + "L";
+  if (a >= 1000) return t(v / 1000, a >= 10000 ? 0 : 1) + "k";
   return String(Math.round(v));
 }
 function roundRectPath(ctx, x, y, w, h, r) {
@@ -1305,7 +1325,7 @@ function drawMain(hist, proj) {
   const nowIdx = hist.length - 1;
   mainChart.pts = pts; mainChart.hist = nowIdx;
 
-  const padL = 50, padR = 72, padT = 12, padB = 22;
+  const padL = 68, padR = 86, padT = 12, padB = 22;
   const plotW = w - padL - padR, plotH = h - padT - padB;
   if (plotW <= 10) return;
 
@@ -1328,7 +1348,7 @@ function drawMain(hist, proj) {
     ctx.strokeStyle = grid; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(padL, Math.round(y) + .5); ctx.lineTo(w - padR, Math.round(y) + .5); ctx.stroke();
     ctx.fillStyle = muted;
-    ctx.fillText("$" + shortMoney(v), padL - 9, y);
+    ctx.fillText("Rs. " + shortMoney(v), padL - 9, y);
   }
 
   // x labels — roughly six, on month boundaries
@@ -1409,7 +1429,7 @@ function drawMain(hist, proj) {
     ctx.beginPath(); ctx.arc(x - 4, Y(e.v), 3.5, 0, Math.PI * 2);
     ctx.fillStyle = e.s.color; ctx.fill();
     ctx.fillStyle = css("--text-secondary");
-    ctx.fillText("$" + shortMoney(e.v), x + 4, e.y);
+    ctx.fillText("Rs. " + shortMoney(e.v), x + 4, e.y);
   }
 
   // hover marker
@@ -1474,7 +1494,7 @@ function drawFlow(buckets) {
   const canvas = el("chartFlow");
   const { ctx, w, h } = setupCanvas(canvas);
   flowChart.buckets = buckets;
-  const padL = 50, padR = 14, padT = 10, padB = 20;
+  const padL = 68, padR = 14, padT = 10, padB = 20;
   const plotW = w - padL - padR, plotH = h - padT - padB;
   if (plotW <= 10 || !buckets.length) return;
 
@@ -1496,7 +1516,7 @@ function drawFlow(buckets) {
     ctx.strokeStyle = v === 0 ? css("--axis") : css("--grid"); ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(padL, Math.round(y) + .5); ctx.lineTo(w - padR, Math.round(y) + .5); ctx.stroke();
     ctx.fillStyle = css("--text-muted");
-    ctx.fillText((v > 0 ? "+$" : v < 0 ? "−$" : "$") + shortMoney(Math.abs(v)), padL - 9, y);
+    ctx.fillText((v > 0 ? "+Rs. " : v < 0 ? "−Rs. " : "Rs. ") + shortMoney(Math.abs(v)), padL - 9, y);
   }
 
   buckets.forEach((b, i) => {
@@ -1614,7 +1634,7 @@ function tryLogin() {
   if (!res.ok) return flash(el("loginMsg"), "err", res.why);
   clearFlash(el("loginMsg"));
   session = card;
-  sessionStorage.setItem("mfrp.session", card);
+  sessionStorage.setItem("bdba.session", card);
   openApp();
 }
 
@@ -1639,7 +1659,10 @@ document.addEventListener("keydown", e => {
 function openApp() {
   const u = currentUser();
   rebuild(u);
-  cashCassette = { 100: 60, 50: 80, 20: 200, 10: 150, 5: 120 };
+  // Stocked deep enough that the per-transaction cap is genuinely reachable;
+  // small denominations are there so any whole amount can be made up exactly.
+  cashCassette = { 500: 250000, 200: 20000, 100: 20000, 50: 8000,
+                   20: 6000, 10: 6000, 5: 4000, 2: 4000, 1: 4000 };
   el("login").hidden = true;
   el("login").style.display = "none";
   el("app").hidden = false;
@@ -1650,7 +1673,7 @@ function openApp() {
 }
 function logout() {
   session = null;
-  sessionStorage.removeItem("mfrp.session");
+  sessionStorage.removeItem("bdba.session");
   el("app").hidden = true;
   el("login").hidden = false;
   el("login").style.display = "grid";
@@ -1661,9 +1684,9 @@ function logout() {
 
 /* ---------- transaction panel ---------- */
 const QUICK = {
-  withdraw: [20, 40, 60, 100, 200, 300],
-  deposit:  [50, 100, 250, 500, 1000, 2500],
-  invest:   [50, 100, 250, 500, 1000, 2000]
+  withdraw: [500, 1000, 2000, 5000, 10000, 25000],
+  deposit:  [1000, 5000, 10000, 25000, 50000, 100000],
+  invest:   [1000, 5000, 10000, 25000, 50000, 100000]
 };
 
 function buildFundSelect() {
@@ -1733,7 +1756,7 @@ function showReceipt(u, res) {
   ];
   if (res.notes) {
     rows.push(["", ""]);
-    POLICY.notes.forEach(n => { if (res.notes[n]) rows.push(["$" + n + " notes", "× " + res.notes[n]]); });
+    POLICY.notes.forEach(n => { if (res.notes[n]) rows.push(["Rs. " + n + " notes", "× " + res.notes[n]]); });
   }
   el("rcRows").innerHTML = rows.map(([k, v]) =>
     k === "" ? '<hr style="margin:8px 0">' : '<div class="rr"><span>' + k + "</span><span>" + v + "</span></div>"
@@ -1790,12 +1813,16 @@ function renderBreakdown() {
   const box = el("breakdown");
   if (op === "withdraw") {
     const left = POLICY.dailyWithdrawLimit - withdrawnToday(u);
-    const cassette = POLICY.notes.map(n => "$" + n + "×" + (cashCassette[n] || 0)).join("  ");
+    const held = POLICY.notes.reduce((s2, n) => s2 + n * (cashCassette[n] || 0), 0);
+    const cassette = POLICY.notes.map(n => n + "×" + (cashCassette[n] || 0)).join("   ");
     box.innerHTML =
-      rowHTML("Available to withdraw", money.format(Math.min(u.balance, left))) +
-      rowHTML("Remaining daily limit", money.format(Math.max(0, left))) +
+      rowHTML("Available to withdraw", money.format(Math.max(0, Math.min(u.balance, left)))) +
+      rowHTML("Remaining daily limit", money0.format(Math.max(0, left))) +
       rowHTML("Per-transaction cap", money0.format(POLICY.maxSingleWithdraw)) +
-      '<div class="breakdown-row" style="margin-top:5px"><span>Notes in terminal</span><strong style="font-variant-numeric:tabular-nums">' + cassette + "</strong></div>";
+      rowHTML("Cash in terminal", money0.format(held)) +
+      '<div style="margin-top:6px;color:var(--text-muted);font-size:11.5px">Notes held</div>' +
+      '<div style="font-variant-numeric:tabular-nums;font-size:11.5px;color:var(--text-secondary);word-spacing:2px">' +
+        cassette + "</div>";
   } else if (op === "deposit") {
     box.innerHTML =
       rowHTML("Current cash balance", money.format(u.balance)) +
@@ -1949,7 +1976,7 @@ el("csvBtn").addEventListener("click", () => {
   }).join("\n");
   const url = URL.createObjectURL(new Blob([head + body], { type: "text/csv" }));
   const a = document.createElement("a");
-  a.href = url; a.download = "mfrp-statement-" + u.card + ".csv";
+  a.href = url; a.download = "bdba-statement-" + u.card + ".csv";
   a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 });
@@ -2000,7 +2027,7 @@ el("themeBtn").addEventListener("click", () => {
   const sysDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   const next = cur ? (cur === "dark" ? "light" : "dark") : (sysDark ? "light" : "dark");
   document.documentElement.setAttribute("data-theme", next);
-  localStorage.setItem("mfrp.theme", next);
+  localStorage.setItem("bdba.theme", next);
   renderAll();
 });
 el("logoutBtn").addEventListener("click", logout);
@@ -2034,7 +2061,7 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () 
 
 /* ---------- boot ---------- */
 (function boot() {
-  const savedTheme = localStorage.getItem("mfrp.theme");
+  const savedTheme = localStorage.getItem("bdba.theme");
   if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
 
   db = load();
@@ -2045,7 +2072,7 @@ window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () 
   bindFlowHover();
   renderCardHints();
 
-  const s = sessionStorage.getItem("mfrp.session");
+  const s = sessionStorage.getItem("bdba.session");
   if (s && db.users[s]) { session = s; openApp(); }
   else el("cardInput").focus();
 })();
