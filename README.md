@@ -1,11 +1,22 @@
 # MFRP
 MyFirstRealSFDCProject
 
-## SLM: a small language model built from scratch in Python
+## AI models built from scratch in Python
 
-A character-level GPT-style small language model (SLM), implemented from
-first principles with only NumPy for array math — no PyTorch, TensorFlow,
-or other ML framework. It includes its own reverse-mode autograd engine.
+Two working models — a **text model** and an **image classifier** — built
+from first principles on a single hand-written autograd engine. NumPy for
+array math only; no PyTorch, TensorFlow, or other ML framework.
+
+New to this? Start with **[LEARN.md](LEARN.md)** — a step-by-step guide to
+how a model is built and trained, written for beginners.
+
+| | `slm/` (text) | `vision/` (pictures) |
+|---|---|---|
+| reads | characters | pixels |
+| answers | "what comes next?" | "which label is this?" |
+| train with | `teach.py`, `train.py` | `train_images.py` |
+
+### The text model
 
 ### Layout
 
@@ -22,8 +33,16 @@ or other ML framework. It includes its own reverse-mode autograd engine.
 - `train.py` — trains the model on a text file.
 - `generate.py` — generates text from a trained checkpoint.
 - `data/corpus.txt` — a small sample training text.
-- `tests/` — gradient checks for the autograd engine and a sanity test that
-  training loss decreases.
+- `vision/ops.py` — convolution, max pooling and flatten, with hand-written
+  gradients, built on the same autograd engine.
+- `vision/model.py` — the CNN image classifier.
+- `vision/data.py` — loading labelled image folders, train/validation split,
+  and augmentation.
+- `make_dataset.py` — draws a labelled cat/dog practice dataset.
+- `train_images.py` — trains the image classifier.
+- `predict_image.py` — classifies a picture with a trained model.
+- `tests/` — numerical gradient checks for every operation, plus sanity tests
+  that both models actually learn.
 
 ### Usage
 
@@ -60,7 +79,38 @@ python train.py --data data/corpus.txt --iters 2000 --out checkpoint.pkl
 python generate.py --checkpoint checkpoint.pkl --prompt "The small" --length 300
 ```
 
-Run the tests with:
+### The image classifier
+
+Sort your pictures into one folder per label — the folder name is the label:
+
+```
+data/images/
+    cat/   anything.png
+    dog/   anything.jpg
+```
+
+```bash
+# Draw a practice dataset (or skip this and use your own photos)
+python make_dataset.py --out data/images --per-class 120
+
+# Train. Prints accuracy on pictures it trained on AND ones held back.
+python train_images.py --data data/images --epochs 12
+
+# Ask it about a picture
+python predict_image.py --model image_model.pkl --image mypicture.png
+```
+
+Adding a third label is just adding a third folder — no code changes.
+
+On the drawn practice set this reaches 100% on unseen pictures in about
+20 seconds. Real photographs are much harder; see the "honest expectations"
+section of [LEARN.md](LEARN.md).
+
+### Tests
+
+Every hand-written gradient is checked against a numerical estimate, which is
+what catches the silent bugs that would otherwise let a model "train" while
+learning nothing:
 
 ```bash
 python -m unittest discover -s tests
