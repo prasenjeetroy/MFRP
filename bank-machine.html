@@ -1,0 +1,1877 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MFRP Bank Machine — ATM Simulator</title>
+<style>
+/* ============================================================
+   Tokens. Light palette on bare :root; dark redefined twice so
+   the OS setting and the in-page toggle both win.
+   ============================================================ */
+:root {
+  color-scheme: light;
+
+  --page:            #f9f9f7;
+  --surface-1:       #fcfcfb;
+  --surface-2:       #f2f1ed;
+  --surface-sunk:    #ecebe6;
+
+  --text-primary:    #0b0b0b;
+  --text-secondary:  #52514e;
+  --text-muted:      #898781;
+
+  --grid:            #e1e0d9;
+  --axis:            #c3c2b7;
+  --border:          rgba(11,11,11,0.10);
+  --border-strong:   rgba(11,11,11,0.20);
+
+  /* categorical slots 1–3 (validated all-pairs, light) */
+  --series-1:        #2a78d6;   /* cash        */
+  --series-2:        #eb6834;   /* investments */
+  --series-3:        #1baf7a;   /* net worth   */
+  /* diverging poles for signed cash flow */
+  --pos:             #2a78d6;
+  --neg:             #e34948;
+
+  /* status — fixed, never themed */
+  --good:            #0ca30c;
+  --warning:         #fab219;
+  --serious:         #ec835a;
+  --critical:        #d03b3b;
+  --success-text:    #006300;
+
+  --accent:          #2a78d6;
+  --accent-ink:      #ffffff;
+
+  --radius:          14px;
+  --radius-sm:       9px;
+  --shadow:          0 1px 2px rgba(11,11,11,.05), 0 8px 24px -12px rgba(11,11,11,.18);
+  --font:            system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page:           #0d0d0d;
+    --surface-1:      #1a1a19;
+    --surface-2:      #211f1e;
+    --surface-sunk:   #131312;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --grid:           #2c2c2a;
+    --axis:           #383835;
+    --border:         rgba(255,255,255,0.10);
+    --border-strong:  rgba(255,255,255,0.22);
+    --series-1:       #3987e5;
+    --series-2:       #d95926;
+    --series-3:       #199e70;
+    --pos:            #3987e5;
+    --neg:            #e66767;
+    --success-text:   #0ca30c;
+    --accent:         #3987e5;
+    --accent-ink:     #0d0d0d;
+    --shadow:         0 1px 2px rgba(0,0,0,.5), 0 10px 30px -14px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page:           #0d0d0d;
+  --surface-1:      #1a1a19;
+  --surface-2:      #211f1e;
+  --surface-sunk:   #131312;
+  --text-primary:   #ffffff;
+  --text-secondary: #c3c2b7;
+  --text-muted:     #898781;
+  --grid:           #2c2c2a;
+  --axis:           #383835;
+  --border:         rgba(255,255,255,0.10);
+  --border-strong:  rgba(255,255,255,0.22);
+  --series-1:       #3987e5;
+  --series-2:       #d95926;
+  --series-3:       #199e70;
+  --pos:            #3987e5;
+  --neg:            #e66767;
+  --success-text:   #0ca30c;
+  --accent:         #3987e5;
+  --accent-ink:     #0d0d0d;
+  --shadow:         0 1px 2px rgba(0,0,0,.5), 0 10px 30px -14px rgba(0,0,0,.8);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  font-family: var(--font);
+  background: var(--page);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  line-height: 1.45;
+  overflow-x: hidden;
+}
+h1, h2, h3 { margin: 0; font-weight: 620; letter-spacing: -0.01em; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------------- shell ---------------- */
+.wrap { max-width: 1180px; margin: 0 auto; padding: 20px 18px 64px; }
+
+.topbar {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  padding: 14px 0 18px;
+}
+.brand { display: flex; align-items: center; gap: 11px; margin-right: auto; }
+.brand-mark {
+  width: 38px; height: 38px; border-radius: 11px; flex: none;
+  background: var(--accent); color: var(--accent-ink);
+  display: grid; place-items: center; font-weight: 700; font-size: 15px;
+  letter-spacing: -0.03em;
+}
+.brand-name { font-size: 15.5px; font-weight: 640; letter-spacing: -0.015em; }
+.brand-sub { font-size: 12px; color: var(--text-muted); }
+
+.btn {
+  border: 1px solid var(--border); background: var(--surface-1);
+  border-radius: var(--radius-sm); padding: 8px 13px; font-size: 13.5px;
+  font-weight: 520; cursor: pointer; transition: background .12s, border-color .12s, transform .06s;
+}
+.btn:hover { background: var(--surface-2); border-color: var(--border-strong); }
+.btn:active { transform: translateY(1px); }
+.btn-primary {
+  background: var(--accent); color: var(--accent-ink); border-color: transparent; font-weight: 600;
+}
+.btn-primary:hover { background: var(--accent); filter: brightness(1.08); }
+.btn-ghost { background: transparent; }
+.btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+.btn-sm { padding: 5px 10px; font-size: 12.5px; }
+
+/* ---------------- login ---------------- */
+#login { min-height: 100dvh; display: grid; place-items: center; padding: 24px 18px; }
+.atm-shell {
+  width: 100%; max-width: 430px;
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 20px; box-shadow: var(--shadow); overflow: hidden;
+}
+.atm-head { padding: 22px 24px 6px; }
+.atm-head h1 { font-size: 19px; }
+.atm-head p { margin: 5px 0 0; font-size: 13px; color: var(--text-secondary); }
+.atm-body { padding: 18px 24px 24px; }
+
+.field { margin-bottom: 14px; }
+.field label {
+  display: block; font-size: 12px; font-weight: 600; letter-spacing: .02em;
+  text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px;
+}
+.input {
+  width: 100%; padding: 11px 13px; font: inherit; font-variant-numeric: tabular-nums;
+  border-radius: var(--radius-sm); border: 1px solid var(--border-strong);
+  background: var(--surface-sunk); color: var(--text-primary);
+}
+.input::placeholder { color: var(--text-muted); }
+.pin-display {
+  display: flex; gap: 9px; justify-content: center; padding: 6px 0 14px;
+}
+.pin-dot {
+  width: 13px; height: 13px; border-radius: 50%;
+  border: 1.5px solid var(--border-strong); background: transparent;
+  transition: background .12s, transform .12s;
+}
+.pin-dot.on { background: var(--accent); border-color: var(--accent); transform: scale(1.12); }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+.key {
+  padding: 15px 0; border-radius: var(--radius-sm); border: 1px solid var(--border);
+  background: var(--surface-2); font-size: 18px; font-weight: 560; cursor: pointer;
+  font-variant-numeric: tabular-nums; transition: background .1s, transform .06s;
+}
+.key:hover { background: var(--surface-sunk); }
+.key:active { transform: translateY(1px); }
+.key.wide { font-size: 13.5px; font-weight: 600; }
+.key.ok { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+
+.msg {
+  display: none; align-items: flex-start; gap: 8px; margin-top: 12px;
+  padding: 10px 12px; border-radius: var(--radius-sm); font-size: 13px;
+  border: 1px solid var(--border);
+}
+.msg.show { display: flex; }
+.msg-icon { flex: none; font-weight: 700; line-height: 1.3; }
+.msg.err   { background: color-mix(in srgb, var(--critical) 10%, var(--surface-1)); }
+.msg.err   .msg-icon { color: var(--critical); }
+.msg.ok    { background: color-mix(in srgb, var(--good) 12%, var(--surface-1)); }
+.msg.ok    .msg-icon { color: var(--success-text); }
+.msg.warn  { background: color-mix(in srgb, var(--warning) 16%, var(--surface-1)); }
+.msg.warn  .msg-icon { color: var(--text-primary); }
+
+.demo-note {
+  margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border);
+  font-size: 12.5px; color: var(--text-secondary);
+}
+.demo-note code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+  background: var(--surface-sunk); padding: 1.5px 5px; border-radius: 5px;
+}
+
+/* ---------------- cards / layout ---------------- */
+.card {
+  background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow);
+}
+.card-title {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 2px;
+}
+.card-title h2 { font-size: 14.5px; }
+.card-title .hint { font-size: 12.5px; color: var(--text-muted); margin-left: auto; }
+
+.grid-tiles {
+  display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; margin-bottom: 16px;
+}
+.tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: var(--radius); padding: 15px 16px; }
+.tile-label {
+  font-size: 11.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--text-muted); display: flex; align-items: center; gap: 7px;
+}
+.swatch { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+.tile-value { font-size: 27px; font-weight: 640; letter-spacing: -0.025em; margin-top: 7px; }
+.tile-sub { font-size: 12.5px; color: var(--text-secondary); margin-top: 3px; }
+.delta-up { color: var(--success-text); font-weight: 600; }
+.delta-down { color: var(--critical); font-weight: 600; }
+
+.cols { display: grid; grid-template-columns: 350px minmax(0,1fr); gap: 16px; align-items: start; }
+/* min-width floors everywhere a canvas lives: a canvas carries an intrinsic
+   width from its pixel-buffer attribute, and without these the grid track
+   sizes to that buffer instead of the viewport — which then makes the buffer
+   wider still on the next redraw. */
+.stack, .card, .chart-wrap { min-width: 0; }
+.stack { display: grid; gap: 16px; }
+
+/* ---------------- transaction panel ---------------- */
+.tabs { display: flex; gap: 4px; background: var(--surface-sunk); padding: 4px; border-radius: var(--radius-sm); margin-bottom: 15px; }
+.tab {
+  flex: 1; border: 0; background: transparent; padding: 7px 4px; border-radius: 7px;
+  font-size: 13px; font-weight: 560; cursor: pointer; color: var(--text-secondary);
+}
+.tab[aria-selected="true"] { background: var(--surface-1); color: var(--text-primary); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+
+.quick { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.chip {
+  border: 1px solid var(--border); background: var(--surface-2); border-radius: var(--radius-sm);
+  padding: 9px 4px; font-size: 13.5px; font-weight: 560; cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.chip:hover { background: var(--surface-sunk); border-color: var(--border-strong); }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+
+.breakdown {
+  margin-top: 12px; padding: 11px 13px; border-radius: var(--radius-sm);
+  background: var(--surface-sunk); border: 1px solid var(--border); font-size: 12.5px;
+}
+.breakdown-row { display: flex; justify-content: space-between; padding: 2.5px 0; color: var(--text-secondary); }
+.breakdown-row strong { color: var(--text-primary); font-weight: 600; }
+
+select.input { appearance: none; cursor: pointer; }
+
+/* ---------------- advisor ---------------- */
+.advice { display: flex; gap: 13px; align-items: flex-start; }
+.advice-icon {
+  width: 38px; height: 38px; flex: none; border-radius: 11px; display: grid;
+  place-items: center; font-size: 19px; font-weight: 700;
+}
+.advice-title { font-size: 15.5px; font-weight: 650; letter-spacing: -0.01em; }
+.advice-body { font-size: 13.5px; color: var(--text-secondary); margin-top: 3px; }
+.meters { margin-top: 15px; display: grid; gap: 12px; }
+.meter-head { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 5px; }
+.meter-head .k { color: var(--text-secondary); }
+.meter-head .v { font-weight: 620; font-variant-numeric: tabular-nums; }
+.meter-track { height: 7px; border-radius: 4px; background: var(--surface-sunk); overflow: hidden; }
+.meter-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+
+/* ---------------- chart ---------------- */
+.chart-wrap { position: relative; margin-top: 10px; }
+canvas { display: block; width: 100%; max-width: 100%; touch-action: pan-y; }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; align-items: center; font-size: 12.5px; color: var(--text-secondary); margin: 4px 0 2px; }
+.legend-item { display: flex; align-items: center; gap: 7px; }
+.legend-line { width: 15px; height: 2px; border-radius: 2px; }
+.legend-note { display: flex; align-items: center; gap: 7px; color: var(--text-muted); }
+.legend-dash {
+  width: 15px; height: 0; border-top: 2px dashed var(--text-muted); border-radius: 2px;
+}
+.tooltip {
+  position: absolute; pointer-events: none; opacity: 0; transition: opacity .1s;
+  background: var(--surface-1); border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm); padding: 9px 11px; font-size: 12.5px;
+  box-shadow: var(--shadow); min-width: 150px; z-index: 5;
+}
+.tooltip.on { opacity: 1; }
+.tt-title { font-weight: 640; margin-bottom: 5px; font-size: 12px; color: var(--text-secondary); }
+.tt-row { display: flex; align-items: center; gap: 7px; padding: 1.5px 0; }
+.tt-row .k { color: var(--text-secondary); }
+.tt-row .v { margin-left: auto; font-weight: 620; font-variant-numeric: tabular-nums; }
+
+.seg { display: flex; gap: 3px; background: var(--surface-sunk); padding: 3px; border-radius: 8px; }
+.seg button {
+  border: 0; background: transparent; padding: 4px 9px; border-radius: 6px;
+  font-size: 12.5px; font-weight: 550; cursor: pointer; color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+.seg button[aria-pressed="true"] { background: var(--surface-1); color: var(--text-primary); }
+
+/* ---------------- history ---------------- */
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 12px 0 10px; }
+.toolbar .input { width: auto; padding: 7px 10px; font-size: 13px; }
+/* The log runs to hundreds of rows — keep it in its own scroll pane instead of
+   letting it set the page height. Header stays pinned (see `th` below). */
+.table-scroll {
+  overflow-x: auto; overflow-y: auto; max-height: 440px;
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+}
+table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 560px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th {
+  font-size: 11.5px; font-weight: 620; letter-spacing: .03em; text-transform: uppercase;
+  color: var(--text-muted); background: var(--surface-2); position: sticky; top: 0;
+}
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--surface-2); }
+td.amt, td.bal { text-align: right; font-variant-numeric: tabular-nums; font-weight: 560; }
+.pill {
+  display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px; border-radius: 999px;
+  font-size: 11.5px; font-weight: 600; border: 1px solid var(--border); background: var(--surface-2);
+}
+.pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+.empty { padding: 26px; text-align: center; color: var(--text-muted); font-size: 13.5px; }
+
+/* ---------------- receipt ---------------- */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none;
+  place-items: center; padding: 20px; z-index: 40; backdrop-filter: blur(2px);
+}
+.overlay.on { display: grid; }
+.receipt {
+  background: var(--surface-1); border: 1px solid var(--border-strong); border-radius: var(--radius);
+  padding: 22px; width: 100%; max-width: 340px; box-shadow: var(--shadow);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+}
+.receipt h3 { font-family: var(--font); font-size: 15px; margin-bottom: 2px; }
+.receipt .rr { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; }
+.receipt .rr span:last-child { font-variant-numeric: tabular-nums; }
+.receipt hr { border: 0; border-top: 1px dashed var(--axis); margin: 11px 0; }
+
+.footnote { font-size: 12px; color: var(--text-muted); margin-top: 22px; text-align: center; }
+
+@media (max-width: 900px) {
+  .cols { grid-template-columns: minmax(0, 1fr); }
+  .grid-tiles { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 520px) {
+  .grid-tiles { grid-template-columns: 1fr; }
+  .tile-value { font-size: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- ================= LOGIN ================= -->
+<section id="login">
+  <div class="atm-shell">
+    <div class="atm-head">
+      <div class="brand" style="margin-bottom:12px">
+        <div class="brand-mark">MF</div>
+        <div>
+          <div class="brand-name">MFRP Bank</div>
+          <div class="brand-sub">Automated Teller · Terminal 04</div>
+        </div>
+      </div>
+      <h1>Insert card</h1>
+      <p>Enter your card number and 4-digit PIN to begin.</p>
+    </div>
+    <div class="atm-body">
+      <div class="field">
+        <label for="cardInput">Card number</label>
+        <input id="cardInput" class="input" inputmode="numeric" autocomplete="off"
+               maxlength="4" placeholder="1001">
+      </div>
+
+      <div class="field">
+        <label for="pinPad">PIN</label>
+        <div class="pin-display" id="pinDots" aria-hidden="true">
+          <span class="pin-dot"></span><span class="pin-dot"></span>
+          <span class="pin-dot"></span><span class="pin-dot"></span>
+        </div>
+        <div class="keypad" id="pinPad" role="group" aria-label="PIN keypad">
+          <button class="key" data-k="1">1</button>
+          <button class="key" data-k="2">2</button>
+          <button class="key" data-k="3">3</button>
+          <button class="key" data-k="4">4</button>
+          <button class="key" data-k="5">5</button>
+          <button class="key" data-k="6">6</button>
+          <button class="key" data-k="7">7</button>
+          <button class="key" data-k="8">8</button>
+          <button class="key" data-k="9">9</button>
+          <button class="key wide" data-k="clear">Clear</button>
+          <button class="key" data-k="0">0</button>
+          <button class="key wide ok" data-k="enter">Enter</button>
+        </div>
+      </div>
+
+      <div class="msg" id="loginMsg" role="status" aria-live="polite">
+        <span class="msg-icon" data-icon></span><span data-text></span>
+      </div>
+
+      <div class="demo-note">
+        <strong style="color:var(--text-primary)">Demo cards</strong> — no real money, everything
+        stays in this browser.<br>
+        <code>1001</code> / PIN <code>1234</code> &nbsp;·&nbsp;
+        <code>2002</code> / PIN <code>4321</code>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= APP ================= -->
+<main id="app" class="wrap" hidden>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">MF</div>
+      <div>
+        <div class="brand-name">MFRP Bank</div>
+        <div class="brand-sub" id="whoami">—</div>
+      </div>
+    </div>
+    <button class="btn" id="themeBtn" title="Toggle light / dark">Theme</button>
+    <button class="btn" id="resetBtn" title="Wipe local data and re-seed demo accounts">Reset demo</button>
+    <button class="btn btn-primary" id="logoutBtn">Log out</button>
+  </header>
+
+  <!-- stat tiles -->
+  <div class="grid-tiles">
+    <div class="tile">
+      <div class="tile-label"><span class="swatch" style="background:var(--series-1)"></span>Available cash</div>
+      <div class="tile-value num" id="tBalance">—</div>
+      <div class="tile-sub" id="tBalanceSub">—</div>
+    </div>
+    <div class="tile">
+      <div class="tile-label"><span class="swatch" style="background:var(--series-2)"></span>Investments</div>
+      <div class="tile-value num" id="tInvest">—</div>
+      <div class="tile-sub" id="tInvestSub">—</div>
+    </div>
+    <div class="tile">
+      <div class="tile-label"><span class="swatch" style="background:var(--series-3)"></span>Net worth</div>
+      <div class="tile-value num" id="tNet">—</div>
+      <div class="tile-sub" id="tNetSub">—</div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Net flow · 30 days</div>
+      <div class="tile-value num" id="tFlow">—</div>
+      <div class="tile-sub" id="tFlowSub">—</div>
+    </div>
+  </div>
+
+  <div class="cols">
+
+    <!-- ---------- left column ---------- -->
+    <div class="stack">
+
+      <section class="card" aria-label="Transaction">
+        <div class="card-title"><h2>Make a transaction</h2></div>
+
+        <div class="tabs" role="tablist" aria-label="Transaction type">
+          <button class="tab" role="tab" id="tab-withdraw" aria-selected="true"  data-op="withdraw">Withdraw</button>
+          <button class="tab" role="tab" id="tab-deposit"  aria-selected="false" data-op="deposit">Deposit</button>
+          <button class="tab" role="tab" id="tab-invest"   aria-selected="false" data-op="invest">Invest</button>
+        </div>
+
+        <div class="quick" id="quickAmts"></div>
+
+        <div class="field">
+          <label for="amtInput">Amount (USD)</label>
+          <input id="amtInput" class="input" inputmode="decimal" placeholder="0.00" autocomplete="off">
+        </div>
+
+        <div class="field" id="fundField" hidden>
+          <label for="fundSelect">Where to</label>
+          <select id="fundSelect" class="input"></select>
+        </div>
+
+        <div class="field" id="sourceField" hidden>
+          <label for="sourceSelect">Source</label>
+          <select id="sourceSelect" class="input">
+            <option value="cash">Cash / cheque at the machine</option>
+            <option value="transfer">Incoming transfer</option>
+            <option value="payroll">Payroll</option>
+            <option value="refund">Refund</option>
+          </select>
+        </div>
+
+        <button class="btn btn-primary" id="submitBtn" style="width:100%;padding:11px">Withdraw</button>
+
+        <div class="msg" id="opMsg" role="status" aria-live="polite">
+          <span class="msg-icon" data-icon></span><span data-text></span>
+        </div>
+
+        <div class="breakdown" id="breakdown"></div>
+      </section>
+
+      <section class="card" aria-label="Savings guidance">
+        <div class="card-title"><h2>Savings check</h2></div>
+        <div class="advice" style="margin-top:12px">
+          <div class="advice-icon" id="advIcon">·</div>
+          <div>
+            <div class="advice-title" id="advTitle">—</div>
+            <div class="advice-body" id="advBody">—</div>
+          </div>
+        </div>
+        <div class="meters" id="meters"></div>
+      </section>
+
+    </div>
+
+    <!-- ---------- right column ---------- -->
+    <div class="stack">
+
+      <section class="card" aria-label="Balance and projection">
+        <div class="card-title">
+          <h2>Money over time</h2>
+          <div class="hint">
+            <span class="seg" id="horizonSeg" role="group" aria-label="Projection horizon">
+              <button data-h="6"  aria-pressed="false">6m</button>
+              <button data-h="12" aria-pressed="true">12m</button>
+              <button data-h="24" aria-pressed="false">24m</button>
+              <button data-h="60" aria-pressed="false">5y</button>
+            </span>
+          </div>
+        </div>
+        <div class="legend" id="legend"></div>
+        <div class="chart-wrap">
+          <canvas id="chartMain" height="300" role="img"
+                  aria-label="Line chart of cash, investments and net worth over time, with a dashed projection of future levels."></canvas>
+          <div class="tooltip" id="ttMain"></div>
+        </div>
+        <p class="tile-sub" id="projSummary" style="margin-top:10px">—</p>
+      </section>
+
+      <section class="card" aria-label="Monthly cash flow">
+        <div class="card-title">
+          <h2>Monthly cash flow</h2>
+          <div class="hint">deposits minus withdrawals, per month</div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chartFlow" height="180" role="img"
+                  aria-label="Bar chart of net cash flow per month. Bars above the baseline are surplus months, bars below are deficit months."></canvas>
+          <div class="tooltip" id="ttFlow"></div>
+        </div>
+      </section>
+
+      <section class="card" aria-label="Transaction history">
+        <div class="card-title">
+          <h2>History</h2>
+          <div class="hint" id="histCount">—</div>
+        </div>
+        <div class="toolbar">
+          <select class="input" id="filterType">
+            <option value="all">All types</option>
+            <option value="deposit">Deposits</option>
+            <option value="withdrawal">Withdrawals</option>
+            <option value="invest">Investments</option>
+            <option value="redeem">Redemptions</option>
+          </select>
+          <select class="input" id="filterRange">
+            <option value="30">Last 30 days</option>
+            <option value="90">Last 90 days</option>
+            <option value="365" selected>Last 12 months</option>
+            <option value="0">All time</option>
+          </select>
+          <input class="input" id="filterText" placeholder="Search description…" style="flex:1;min-width:140px">
+          <button class="btn btn-sm" id="csvBtn">Export CSV</button>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Date</th>
+                <th scope="col">Type</th>
+                <th scope="col">Description</th>
+                <th scope="col" style="text-align:right">Amount</th>
+                <th scope="col" style="text-align:right">Balance after</th>
+              </tr>
+            </thead>
+            <tbody id="histBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <p class="footnote">
+    Simulation only. Balances, market returns and projections are made up and stored in
+    <code>localStorage</code> on this device — no server, no real accounts, no financial advice.
+  </p>
+</main>
+
+<!-- receipt -->
+<div class="overlay" id="overlay">
+  <div class="receipt" role="dialog" aria-modal="true" aria-labelledby="rcTitle">
+    <h3 id="rcTitle">MFRP Bank — Receipt</h3>
+    <div style="color:var(--text-muted);font-size:11.5px" id="rcTerm">Terminal 04</div>
+    <hr>
+    <div id="rcRows"></div>
+    <hr>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn" id="rcPrint" style="flex:1">Print</button>
+      <button class="btn btn-primary" id="rcClose" style="flex:1">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ==========================================================================
+   MFRP Bank Machine — single-file ATM simulator.
+   Sections: storage · demo data · auth · money ops · analytics · charts · UI
+   ========================================================================== */
+
+const KEY   = "mfrp.atm.v1";
+const DAY   = 86400000;
+const YEAR  = 365.25 * DAY;
+
+const money = new Intl.NumberFormat("en-US", { style:"currency", currency:"USD" });
+const money0 = new Intl.NumberFormat("en-US", { style:"currency", currency:"USD", maximumFractionDigits:0 });
+const dateFmt = new Intl.DateTimeFormat("en-US", { year:"numeric", month:"short", day:"numeric" });
+const dateTimeFmt = new Intl.DateTimeFormat("en-US", { month:"short", day:"numeric", year:"numeric", hour:"numeric", minute:"2-digit" });
+const monthFmt = new Intl.DateTimeFormat("en-US", { month:"short" });
+const monthYrFmt = new Intl.DateTimeFormat("en-US", { month:"short", year:"numeric" });
+
+const round2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+const clamp  = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+const el = id => document.getElementById(id);
+
+/* ---------- policy ---------- */
+const POLICY = {
+  dailyWithdrawLimit: 1000,
+  maxSingleWithdraw: 800,
+  minWithdraw: 5,
+  maxDeposit: 25000,
+  notes: [100, 50, 20, 10, 5],
+  overdraftAllowed: false
+};
+
+const FUNDS = [
+  { id:"hysa",   name:"High-yield savings",   rate:0.042 },
+  { id:"index",  name:"Index fund (S&P 500)", rate:0.085 },
+  { id:"bond",   name:"Bond fund",            rate:0.036 },
+  { id:"growth", name:"Growth portfolio",     rate:0.110 }
+];
+const fundById = id => FUNDS.find(f => f.id === id) || FUNDS[0];
+
+/* ==========================================================================
+   1. Storage
+   ========================================================================== */
+
+/* Demo-grade PIN obfuscation. This is a toy — it keeps the PIN out of plain
+   sight in localStorage and nothing more. Never do this in a real product. */
+function hashPin(card, pin) {
+  let h = 0x811c9dc5;
+  const s = card + "::" + pin + "::mfrp";
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, "0");
+}
+
+let db = null;
+let session = null;      // card number of the logged-in user
+let cashCassette = null; // notes available in this terminal
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.users) return parsed;
+    }
+  } catch (e) { /* corrupt or unavailable — fall through to a fresh seed */ }
+  return seed();
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(db)); }
+  catch (e) { console.warn("Could not persist state:", e); }
+}
+
+/* ==========================================================================
+   2. Demo data — deterministic, so the charts look lived-in on first run
+   ========================================================================== */
+
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function makeHistory(seedNum, profile) {
+  const rnd = mulberry32(seedNum);
+  const now = Date.now();
+  const start = now - 300 * DAY;
+  const tx = [];
+  let id = 1;
+
+  const push = (ts, type, amount, desc, meta) => {
+    tx.push(Object.assign({ id: id++, ts: Math.round(ts), type, amount: round2(amount), desc }, meta || {}));
+  };
+
+  // biweekly pay
+  for (let t = start; t < now; t += 14 * DAY) {
+    const pay = profile.pay * (0.94 + rnd() * 0.12);
+    push(t + 9 * 3600e3, "deposit", pay, "Payroll — " + profile.employer, { source: "payroll" });
+  }
+  // monthly rent, on the 1st-ish
+  for (let m = 0; m < 10; m++) {
+    const d = new Date(start + m * 30.44 * DAY);
+    d.setDate(2); d.setHours(8, 15, 0, 0);
+    if (d.getTime() > start && d.getTime() < now) {
+      push(d.getTime(), "withdrawal", profile.rent, "Rent / housing", { channel: "transfer" });
+    }
+  }
+  // weekly cash + card spending
+  for (let t = start + 3 * DAY; t < now; t += 7 * DAY) {
+    const spend = profile.weekly * (0.55 + rnd() * 0.95);
+    const labels = ["Groceries", "Fuel & transit", "Dining out", "Utilities", "Pharmacy", "Household"];
+    push(t + rnd() * DAY, "withdrawal", Math.round(spend / 5) * 5, labels[Math.floor(rnd() * labels.length)], { channel: "atm" });
+  }
+  // monthly automatic investing
+  for (let m = 1; m < 10; m++) {
+    const ts = start + m * 30.44 * DAY + 3 * DAY;
+    if (ts < now) {
+      const f = profile.funds[m % profile.funds.length];
+      push(ts, "invest", profile.contrib * (0.8 + rnd() * 0.5), "Auto-invest — " + fundById(f).name, { fund: f });
+    }
+  }
+  // a couple of one-offs
+  if (profile.refund) push(start + 120 * DAY, "deposit", profile.refund, "Tax refund", { source: "refund" });
+  push(start + 205 * DAY, "withdrawal", profile.bigSpend, "Car repair", { channel: "transfer" });
+  if (profile.redeem) {
+    push(start + 250 * DAY, "redeem", profile.redeem, "Sold holdings — Bond fund", { fund: "bond" });
+  }
+
+  tx.sort((a, b) => a.ts - b.ts);
+  tx.forEach((t, i) => { t.id = i + 1; });
+  return tx;
+}
+
+function seed() {
+  const mk = (card, pin, name, employer, opening, profile) => {
+    const tx = makeHistory(profile.seed, Object.assign({ employer }, profile));
+    return {
+      card, name, employer,
+      pinHash: hashPin(card, pin),
+      opening,                 // cash balance before the first transaction
+      openedAt: tx[0].ts - DAY,
+      tx,
+      holdings: [],            // filled by rebuild() from invest/redeem rows
+      failedAttempts: 0,
+      lockedUntil: 0
+    };
+  };
+
+  // The two profiles are tuned to land in different advice tiers, so the
+  // recommendation engine has something to say either way.
+  const users = {};
+  users["1001"] = mk("1001", "1234", "Alex Mercer", "Northwind Labs", 5200, {
+    seed: 20260807, pay: 1950, rent: 1650, weekly: 380, contrib: 400,
+    bigSpend: 720, redeem: 900, refund: 850, funds: ["index", "hysa", "growth"]
+  });
+  users["2002"] = mk("2002", "4321", "Jordan Patel", "Cedar Health", 900, {
+    seed: 90210, pay: 1500, rent: 1400, weekly: 330, contrib: 150,
+    bigSpend: 1100, redeem: 0, refund: 0, funds: ["hysa", "bond"]
+  });
+
+  return { version: 1, users, createdAt: Date.now() };
+}
+
+/* Recompute derived state (running balances, investment holdings) from the
+   transaction log. The log is the single source of truth; everything else is
+   a projection of it, so a bad edit can never leave the account inconsistent. */
+function rebuild(u) {
+  u.tx.sort((a, b) => a.ts - b.ts || a.id - b.id);
+  let bal = u.opening;
+  u.holdings = [];
+
+  for (const t of u.tx) {
+    if (t.type === "deposit")         bal += t.amount;
+    else if (t.type === "withdrawal") bal -= t.amount;
+    else if (t.type === "invest") {
+      bal -= t.amount;
+      u.holdings.push({ ts: t.ts, amount: t.amount, fund: t.fund || "hysa" });
+    } else if (t.type === "redeem") {
+      bal += t.amount;
+      // Sell pro-rata across holdings so remaining principal keeps compounding
+      // from its own start date.
+      const val = holdingsValueAt(u, t.ts);
+      const ratio = val > 0 ? clamp(t.amount / val, 0, 1) : 0;
+      u.holdings.forEach(h => { h.amount = round2(h.amount * (1 - ratio)); });
+      u.holdings = u.holdings.filter(h => h.amount > 0.01);
+    }
+    bal = round2(bal);
+    t.balanceAfter = bal;
+  }
+  u.balance = bal;
+  return u;
+}
+
+/* ==========================================================================
+   3. Investment valuation
+   ========================================================================== */
+
+function holdingValueAt(h, t) {
+  if (t <= h.ts) return 0;
+  const years = (t - h.ts) / YEAR;
+  return h.amount * Math.pow(1 + fundById(h.fund).rate, years);
+}
+function holdingsValueAt(u, t) {
+  return u.holdings.reduce((s, h) => s + holdingValueAt(h, t), 0);
+}
+function investmentsNow(u) { return round2(holdingsValueAt(u, Date.now())); }
+function investedPrincipal(u) { return round2(u.holdings.reduce((s, h) => s + h.amount, 0)); }
+
+/* Money-weighted blended return across current holdings. */
+function blendedRate(u) {
+  const total = u.holdings.reduce((s, h) => s + h.amount, 0);
+  if (total <= 0) return 0.05;
+  return u.holdings.reduce((s, h) => s + h.amount * fundById(h.fund).rate, 0) / total;
+}
+
+/* ==========================================================================
+   4. Auth
+   ========================================================================== */
+
+function login(card, pin) {
+  const u = db.users[card];
+  if (!u) return { ok: false, why: "No account matches that card number." };
+
+  if (u.lockedUntil && Date.now() < u.lockedUntil) {
+    const mins = Math.ceil((u.lockedUntil - Date.now()) / 60000);
+    return { ok: false, why: "Card locked after 3 wrong PINs. Try again in " + mins + " min." };
+  }
+  if (u.pinHash !== hashPin(card, pin)) {
+    u.failedAttempts = (u.failedAttempts || 0) + 1;
+    if (u.failedAttempts >= 3) {
+      u.lockedUntil = Date.now() + 5 * 60000;
+      u.failedAttempts = 0;
+      save();
+      return { ok: false, why: "Incorrect PIN. Card locked for 5 minutes." };
+    }
+    save();
+    return { ok: false, why: "Incorrect PIN. " + (3 - u.failedAttempts) + " attempt(s) left." };
+  }
+
+  u.failedAttempts = 0;
+  u.lockedUntil = 0;
+  save();
+  return { ok: true, user: u };
+}
+
+const currentUser = () => (session ? db.users[session] : null);
+
+/* ==========================================================================
+   5. Money operations
+   ========================================================================== */
+
+function withdrawnToday(u) {
+  const cutoff = Date.now() - DAY;
+  return u.tx.filter(t => t.type === "withdrawal" && t.ts >= cutoff)
+             .reduce((s, t) => s + t.amount, 0);
+}
+
+/* Greedy note breakdown against what the terminal actually holds. */
+function dispense(amount, cassette, commit) {
+  if (amount % 5 !== 0) return { ok: false, why: "This machine dispenses multiples of $5 only." };
+  const plan = {};
+  let left = amount;
+  for (const note of POLICY.notes) {
+    const want = Math.floor(left / note);
+    const have = cassette[note] || 0;
+    const take = Math.min(want, have);
+    if (take > 0) { plan[note] = take; left -= take * note; }
+  }
+  if (left > 0) return { ok: false, why: "The terminal can't make that amount from the notes it has left." };
+  if (commit) for (const n in plan) cassette[n] -= plan[n];
+  return { ok: true, plan };
+}
+
+function withdraw(u, amount) {
+  amount = round2(amount);
+  if (!(amount > 0))                    return { ok: false, why: "Enter an amount greater than zero." };
+  if (amount < POLICY.minWithdraw)      return { ok: false, why: "Minimum withdrawal is " + money0.format(POLICY.minWithdraw) + "." };
+  if (amount > POLICY.maxSingleWithdraw)return { ok: false, why: "Single-withdrawal limit is " + money0.format(POLICY.maxSingleWithdraw) + "." };
+
+  const today = withdrawnToday(u);
+  if (today + amount > POLICY.dailyWithdrawLimit) {
+    return { ok: false, why: "Daily limit " + money0.format(POLICY.dailyWithdrawLimit) +
+             " — you have " + money.format(POLICY.dailyWithdrawLimit - today) + " left today." };
+  }
+  if (!POLICY.overdraftAllowed && amount > u.balance) {
+    return { ok: false, why: "Insufficient funds. Available: " + money.format(u.balance) + "." };
+  }
+
+  const d = dispense(amount, cashCassette, false);
+  if (!d.ok) return d;
+  dispense(amount, cashCassette, true);
+
+  const t = {
+    id: nextId(u), ts: Date.now(), type: "withdrawal", amount,
+    desc: "ATM cash withdrawal", channel: "atm", notes: d.plan
+  };
+  u.tx.push(t);
+  rebuild(u); save();
+  return { ok: true, tx: t, notes: d.plan };
+}
+
+function deposit(u, amount, source) {
+  amount = round2(amount);
+  if (!(amount > 0))            return { ok: false, why: "Enter an amount greater than zero." };
+  if (amount > POLICY.maxDeposit) return { ok: false, why: "Single-deposit ceiling is " + money0.format(POLICY.maxDeposit) + "." };
+
+  const labels = { cash:"Cash deposit", transfer:"Incoming transfer", payroll:"Payroll deposit", refund:"Refund" };
+  const t = {
+    id: nextId(u), ts: Date.now(), type: "deposit", amount,
+    desc: labels[source] || "Deposit", source: source || "cash"
+  };
+  u.tx.push(t);
+  rebuild(u); save();
+  return { ok: true, tx: t };
+}
+
+function invest(u, amount, fundId) {
+  amount = round2(amount);
+  if (!(amount > 0))     return { ok: false, why: "Enter an amount greater than zero." };
+  if (amount > u.balance) return { ok: false, why: "Not enough cash. Available: " + money.format(u.balance) + "." };
+
+  const f = fundById(fundId);
+  const t = {
+    id: nextId(u), ts: Date.now(), type: "invest", amount,
+    desc: "Transfer to " + f.name, fund: f.id
+  };
+  u.tx.push(t);
+  rebuild(u); save();
+  return { ok: true, tx: t, fund: f };
+}
+
+function redeem(u, amount) {
+  amount = round2(amount);
+  const val = investmentsNow(u);
+  if (!(amount > 0)) return { ok: false, why: "Enter an amount greater than zero." };
+  if (amount > val)  return { ok: false, why: "Holdings are worth " + money.format(val) + "." };
+
+  const t = { id: nextId(u), ts: Date.now(), type: "redeem", amount, desc: "Sold holdings to cash" };
+  u.tx.push(t);
+  rebuild(u); save();
+  return { ok: true, tx: t };
+}
+
+function nextId(u) { return u.tx.reduce((m, t) => Math.max(m, t.id), 0) + 1; }
+
+/* ==========================================================================
+   6. Analytics — history series, projection, advice
+   ========================================================================== */
+
+/* Weekly observed points of cash / investments / net worth. */
+function historySeries(u) {
+  const now = Date.now();
+  const start = Math.min(u.openedAt, u.tx.length ? u.tx[0].ts - DAY : now);
+  const step = 7 * DAY;
+  const pts = [];
+
+  let idx = 0, cash = u.opening;
+  for (let t = start; t <= now; t += step) {
+    while (idx < u.tx.length && u.tx[idx].ts <= t) {
+      const tx = u.tx[idx];
+      if (tx.type === "deposit" || tx.type === "redeem") cash += tx.amount;
+      else cash -= tx.amount;
+      idx++;
+    }
+    // Value only the holdings that existed at time t (post-redemption principal
+    // is a fair approximation for a chart at this resolution).
+    const inv = u.holdings.reduce((s, h) => s + holdingValueAt(h, t), 0);
+    pts.push({ t, cash: round2(cash), inv: round2(inv), net: round2(cash + inv) });
+  }
+
+  // pin the last point to live values
+  const last = pts[pts.length - 1];
+  if (last) {
+    last.t = now;
+    last.cash = u.balance;
+    last.inv = investmentsNow(u);
+    last.net = round2(last.cash + last.inv);
+  }
+  return pts;
+}
+
+/* Per-calendar-month aggregates over the last `months` months. */
+function monthlyBuckets(u, months) {
+  const now = new Date();
+  const out = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    out.push({
+      t: d.getTime(), label: d,
+      deposits: 0, withdrawals: 0, invested: 0, redeemed: 0, net: 0
+    });
+  }
+  const firstTs = out.length ? out[0].t : now.getTime();
+  for (const tx of u.tx) {
+    if (tx.ts < firstTs) continue;
+    const d = new Date(tx.ts);
+    const b = out.find(o => {
+      const od = new Date(o.t);
+      return od.getFullYear() === d.getFullYear() && od.getMonth() === d.getMonth();
+    });
+    if (!b) continue;
+    if (tx.type === "deposit")         b.deposits    += tx.amount;
+    else if (tx.type === "withdrawal") b.withdrawals += tx.amount;
+    else if (tx.type === "invest")     b.invested    += tx.amount;
+    else if (tx.type === "redeem")     b.redeemed    += tx.amount;
+  }
+  out.forEach(b => {
+    b.deposits = round2(b.deposits); b.withdrawals = round2(b.withdrawals);
+    b.invested = round2(b.invested); b.redeemed = round2(b.redeemed);
+    // Money in minus money out. A transfer to investments is not spending —
+    // it leaves cash but stays yours — so it is excluded from the flow figure.
+    b.net = round2(b.deposits - b.withdrawals);
+  });
+  return out;
+}
+
+/* Averages over the last N *complete-ish* months, ignoring the leading month
+   if the account did not exist yet. */
+function rates(u, months) {
+  months = months || 6;
+  const buckets = monthlyBuckets(u, months + 1).slice(0, months); // drop the partial current month
+  const live = buckets.filter(b => b.t >= u.openedAt - 31 * DAY);
+  const n = Math.max(1, live.length);
+  const sum = k => live.reduce((s, b) => s + b[k], 0);
+  return {
+    months: n,
+    income:   round2(sum("deposits") / n),
+    spend:    round2(sum("withdrawals") / n),
+    invested: round2(sum("invested") / n),
+    net:      round2((sum("deposits") - sum("withdrawals")) / n),
+    cashFlow: round2((sum("deposits") - sum("withdrawals") - sum("invested") + sum("redeemed")) / n)
+  };
+}
+
+/* Forward projection: cash walks by the observed monthly cash flow, holdings
+   compound at the blended rate and receive the observed monthly contribution. */
+function project(u, horizonMonths) {
+  const r = rates(u, 6);
+  const rate = blendedRate(u);
+  const monthly = Math.pow(1 + rate, 1 / 12) - 1;
+  const now = Date.now();
+
+  let cash = u.balance;
+  let inv  = investmentsNow(u);
+  const pts = [{ t: now, cash: round2(cash), inv: round2(inv), net: round2(cash + inv), projected: true }];
+
+  for (let m = 1; m <= horizonMonths; m++) {
+    cash += r.cashFlow;
+    inv = inv * (1 + monthly) + r.invested;
+    const d = new Date(now); d.setMonth(d.getMonth() + m);
+    pts.push({ t: d.getTime(), cash: round2(cash), inv: round2(inv), net: round2(cash + inv), projected: true });
+  }
+  return { pts, rate, r };
+}
+
+/* The recommendation engine. Deliberately explicit rather than a score: the
+   user should be able to see exactly which fact moved them into a tier. */
+function advise(u) {
+  const r = rates(u, 6);
+  const cash = u.balance;
+  const inv = investmentsNow(u);
+  const spend = Math.max(r.spend, 1);
+  const savingsRate = r.income > 0 ? (r.income - r.spend) / r.income : 0;
+  const runway = cash / spend;                       // months of cash on hand
+  const fundTarget = spend * 3;                      // emergency fund
+  const covered = clamp(cash / fundTarget, 0, 1);
+  const totalRunway = (cash + inv) / spend;
+
+  let tier, title, body, color, icon;
+
+  if (r.net < 0 || runway < 1) {
+    tier = "critical"; color = "var(--critical)"; icon = "!";
+    title = "Spend less — you're going backwards";
+    body = r.net < 0
+      ? "You're spending " + money.format(Math.abs(r.net)) + " more than you take in each month. At this pace your cash runs out in about " +
+        (r.net < 0 ? Math.max(0, Math.round(cash / Math.abs(r.net))) : 0) + " months. Trim the largest recurring withdrawals first."
+      : "Less than a month of expenses in cash. Build a buffer before anything else.";
+  } else if (savingsRate < 0.10 || runway < 3) {
+    tier = "serious"; color = "var(--serious)"; icon = "▲";
+    title = "Save more";
+    body = "You're keeping " + Math.round(savingsRate * 100) + "% of what comes in and hold " +
+      runway.toFixed(1) + " months of expenses. Aim for 10%+ saved and a " + money0.format(fundTarget) +
+      " emergency fund (3 months). Moving " + money0.format(Math.max(50, Math.round(r.income * 0.1 / 10) * 10)) +
+      "/month would get you there.";
+  } else if (savingsRate < 0.20 || runway < 6) {
+    tier = "warning"; color = "var(--warning)"; icon = "●";
+    title = "You're OK";
+    body = "Saving " + Math.round(savingsRate * 100) + "% a month with " + runway.toFixed(1) +
+      " months of cash — a healthy, ordinary position. Nudging the rate to 20% would add roughly " +
+      money0.format(Math.max(0, (r.income * 0.20 - r.net)) * 12) + " a year.";
+  } else if (savingsRate < 0.30 || totalRunway < 12) {
+    tier = "good"; color = "var(--good)"; icon = "✓";
+    title = "You're in good shape";
+    body = "Saving " + Math.round(savingsRate * 100) + "% with " + runway.toFixed(1) +
+      " months of cash and " + money0.format(inv) + " invested. The emergency fund is covered — surplus cash above " +
+      money0.format(fundTarget) + " is earning more invested than sitting here.";
+  } else {
+    tier = "great"; color = "var(--good)"; icon = "★";
+    title = "You've saved a lot";
+    body = "Saving " + Math.round(savingsRate * 100) + "% of your income, with " +
+      totalRunway.toFixed(0) + " months of expenses across cash and investments. You're well past the buffer stage; " +
+      "the open question is allocation, not whether to save.";
+  }
+
+  return { tier, title, body, color, icon, savingsRate, runway, covered, fundTarget, r, inv, cash, totalRunway };
+}
+
+/* ==========================================================================
+   7. Chart engine (canvas, no dependencies)
+   ========================================================================== */
+
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+function setupCanvas(canvas) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  const rect = canvas.getBoundingClientRect();
+  const cssH = canvas.getAttribute("height") * 1;
+  const w = Math.max(240, rect.width);
+  canvas.width = Math.round(w * dpr);
+  canvas.height = Math.round(cssH * dpr);
+  canvas.style.height = cssH + "px";
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, cssH);
+  return { ctx, w, h: cssH };
+}
+
+/* Pick a round gridline step first, then round the axis top up to a multiple
+   of it — so every tick label is a round number and the axis doesn't leave a
+   half-empty plot the way "round the maximum up" alone does. */
+function niceScale(maxV, ticks) {
+  if (!(maxV > 0)) return { max: 10, step: 5 };
+  const raw = maxV / Math.max(1, ticks);
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const n = raw / mag;
+  const step = (n <= 1 ? 1 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 5 ? 5 : 10) * mag;
+  return { max: Math.ceil(maxV / step) * step, step };
+}
+function shortMoney(v) {
+  const a = Math.abs(v);
+  if (a >= 1e6) return (v / 1e6).toFixed(a >= 1e7 ? 0 : 1).replace(/\.0$/, "") + "M";
+  if (a >= 1000) return (v / 1000).toFixed(a >= 10000 ? 0 : 1).replace(/\.0$/, "") + "k";
+  return String(Math.round(v));
+}
+function roundRectPath(ctx, x, y, w, h, r) {
+  const rr = Math.min(r, Math.abs(w) / 2, Math.abs(h));
+  ctx.beginPath();
+  ctx.moveTo(x, y + h);
+  ctx.lineTo(x, y + rr);
+  ctx.quadraticCurveTo(x, y, x + rr, y);
+  ctx.lineTo(x + w - rr, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+  ctx.lineTo(x + w, y + h);
+  ctx.closePath();
+}
+
+/* ---------- main line chart ---------- */
+const mainChart = { pts: [], hist: 0, geo: null };
+
+function drawMain(hist, proj) {
+  const canvas = el("chartMain");
+  const { ctx, w, h } = setupCanvas(canvas);
+  const pts = hist.concat(proj.slice(1));
+  const nowIdx = hist.length - 1;
+  mainChart.pts = pts; mainChart.hist = nowIdx;
+
+  const padL = 52, padR = 74, padT = 14, padB = 26;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+  if (plotW <= 10) return;
+
+  const maxV = Math.max(10, ...pts.map(p => Math.max(p.net, p.cash, p.inv)));
+  const scale = niceScale(maxV, 5);
+  const yMax = scale.max;
+  const t0 = pts[0].t, t1 = pts[pts.length - 1].t;
+  const X = t => padL + ((t - t0) / (t1 - t0 || 1)) * plotW;
+  const Y = v => padT + plotH - (v / yMax) * plotH;
+  mainChart.geo = { padL, padR, padT, padB, plotW, plotH, X, Y, t0, t1, yMax, w, h };
+
+  const grid = css("--grid"), axis = css("--axis"), muted = css("--text-muted");
+  const surface = css("--surface-1");
+  ctx.font = "11px system-ui, -apple-system, sans-serif";
+
+  // gridlines + y labels
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (let v = 0; v <= yMax + 1e-6; v += scale.step) {
+    const y = Y(v);
+    ctx.strokeStyle = grid; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL, Math.round(y) + .5); ctx.lineTo(w - padR, Math.round(y) + .5); ctx.stroke();
+    ctx.fillStyle = muted;
+    ctx.fillText("$" + shortMoney(v), padL - 9, y);
+  }
+
+  // x labels — roughly six, on month boundaries
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  const span = t1 - t0;
+  const stepMonths = span > 3 * YEAR ? 12 : span > 700 * DAY ? 6 : span > 400 * DAY ? 3 : 2;
+  const cur = new Date(t0); cur.setDate(1); cur.setHours(0, 0, 0, 0);
+  while (cur.getTime() < t1) {
+    const t = cur.getTime();
+    if (t >= t0) {
+      const x = X(t);
+      if (x > padL - 2 && x < w - padR + 2) {
+        ctx.fillStyle = muted;
+        // Carry the year on January ticks (and on every tick when the span is
+        // long) so "Jan · Apr · Jul · Jan" can't read as a single year.
+        const showYear = stepMonths >= 6 || cur.getMonth() === 0;
+        ctx.fillText(
+          showYear ? monthFmt.format(cur) + " ’" + String(cur.getFullYear()).slice(2) : monthFmt.format(cur),
+          x, h - padB + 7);
+      }
+    }
+    cur.setMonth(cur.getMonth() + stepMonths);
+  }
+
+  // baseline
+  ctx.strokeStyle = axis; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(padL, Math.round(Y(0)) + .5); ctx.lineTo(w - padR, Math.round(Y(0)) + .5); ctx.stroke();
+
+  // "now" divider
+  const nowX = X(pts[nowIdx].t);
+  ctx.save();
+  ctx.setLineDash([3, 4]); ctx.strokeStyle = axis; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(Math.round(nowX) + .5, padT); ctx.lineTo(Math.round(nowX) + .5, padT + plotH); ctx.stroke();
+  ctx.restore();
+  ctx.fillStyle = muted; ctx.textAlign = "left"; ctx.textBaseline = "top";
+  if (nowX < w - padR - 34) ctx.fillText("now", nowX + 5, padT + 1);
+
+  // series — solid over observed range, dashed over the projection
+  const series = [
+    { key: "net",  color: css("--series-3"), label: "Net worth" },
+    { key: "cash", color: css("--series-1"), label: "Cash" },
+    { key: "inv",  color: css("--series-2"), label: "Investments" }
+  ];
+
+  ctx.lineJoin = "round"; ctx.lineCap = "round"; ctx.lineWidth = 2;
+  for (const s of series) {
+    // observed
+    ctx.strokeStyle = s.color; ctx.setLineDash([]);
+    ctx.beginPath();
+    for (let i = 0; i <= nowIdx; i++) {
+      const x = X(pts[i].t), y = Y(pts[i][s.key]);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    // projected
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath();
+    for (let i = nowIdx; i < pts.length; i++) {
+      const x = X(pts[i].t), y = Y(pts[i][s.key]);
+      i === nowIdx ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // direct end labels — swatch carries identity, text stays in ink
+  const ends = series.map(s => ({ s, y: Y(pts[pts.length - 1][s.key]), v: pts[pts.length - 1][s.key] }))
+                     .sort((a, b) => a.y - b.y);
+  for (let i = 1; i < ends.length; i++) {                  // avoid collisions
+    if (ends[i].y - ends[i - 1].y < 13) ends[i].y = ends[i - 1].y + 13;
+  }
+  ctx.textAlign = "left"; ctx.textBaseline = "middle";
+  for (const e of ends) {
+    const x = w - padR + 8;
+    // 2px surface ring keeps the dot legible where lines converge
+    ctx.beginPath(); ctx.arc(x - 4, Y(e.v), 5, 0, Math.PI * 2);
+    ctx.fillStyle = surface; ctx.fill();
+    ctx.beginPath(); ctx.arc(x - 4, Y(e.v), 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = e.s.color; ctx.fill();
+    ctx.fillStyle = css("--text-secondary");
+    ctx.fillText("$" + shortMoney(e.v), x + 4, e.y);
+  }
+
+  // hover marker
+  if (mainChart.hover != null) {
+    const p = pts[mainChart.hover];
+    const x = X(p.t);
+    ctx.save();
+    ctx.setLineDash([2, 3]); ctx.strokeStyle = css("--text-muted"); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(Math.round(x) + .5, padT); ctx.lineTo(Math.round(x) + .5, padT + plotH); ctx.stroke();
+    ctx.restore();
+    for (const s of series) {
+      ctx.beginPath(); ctx.arc(x, Y(p[s.key]), 5.5, 0, Math.PI * 2);
+      ctx.fillStyle = surface; ctx.fill();
+      ctx.beginPath(); ctx.arc(x, Y(p[s.key]), 4, 0, Math.PI * 2);
+      ctx.fillStyle = s.color; ctx.fill();
+    }
+  }
+}
+
+function bindMainHover() {
+  const canvas = el("chartMain"), tip = el("ttMain");
+  const move = ev => {
+    const g = mainChart.geo; if (!g || !mainChart.pts.length) return;
+    const rect = canvas.getBoundingClientRect();
+    const cx = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+    if (cx < g.padL - 12 || cx > g.w - g.padR + 12) return hideMain();
+
+    let best = 0, bd = Infinity;
+    mainChart.pts.forEach((p, i) => {
+      const d = Math.abs(g.X(p.t) - cx);
+      if (d < bd) { bd = d; best = i; }
+    });
+    if (best === mainChart.hover) return;
+    mainChart.hover = best;
+    redrawMain();
+
+    const p = mainChart.pts[best];
+    const future = best > mainChart.hist;
+    tip.innerHTML =
+      '<div class="tt-title">' + dateFmt.format(new Date(p.t)) + (future ? " · projected" : "") + "</div>" +
+      row("--series-3", "Net worth", p.net) + row("--series-1", "Cash", p.cash) + row("--series-2", "Investments", p.inv);
+    tip.classList.add("on");
+    const x = g.X(p.t);
+    tip.style.left = clamp(x + 14, 6, Math.max(6, g.w - tip.offsetWidth - 6)) + "px";
+    tip.style.top = "12px";
+  };
+  const row = (v, k, val) =>
+    '<div class="tt-row"><span class="swatch" style="background:var(' + v + ')"></span>' +
+    '<span class="k">' + k + '</span><span class="v">' + money0.format(val) + "</span></div>";
+  const hideMain = () => { mainChart.hover = null; tip.classList.remove("on"); redrawMain(); };
+
+  canvas.addEventListener("mousemove", move);
+  canvas.addEventListener("touchmove", move, { passive: true });
+  canvas.addEventListener("mouseleave", hideMain);
+  canvas.addEventListener("touchend", hideMain);
+}
+
+/* ---------- monthly cash-flow bars ---------- */
+const flowChart = { buckets: [], geo: null, hover: null };
+
+function drawFlow(buckets) {
+  const canvas = el("chartFlow");
+  const { ctx, w, h } = setupCanvas(canvas);
+  flowChart.buckets = buckets;
+  const padL = 52, padR = 14, padT = 12, padB = 24;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+  if (plotW <= 10 || !buckets.length) return;
+
+  const fs = niceScale(Math.max(100, ...buckets.map(b => Math.abs(b.net))), 2);
+  const maxAbs = fs.max;
+  const zeroY = padT + plotH / 2;
+  const Y = v => zeroY - (v / maxAbs) * (plotH / 2);
+  const slot = plotW / buckets.length;
+  const bw = Math.max(6, Math.min(34, slot - 8));   // 2px+ surface gap between bars
+  const X = i => padL + slot * i + (slot - bw) / 2;
+  flowChart.geo = { padL, padR, padT, padB, plotW, plotH, X, Y, slot, bw, zeroY, w, h, maxAbs };
+
+  ctx.font = "11px system-ui, sans-serif";
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  const ticks = [];
+  for (let v = 0; v <= maxAbs + 1e-6; v += fs.step) { ticks.push(v); if (v > 0) ticks.push(-v); }
+  for (const v of ticks) {
+    const y = Y(v);
+    ctx.strokeStyle = v === 0 ? css("--axis") : css("--grid"); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(padL, Math.round(y) + .5); ctx.lineTo(w - padR, Math.round(y) + .5); ctx.stroke();
+    ctx.fillStyle = css("--text-muted");
+    ctx.fillText((v > 0 ? "+$" : v < 0 ? "−$" : "$") + shortMoney(Math.abs(v)), padL - 9, y);
+  }
+
+  buckets.forEach((b, i) => {
+    const y = Y(b.net);
+    const col = b.net >= 0 ? css("--pos") : css("--neg");
+    ctx.fillStyle = col;
+    ctx.globalAlpha = flowChart.hover != null && flowChart.hover !== i ? 0.45 : 1;
+    // 4px rounded data-end away from the baseline; square end anchored to it.
+    // Negative bars are the same path mirrored about the zero line.
+    if (b.net >= 0) {
+      roundRectPath(ctx, X(i), y, bw, zeroY - y, 4);
+    } else {
+      ctx.save();
+      ctx.translate(0, 2 * zeroY);
+      ctx.scale(1, -1);
+      roundRectPath(ctx, X(i), 2 * zeroY - y, bw, y - zeroY, 4);
+      ctx.fill();
+      ctx.restore();
+      ctx.beginPath();   // nothing left to fill outside the mirrored path
+    }
+    ctx.fill();
+    ctx.globalAlpha = 1;
+
+    if (i % Math.ceil(buckets.length / 7) === 0) {
+      ctx.fillStyle = css("--text-muted"); ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.fillText(monthFmt.format(b.label), X(i) + bw / 2, h - padB + 6);
+    }
+  });
+}
+
+function bindFlowHover() {
+  const canvas = el("chartFlow"), tip = el("ttFlow");
+  const move = ev => {
+    const g = flowChart.geo; if (!g) return;
+    const rect = canvas.getBoundingClientRect();
+    const cx = (ev.touches ? ev.touches[0].clientX : ev.clientX) - rect.left;
+    const i = Math.floor((cx - g.padL) / g.slot);
+    if (i < 0 || i >= flowChart.buckets.length) return hide();
+    if (i === flowChart.hover) return;
+    flowChart.hover = i;
+    drawFlow(flowChart.buckets);
+    const b = flowChart.buckets[i];
+    tip.innerHTML =
+      '<div class="tt-title">' + monthYrFmt.format(b.label) + "</div>" +
+      '<div class="tt-row"><span class="k">In</span><span class="v">' + money0.format(b.deposits) + "</span></div>" +
+      '<div class="tt-row"><span class="k">Out</span><span class="v">−' + money0.format(b.withdrawals) + "</span></div>" +
+      '<div class="tt-row"><span class="k">Invested</span><span class="v">' + money0.format(b.invested) + "</span></div>" +
+      '<div class="tt-row"><span class="k">Net</span><span class="v">' + (b.net >= 0 ? "+" : "−") + money0.format(Math.abs(b.net)) + "</span></div>";
+    tip.classList.add("on");
+    tip.style.left = clamp(g.X(i) + g.bw / 2 + 10, 6, Math.max(6, g.w - tip.offsetWidth - 6)) + "px";
+    tip.style.top = "8px";
+  };
+  const hide = () => { flowChart.hover = null; tip.classList.remove("on"); drawFlow(flowChart.buckets); };
+  canvas.addEventListener("mousemove", move);
+  canvas.addEventListener("touchmove", move, { passive: true });
+  canvas.addEventListener("mouseleave", hide);
+  canvas.addEventListener("touchend", hide);
+}
+
+let lastProj = null;
+function redrawMain() {
+  const u = currentUser(); if (!u || !lastProj) return;
+  drawMain(lastProj.hist, lastProj.proj);
+}
+
+/* ==========================================================================
+   8. UI
+   ========================================================================== */
+
+let op = "withdraw";
+let horizon = 12;
+
+function flash(node, kind, text) {
+  node.className = "msg show " + kind;
+  node.querySelector("[data-icon]").textContent = kind === "err" ? "✕" : kind === "ok" ? "✓" : "!";
+  node.querySelector("[data-text]").textContent = text;
+}
+function clearFlash(node) { node.className = "msg"; }
+
+/* ---------- login screen ---------- */
+let pinBuf = "";
+function paintPin() {
+  el("pinDots").querySelectorAll(".pin-dot").forEach((d, i) => d.classList.toggle("on", i < pinBuf.length));
+}
+function tryLogin() {
+  const card = el("cardInput").value.trim();
+  if (!card) return flash(el("loginMsg"), "err", "Enter a card number.");
+  if (pinBuf.length !== 4) return flash(el("loginMsg"), "err", "PIN must be 4 digits.");
+  const res = login(card, pinBuf);
+  pinBuf = ""; paintPin();
+  if (!res.ok) return flash(el("loginMsg"), "err", res.why);
+  clearFlash(el("loginMsg"));
+  session = card;
+  sessionStorage.setItem("mfrp.session", card);
+  openApp();
+}
+
+el("pinPad").addEventListener("click", e => {
+  const b = e.target.closest("[data-k]"); if (!b) return;
+  const k = b.dataset.k;
+  if (k === "clear") { pinBuf = ""; clearFlash(el("loginMsg")); }
+  else if (k === "enter") return tryLogin();
+  else if (pinBuf.length < 4) pinBuf += k;
+  paintPin();
+});
+document.addEventListener("keydown", e => {
+  if (!el("app").hidden) return;
+  if (/^[0-9]$/.test(e.key) && document.activeElement !== el("cardInput")) {
+    if (pinBuf.length < 4) { pinBuf += e.key; paintPin(); }
+  } else if (e.key === "Backspace" && document.activeElement !== el("cardInput")) {
+    pinBuf = pinBuf.slice(0, -1); paintPin();
+  } else if (e.key === "Enter") tryLogin();
+});
+
+/* ---------- open / close ---------- */
+function openApp() {
+  const u = currentUser();
+  rebuild(u);
+  cashCassette = { 100: 60, 50: 80, 20: 200, 10: 150, 5: 120 };
+  el("login").hidden = true;
+  el("login").style.display = "none";
+  el("app").hidden = false;
+  el("whoami").textContent = u.name + " · card ••" + u.card.slice(-2);
+  buildFundSelect();
+  setOp("withdraw");
+  renderAll();
+}
+function logout() {
+  session = null;
+  sessionStorage.removeItem("mfrp.session");
+  el("app").hidden = true;
+  el("login").hidden = false;
+  el("login").style.display = "grid";
+  el("cardInput").value = ""; pinBuf = ""; paintPin();
+  clearFlash(el("loginMsg"));
+}
+
+/* ---------- transaction panel ---------- */
+const QUICK = {
+  withdraw: [20, 40, 60, 100, 200, 300],
+  deposit:  [50, 100, 250, 500, 1000, 2500],
+  invest:   [50, 100, 250, 500, 1000, 2000]
+};
+
+function buildFundSelect() {
+  el("fundSelect").innerHTML = FUNDS.map(f =>
+    '<option value="' + f.id + '">' + f.name + " — " + (f.rate * 100).toFixed(1) + "% / yr</option>"
+  ).join("");
+}
+
+function setOp(next) {
+  op = next;
+  document.querySelectorAll(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.op === op)));
+  el("quickAmts").innerHTML = QUICK[op].map(v =>
+    '<button class="chip" data-v="' + v + '" aria-pressed="false">' + money0.format(v) + "</button>"
+  ).join("");
+  el("fundField").hidden   = op !== "invest";
+  el("sourceField").hidden = op !== "deposit";
+  el("submitBtn").textContent = op === "withdraw" ? "Withdraw" : op === "deposit" ? "Deposit" : "Move to investments";
+  el("amtInput").value = "";
+  clearFlash(el("opMsg"));
+  renderBreakdown();
+}
+
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => setOp(t.dataset.op)));
+el("quickAmts").addEventListener("click", e => {
+  const b = e.target.closest(".chip"); if (!b) return;
+  el("quickAmts").querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", String(c === b)));
+  el("amtInput").value = b.dataset.v;
+  clearFlash(el("opMsg"));
+});
+el("amtInput").addEventListener("input", () => {
+  el("quickAmts").querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", "false"));
+});
+el("amtInput").addEventListener("keydown", e => { if (e.key === "Enter") el("submitBtn").click(); });
+
+el("submitBtn").addEventListener("click", () => {
+  const u = currentUser(); if (!u) return;
+  const amt = parseFloat(String(el("amtInput").value).replace(/[^0-9.\-]/g, ""));
+  if (!isFinite(amt)) return flash(el("opMsg"), "err", "Enter an amount.");
+
+  let res;
+  if (op === "withdraw")     res = withdraw(u, amt);
+  else if (op === "deposit") res = deposit(u, amt, el("sourceSelect").value);
+  else                       res = invest(u, amt, el("fundSelect").value);
+
+  if (!res.ok) return flash(el("opMsg"), "err", res.why);
+
+  el("amtInput").value = "";
+  el("quickAmts").querySelectorAll(".chip").forEach(c => c.setAttribute("aria-pressed", "false"));
+  flash(el("opMsg"), "ok",
+    op === "withdraw" ? "Dispensed " + money.format(amt) + ". Take your cash."
+    : op === "deposit" ? money.format(amt) + " credited to your account."
+    : money.format(amt) + " moved into " + res.fund.name + ".");
+  showReceipt(u, res);
+  renderAll();
+});
+
+/* ---------- receipt ---------- */
+function showReceipt(u, res) {
+  const t = res.tx;
+  const rows = [
+    ["Date", dateTimeFmt.format(new Date(t.ts))],
+    ["Card", "••••" + u.card.slice(-2)],
+    ["Type", t.type.toUpperCase()],
+    ["Amount", (t.type === "deposit" || t.type === "redeem" ? "+" : "−") + money.format(t.amount)],
+    ["Cash balance", money.format(u.balance)],
+    ["Investments", money.format(investmentsNow(u))]
+  ];
+  if (res.notes) {
+    rows.push(["", ""]);
+    POLICY.notes.forEach(n => { if (res.notes[n]) rows.push(["$" + n + " notes", "× " + res.notes[n]]); });
+  }
+  el("rcRows").innerHTML = rows.map(([k, v]) =>
+    k === "" ? '<hr style="margin:8px 0">' : '<div class="rr"><span>' + k + "</span><span>" + v + "</span></div>"
+  ).join("");
+  el("rcTerm").textContent = "Terminal 04 · ref " + String(t.id).padStart(6, "0");
+  el("overlay").classList.add("on");
+}
+el("rcClose").addEventListener("click", () => el("overlay").classList.remove("on"));
+el("rcPrint").addEventListener("click", () => window.print());
+el("overlay").addEventListener("click", e => { if (e.target === el("overlay")) el("overlay").classList.remove("on"); });
+
+/* ---------- limits / notes panel ---------- */
+function renderBreakdown() {
+  const u = currentUser(); if (!u) return;
+  const box = el("breakdown");
+  if (op === "withdraw") {
+    const left = POLICY.dailyWithdrawLimit - withdrawnToday(u);
+    const cassette = POLICY.notes.map(n => "$" + n + "×" + (cashCassette[n] || 0)).join("  ");
+    box.innerHTML =
+      rowHTML("Available to withdraw", money.format(Math.min(u.balance, left))) +
+      rowHTML("Remaining daily limit", money.format(Math.max(0, left))) +
+      rowHTML("Per-transaction cap", money0.format(POLICY.maxSingleWithdraw)) +
+      '<div class="breakdown-row" style="margin-top:5px"><span>Notes in terminal</span><strong style="font-variant-numeric:tabular-nums">' + cassette + "</strong></div>";
+  } else if (op === "deposit") {
+    box.innerHTML =
+      rowHTML("Current cash balance", money.format(u.balance)) +
+      rowHTML("Deposit ceiling", money0.format(POLICY.maxDeposit)) +
+      rowHTML("Availability", "Immediate (simulated)");
+  } else {
+    const inv = investmentsNow(u);
+    box.innerHTML =
+      rowHTML("Holdings value", money.format(inv)) +
+      rowHTML("Principal contributed", money.format(investedPrincipal(u))) +
+      rowHTML("Unrealised gain", money.format(round2(inv - investedPrincipal(u)))) +
+      rowHTML("Blended return", (blendedRate(u) * 100).toFixed(1) + "% / yr") +
+      '<div style="margin-top:8px"><button class="btn btn-sm" id="redeemBtn" style="width:100%">Sell holdings to cash…</button></div>';
+    const rb = el("redeemBtn");
+    if (rb) rb.addEventListener("click", () => {
+      const raw = prompt("How much would you like to sell? Holdings are worth " + money.format(inv) + ".");
+      if (raw == null) return;
+      const amt = parseFloat(String(raw).replace(/[^0-9.]/g, ""));
+      if (!isFinite(amt)) return flash(el("opMsg"), "err", "Enter an amount.");
+      const r = redeem(u, amt);
+      if (!r.ok) return flash(el("opMsg"), "err", r.why);
+      flash(el("opMsg"), "ok", money.format(amt) + " moved back to cash.");
+      showReceipt(u, r);
+      renderAll();
+    });
+  }
+}
+const rowHTML = (k, v) => '<div class="breakdown-row"><span>' + k + "</span><strong>" + v + "</strong></div>";
+
+/* ---------- tiles ---------- */
+function renderTiles(u, hist) {
+  const inv = investmentsNow(u);
+  const net = round2(u.balance + inv);
+  el("tBalance").textContent = money.format(u.balance);
+  el("tInvest").textContent  = money.format(inv);
+  el("tNet").textContent     = money.format(net);
+
+  const monthAgo = Date.now() - 30 * DAY;
+  const rec = u.tx.filter(t => t.ts >= monthAgo);
+  const din = rec.filter(t => t.type === "deposit").reduce((s, t) => s + t.amount, 0);
+  const dout = rec.filter(t => t.type === "withdrawal").reduce((s, t) => s + t.amount, 0);
+  const flow = round2(din - dout);
+
+  const prior = hist.find(p => p.t >= monthAgo) || hist[0];
+  const netDelta = prior ? round2(net - prior.net) : 0;
+  const gain = round2(inv - investedPrincipal(u));
+
+  el("tBalanceSub").innerHTML = "Withdrawn today: " + money.format(withdrawnToday(u)) +
+    " of " + money0.format(POLICY.dailyWithdrawLimit);
+  el("tInvestSub").innerHTML = (gain >= 0
+      ? '<span class="delta-up">▲ ' + money.format(gain) + "</span>"
+      : '<span class="delta-down">▼ ' + money.format(Math.abs(gain)) + "</span>") +
+    " on " + money0.format(investedPrincipal(u)) + " in";
+  el("tNetSub").innerHTML = (netDelta >= 0
+      ? '<span class="delta-up">▲ ' + money0.format(netDelta) + "</span>"
+      : '<span class="delta-down">▼ ' + money0.format(Math.abs(netDelta)) + "</span>") + " in 30 days";
+  el("tFlow").textContent = (flow >= 0 ? "+" : "−") + money0.format(Math.abs(flow));
+  el("tFlow").style.color = flow >= 0 ? "var(--success-text)" : "var(--critical)";
+  el("tFlowSub").textContent = money0.format(din) + " in · " + money0.format(dout) + " out";
+}
+
+/* ---------- advisor ---------- */
+function renderAdvice(adv) {
+  el("advIcon").textContent = adv.icon;
+  el("advIcon").style.background = "color-mix(in srgb, " + adv.color + " 18%, var(--surface-1))";
+  el("advIcon").style.color = adv.color;
+  el("advTitle").textContent = adv.title;
+  el("advBody").textContent = adv.body;
+
+  const meters = [
+    { k: "Savings rate", v: Math.round(adv.savingsRate * 100) + "%",
+      pct: clamp(adv.savingsRate / 0.30, 0, 1), color: adv.savingsRate >= 0.20 ? "var(--good)" : adv.savingsRate >= 0.10 ? "var(--warning)" : "var(--critical)",
+      note: "target 20%" },
+    { k: "Emergency fund", v: money0.format(adv.cash) + " of " + money0.format(adv.fundTarget),
+      pct: adv.covered, color: adv.covered >= 1 ? "var(--good)" : adv.covered >= 0.5 ? "var(--warning)" : "var(--critical)",
+      note: "3 months of spending" },
+    { k: "Months of runway", v: (isFinite(adv.runway) ? adv.runway.toFixed(1) : "∞") + " mo cash",
+      pct: clamp(adv.runway / 6, 0, 1), color: adv.runway >= 6 ? "var(--good)" : adv.runway >= 3 ? "var(--warning)" : "var(--critical)",
+      note: "cash only" }
+  ];
+  el("meters").innerHTML = meters.map(m =>
+    '<div><div class="meter-head"><span class="k">' + m.k + '</span><span class="v">' + m.v + "</span></div>" +
+    '<div class="meter-track"><div class="meter-fill" style="width:' + (m.pct * 100).toFixed(1) + "%;background:" + m.color + '"></div></div>' +
+    '<div style="font-size:11.5px;color:var(--text-muted);margin-top:3px">' + m.note + "</div></div>"
+  ).join("");
+}
+
+/* ---------- legend ---------- */
+function renderLegend() {
+  el("legend").innerHTML =
+    [["--series-3", "Net worth"], ["--series-1", "Cash"], ["--series-2", "Investments"]]
+      .map(([v, n]) => '<span class="legend-item"><span class="legend-line" style="background:var(' + v + ')"></span>' + n + "</span>")
+      .join("") +
+    '<span class="legend-note"><span class="legend-dash"></span>projected</span>';
+}
+
+/* ---------- history table ---------- */
+const TYPE_META = {
+  deposit:    { label: "Deposit",    color: "var(--series-1)", sign: "+" },
+  withdrawal: { label: "Withdrawal", color: "var(--neg)",      sign: "−" },
+  invest:     { label: "Invest",     color: "var(--series-2)", sign: "−" },
+  redeem:     { label: "Redeem",     color: "var(--series-3)", sign: "+" }
+};
+
+function filteredTx(u) {
+  const type = el("filterType").value;
+  const days = parseInt(el("filterRange").value, 10);
+  const q = el("filterText").value.trim().toLowerCase();
+  const cutoff = days > 0 ? Date.now() - days * DAY : 0;
+  return u.tx
+    .filter(t => t.ts >= cutoff)
+    .filter(t => type === "all" || t.type === type)
+    .filter(t => !q || t.desc.toLowerCase().includes(q))
+    .sort((a, b) => b.ts - a.ts);
+}
+
+function renderHistory(u) {
+  const rows = filteredTx(u);
+  el("histCount").textContent = rows.length + " transaction" + (rows.length === 1 ? "" : "s");
+  if (!rows.length) {
+    el("histBody").innerHTML = '<tr><td colspan="5" class="empty">No transactions match these filters.</td></tr>';
+    return;
+  }
+  el("histBody").innerHTML = rows.slice(0, 400).map(t => {
+    const m = TYPE_META[t.type];
+    return "<tr>" +
+      "<td>" + dateFmt.format(new Date(t.ts)) + "</td>" +
+      '<td><span class="pill"><span class="dot" style="background:' + m.color + '"></span>' + m.label + "</span></td>" +
+      "<td>" + escapeHTML(t.desc) + "</td>" +
+      '<td class="amt" style="color:' + (m.sign === "+" ? "var(--success-text)" : "var(--text-primary)") + '">' +
+        m.sign + money.format(t.amount) + "</td>" +
+      '<td class="bal">' + money.format(t.balanceAfter) + "</td>" +
+    "</tr>";
+  }).join("");
+}
+const escapeHTML = s => String(s).replace(/[&<>"']/g, c =>
+  ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+
+["filterType", "filterRange", "filterText"].forEach(id =>
+  el(id).addEventListener("input", () => renderHistory(currentUser())));
+
+el("csvBtn").addEventListener("click", () => {
+  const u = currentUser(); if (!u) return;
+  const rows = filteredTx(u);
+  const head = "date,type,description,amount,signed_amount,balance_after\n";
+  const body = rows.map(t => {
+    const m = TYPE_META[t.type];
+    const signed = (m.sign === "+" ? 1 : -1) * t.amount;
+    return [new Date(t.ts).toISOString(), t.type, '"' + t.desc.replace(/"/g, '""') + '"',
+            t.amount.toFixed(2), signed.toFixed(2), t.balanceAfter.toFixed(2)].join(",");
+  }).join("\n");
+  const url = URL.createObjectURL(new Blob([head + body], { type: "text/csv" }));
+  const a = document.createElement("a");
+  a.href = url; a.download = "mfrp-statement-" + u.card + ".csv";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+/* ---------- projection summary ---------- */
+function renderProjection(u, hist, proj) {
+  const end = proj.pts[proj.pts.length - 1];
+  const nowNet = round2(u.balance + investmentsNow(u));
+  const diff = round2(end.net - nowNet);
+  const label = horizon >= 12 ? (horizon / 12) + " year" + (horizon === 12 ? "" : "s") : horizon + " months";
+  const dir = diff >= 0 ? "grow to" : "fall to";
+  el("projSummary").innerHTML =
+    "At your last-6-month pace — " + money0.format(proj.r.income) + " in, " + money0.format(proj.r.spend) +
+    " out and " + money0.format(proj.r.invested) + " invested per month, holdings compounding at " +
+    (proj.rate * 100).toFixed(1) + "% — net worth would " + dir + " <strong>" + money0.format(end.net) +
+    "</strong> in " + label + " (" + (diff >= 0 ? "+" : "−") + money0.format(Math.abs(diff)) +
+    "). A projection is arithmetic on the past, not a forecast: markets and spending both move.";
+}
+
+el("horizonSeg").addEventListener("click", e => {
+  const b = e.target.closest("[data-h]"); if (!b) return;
+  horizon = parseInt(b.dataset.h, 10);
+  el("horizonSeg").querySelectorAll("button").forEach(x => x.setAttribute("aria-pressed", String(x === b)));
+  renderAll();
+});
+
+/* ---------- master render ---------- */
+function renderAll() {
+  const u = currentUser(); if (!u) return;
+  const hist = historySeries(u);
+  const proj = project(u, horizon);
+  const adv = advise(u);
+  lastProj = { hist, proj: proj.pts };
+
+  renderTiles(u, hist);
+  renderAdvice(adv);
+  renderLegend();
+  renderBreakdown();
+  renderHistory(u);
+  renderProjection(u, hist, proj);
+  drawMain(hist, proj.pts);
+  drawFlow(monthlyBuckets(u, 10));
+}
+
+/* ---------- chrome ---------- */
+el("themeBtn").addEventListener("click", () => {
+  const cur = document.documentElement.getAttribute("data-theme");
+  const sysDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  const next = cur ? (cur === "dark" ? "light" : "dark") : (sysDark ? "light" : "dark");
+  document.documentElement.setAttribute("data-theme", next);
+  localStorage.setItem("mfrp.theme", next);
+  renderAll();
+});
+el("logoutBtn").addEventListener("click", logout);
+el("resetBtn").addEventListener("click", () => {
+  if (!confirm("Wipe the local demo data and start over with fresh accounts?")) return;
+  localStorage.removeItem(KEY);
+  db = seed();
+  Object.values(db.users).forEach(rebuild);
+  save();
+  logout();
+});
+
+let resizeTimer;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { if (!el("app").hidden) renderAll(); }, 120);
+});
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+  if (!el("app").hidden) renderAll();
+});
+
+/* ---------- boot ---------- */
+(function boot() {
+  const savedTheme = localStorage.getItem("mfrp.theme");
+  if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
+
+  db = load();
+  Object.values(db.users).forEach(rebuild);
+  save();
+
+  bindMainHover();
+  bindFlowHover();
+
+  const s = sessionStorage.getItem("mfrp.session");
+  if (s && db.users[s]) { session = s; openApp(); }
+  else el("cardInput").focus();
+})();
+</script>
+</body>
+</html>
