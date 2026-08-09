@@ -19,7 +19,7 @@ just Python 3.
 
 5. Stuck? Peek at `solutions/` — but try for a few minutes first.
 
-## The exercises
+## Level 1 — the basics
 
 | File | What you practice |
 | --- | --- |
@@ -28,6 +28,23 @@ just Python 3.
 | `03_countdown.py` | `def` + a `while` loop |
 | `04_count_vowels.py` | `def` + looping over a string + `if` |
 | `05_collatz_steps.py` | `def` + a `while` loop with a condition |
+
+## Level 2 — a step up (`level2/`)
+
+Same loops and functions, but each one asks you to hold a bit more in your
+head: several branches, one function calling another, or a variable you carry
+along as the loop runs.
+
+| File | What you practice |
+| --- | --- |
+| `level2/01_fizzbuzz.py` | `if` / `elif` / `else` inside a loop, and branch order |
+| `level2/02_primes.py` | Two functions, one calling the other; leaving a loop early with `return` |
+| `level2/03_reverse_number.py` | A `while` loop doing arithmetic with `%` and `//` |
+| `level2/04_word_counts.py` | Dictionaries — counting things as you loop |
+| `level2/05_longest_run.py` | Tracking "current" and "best so far" through a loop |
+
+Level 2 works exactly the same way — fill in the `# TODO`, run the file,
+answers in `level2/solutions/`.
 
 ## Two things worth remembering
 
