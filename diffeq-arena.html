@@ -1,0 +1,1005 @@
+<!doctype html>
+<html lang="en">
+ <head><script>window["__codeletBootstrap__"]=JSON.parse('{"A":"A","B":"20260814-05-a1b2e7b","C":{"Abril Fatface":"YACgEZbkUVE,0","Alfa Slab One":"YACgEYS9sJU,0","Anton":"YACgEcYqQ-A,0","Archivo":"YAHO2-t-jNE,0","Arial":"YAGyDvJ_4Ts,0","Bebas Neue":"YACgESME5ew,0","Bricolage Grotesque":"YAFyMcdwzpc,0","Canva Sans":"YAFLd8sKbwc,2","Caveat":"YALBs2ploWQ,0","Comic Sans MS":"YAHO2VMiyZo,0","Cormorant Garamond":"YAFdJhX-538,0","Courier New":"YAGzXiGs0_8,0","DM Sans":"YAD1aU3sLnI,0","DM Serif Display":"YAD1aYG82rc,0","Forum":"YACgEcnnqB4,0","Fraunces":"YAEul-FRQw4,0","Georgia":"YAGzXkO0pEM,0","Helvetica Neue":"YAFcf6CtJfI,0","Impact":"YAFcfnjI7Vk,0","Inter":"YAFdJvSyp_k,3","Iowan Old Style":"YAGNIFa8j9o,0","Jacques Francois":"YAHO2a5g66Q,0","JetBrains Mono":"YAFdJksXcAk,0","Libre Baskerville":"YACgEUFdPdA,0","Manrope":"YAHO2b2feC4,0","Merriweather":"YACgEXvHxxs,0","Montserrat":"YADLjI9qxTA,0","Nunito":"YACgEX8C5Gg,0","Oleo Script":"YACgEQQ14jI,0","Phantom Sans":"YAHO2E8Pb88,0","Playfair Display":"YACgEYmuCJE,0","Poppins":"YAFdJjbTu24,1","Press Start 2P":"YAFyGr-8pmQ,0","Quicksand":"YADWjpfPmdk,0","Raleway":"YACgEVg3xZg,0","Segoe UI":"YAHNdRD1Klw,0","Source Sans 3":"YAG4lO1Mj10,0","Spectral":"YAHO2rVUHIM,0","Times New Roman":"YAGzXW3gftg,0","Times":"YAGzXW3gftg,0","Ubuntu":"YACgERDU--Q,0","Work Sans":"YAGXhLOKv44,0","Yellowtail":"YACgEYG4kG4,0","ui-monospace":"YADlN8CFZ8Q,0","ui-sans-serif":"YACkoN-xg4g,0"}}');</script><script src="/_sdk/7949ff62d67710d5.telemetry_sdk.js" integrity="sha512-KIvXA82Di44YY/RH9/63A9MuTuavYgDFG8PfErJn7Wli4K0LAOk+coo/aPXk3+ZNL96nHh9VYD4PE+fLes+laQ=="></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DiffEq Arena</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.263.0/dist/umd/lucide.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&amp;family=Fraunces:wght@700;900&amp;display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'DM Sans', sans-serif; }
+    .font-display { font-family: 'Fraunces', serif; }
+    .view { display: none; }
+    .view.active { display: block; }
+    .level-node { transition: transform 0.2s, box-shadow 0.2s; }
+    .level-node:hover:not(.locked) { transform: scale(1.05); box-shadow: 0 8px 25px rgba(99,102,241,0.3); }
+    .level-node.locked { opacity: 0.4; cursor: not-allowed; }
+    .progress-fill { transition: width 0.6s ease; }
+    .step-dot { transition: all 0.3s; }
+    .step-dot.completed { background: #4f46e5; border-color: #4f46e5; }
+    .step-dot.current { border-color: #818cf8; box-shadow: 0 0 8px #818cf8; }
+    .auth-input { width: 100%; padding: 0.7rem 0.9rem; border-radius: 0.75rem; background: rgba(15,23,42,0.7);
+                  border: 1px solid rgba(71,85,105,0.6); color: #e2e8f0; outline: none; transition: border-color .15s; }
+    .auth-input:focus { border-color: #6366f1; }
+    .auth-input::placeholder { color: #64748b; }
+    .auth-tab-active { background: #4f46e5; color: #fff; }
+    .auth-tab-idle { background: transparent; color: #94a3b8; }
+  </style>
+  <script src="/_sdk/eba18683f23e5798.resizing_sdk.js" type="text/javascript" integrity="sha512-E0UWUllhwPXaNJtjyTKXWKrIE+FruPfFpO4mRmMDP2LI+U9bOizy5npCq6xx/JyWcvSK7D3TFf2wFR2Mha9kbA=="></script>
+ <script src="/_sdk/0e8d3a91e1c6f495.data_sdk.js" integrity="sha512-c00oDoGjsMgluCLLEyVl3suwEkgjOGGplVFbsilUoBg4aMKNmsL3mwsc9r0dPn95qiSZyjBousQXgROkAW7p/w=="></script></head>
+ <body data-template-id="__page-root" class="min-h-screen w-full"><!-- Nav -->
+  <nav class="sticky top-0 z-50 backdrop-blur-md bg-slate-900/90 border-b border-slate-700/50">
+   <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between"><button onclick="showView('home')" class="flex items-center gap-2"> <span data-template-id="nav-logo" class="canva-text font-display text-xl"></span> </button>
+    <div id="nav-stats" class="hidden items-center gap-4"><button onclick="showView('practice')" class="flex items-center gap-1 bg-amber-500/20 px-3 py-1.5 rounded-full border border-amber-500/40"> <i data-lucide="flame" style="width:16px;height:16px;color:#f59e0b"></i> <span id="streak-display" class="text-amber-400 font-bold text-sm">0</span> </button>
+     <div class="flex items-center gap-1 bg-yellow-500/20 px-3 py-1.5 rounded-full border border-yellow-500/40"><i data-lucide="coins" style="width:16px;height:16px;color:#eab308"></i> <span id="coins-display" class="text-yellow-400 font-bold text-sm">0</span>
+     </div>
+     <div class="flex items-center gap-1 bg-indigo-500/20 px-3 py-1.5 rounded-full border border-indigo-500/40"><i data-lucide="star" style="width:16px;height:16px;color:#818cf8"></i> <span id="points-display" class="text-indigo-300 font-bold text-sm">0</span>
+     </div>
+     <div class="flex items-center gap-2 pl-2 border-l border-slate-700/60"><span id="user-display" class="hidden sm:inline text-slate-300 text-sm font-medium"></span> <button onclick="logout()" title="Log out" class="flex items-center gap-1 text-slate-400 hover:text-rose-400 transition-colors"><i data-lucide="log-out" style="width:16px;height:16px"></i></button>
+     </div>
+    </div>
+   </div>
+  </nav><!-- AUTH VIEW -->
+  <div id="view-auth" class="view active">
+   <div class="max-w-md mx-auto px-4 py-12">
+    <div class="text-center mb-8">
+     <div class="text-4xl mb-2">
+      📐
+     </div>
+     <h1 class="font-display text-3xl font-bold text-white">DiffEq Arena</h1>
+     <p class="text-slate-400 mt-2 text-sm">Sign in to keep your levels, coins and streak.</p>
+    </div>
+    <div class="bg-slate-800/60 rounded-2xl p-6 border border-slate-700/50">
+     <div class="flex bg-slate-900/60 rounded-xl p-1 mb-6"><button id="tab-login" type="button" onclick="setAuthMode('login')" class="flex-1 py-2 rounded-lg text-sm font-bold transition-colors">Log In</button> <button id="tab-signup" type="button" onclick="setAuthMode('signup')" class="flex-1 py-2 rounded-lg text-sm font-bold transition-colors">Sign Up</button>
+     </div>
+     <div class="space-y-4">
+      <div>
+       <label for="auth-username" class="block text-xs text-slate-400 mb-1.5">Username</label> <input id="auth-username" type="text" class="auth-input" autocomplete="username" placeholder="e.g. euler_fan" maxlength="24">
+      </div>
+      <div>
+       <label for="auth-password" class="block text-xs text-slate-400 mb-1.5">Password</label> <input id="auth-password" type="password" class="auth-input" autocomplete="current-password" placeholder="••••••••">
+      </div>
+      <div id="confirm-wrap" class="hidden">
+       <label for="auth-confirm" class="block text-xs text-slate-400 mb-1.5">Confirm password</label> <input id="auth-confirm" type="password" class="auth-input" autocomplete="new-password" placeholder="••••••••">
+      </div>
+      <p id="auth-message" class="hidden text-sm font-medium"></p><button id="auth-submit" type="button" onclick="submitAuth()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-bold transition-colors">Log In</button>
+     </div>
+     <p id="auth-hint" class="text-center text-xs text-slate-500 mt-4"></p>
+    </div>
+    <p class="text-center text-[11px] text-slate-600 mt-6 leading-relaxed">Passwords are salted and hashed (PBKDF2-SHA256) before storage — never saved in plain text. This is a lightweight in-browser gate, not server-enforced security, so please don't reuse an important password here.</p>
+   </div>
+  </div><!-- HOME VIEW -->
+  <div id="view-home" class="view">
+   <header class="relative overflow-hidden py-12 px-4">
+    <div class="absolute inset-0 bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 opacity-90"></div><img data-template-id="hero-bg" class="canva-image absolute inset-0 w-full h-full object-cover opacity-20 mix-blend-overlay" loading="lazy">
+    <div class="relative max-w-4xl mx-auto text-center">
+     <h1 data-template-id="hero-title" class="canva-text font-display"></h1>
+     <p data-template-id="hero-subtitle" class="canva-text mt-3 text-lg opacity-80"></p>
+    </div>
+   </header>
+   <main class="max-w-5xl mx-auto px-4 py-8">
+    <h2 data-template-id="courses-heading" class="canva-text font-display mb-6"></h2>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"><button onclick="selectCourse('ode1')" data-template-id="course-ode1" class="canva-card text-left p-5 rounded-2xl border border-slate-700/50 hover:border-indigo-500/60 transition-colors">
+      <div class="text-3xl mb-2">
+       📐
+      </div><h3 data-template-id="course-ode1-title" class="canva-text font-bold text-lg"></h3><p data-template-id="course-ode1-desc" class="canva-text text-sm mt-1 opacity-70"></p>
+      <div class="mt-3 h-2 bg-slate-700 rounded-full overflow-hidden">
+       <div id="prog-ode1" class="progress-fill h-full bg-indigo-500 rounded-full" style="width:0%"></div>
+      </div></button> <button onclick="selectCourse('ode2')" data-template-id="course-ode2" class="canva-card text-left p-5 rounded-2xl border border-slate-700/50 hover:border-emerald-500/60 transition-colors">
+      <div class="text-3xl mb-2">
+       🔄
+      </div><h3 data-template-id="course-ode2-title" class="canva-text font-bold text-lg"></h3><p data-template-id="course-ode2-desc" class="canva-text text-sm mt-1 opacity-70"></p>
+      <div class="mt-3 h-2 bg-slate-700 rounded-full overflow-hidden">
+       <div id="prog-ode2" class="progress-fill h-full bg-emerald-500 rounded-full" style="width:0%"></div>
+      </div></button> <button onclick="selectCourse('pde')" data-template-id="course-pde" class="canva-card text-left p-5 rounded-2xl border border-slate-700/50 hover:border-rose-500/60 transition-colors">
+      <div class="text-3xl mb-2">
+       🌊
+      </div><h3 data-template-id="course-pde-title" class="canva-text font-bold text-lg"></h3><p data-template-id="course-pde-desc" class="canva-text text-sm mt-1 opacity-70"></p>
+      <div class="mt-3 h-2 bg-slate-700 rounded-full overflow-hidden">
+       <div id="prog-pde" class="progress-fill h-full bg-rose-500 rounded-full" style="width:0%"></div>
+      </div></button>
+    </div>
+   </main>
+  </div><!-- COURSE/LEVELS VIEW -->
+  <div id="view-course" class="view">
+   <div class="max-w-4xl mx-auto px-4 py-8"><button onclick="showView('home')" class="flex items-center gap-2 text-slate-400 hover:text-white mb-6 transition-colors"> <i data-lucide="arrow-left" style="width:18px;height:18px"></i> <span data-template-id="back-btn" class="canva-text text-sm"></span> </button>
+    <h2 id="course-title-display" class="font-display text-2xl font-bold text-white mb-2"></h2>
+    <div id="course-complete-banner" class="hidden mb-6 p-4 bg-emerald-500/20 border border-emerald-500/50 rounded-xl text-center"><span class="text-emerald-400 font-bold text-lg">🎓 Course Completed!</span>
+    </div>
+    <div id="levels-container" class="mt-8 flex flex-col items-center gap-4"></div>
+   </div>
+  </div><!-- LEVEL STEPS VIEW -->
+  <div id="view-level" class="view">
+   <div class="max-w-3xl mx-auto px-4 py-8"><button onclick="showView('course')" class="flex items-center gap-2 text-slate-400 hover:text-white mb-6"> <i data-lucide="arrow-left" style="width:18px;height:18px"></i> Back to Levels </button>
+    <h2 id="level-title" class="font-display text-xl font-bold text-white mb-4"></h2><!-- Step progress dots -->
+    <div id="step-dots" class="flex items-center gap-2 mb-6 flex-wrap"></div><!-- Step content -->
+    <div id="step-content" class="bg-slate-800/60 rounded-2xl p-6 border border-slate-700/50">
+     <div id="step-text" class="text-slate-300 leading-relaxed mb-6"></div>
+     <div id="step-quiz" class="border-t border-slate-700/50 pt-4">
+      <p id="step-quiz-question" class="text-white font-medium mb-3"></p>
+      <div id="step-quiz-options" class="space-y-2"></div>
+      <div id="step-quiz-feedback" class="mt-3 text-sm font-medium hidden"></div>
+     </div>
+    </div><button id="step-next-btn" onclick="goNextStep()" class="mt-6 w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold hidden transition-colors">Next Step →</button> <button id="take-test-btn" onclick="startLevelTest()" data-template-id="start-test-btn" class="canva-button mt-6 w-full py-3 rounded-xl font-bold text-lg hidden"></button>
+   </div>
+  </div><!-- TEST VIEW -->
+  <div id="view-test" class="view">
+   <div class="max-w-3xl mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+     <div class="flex items-center gap-2">
+      <span class="text-slate-400 text-sm">Question</span><span id="q-counter" class="text-white font-bold"></span>
+     </div>
+     <div class="flex items-center gap-2 bg-slate-800 px-3 py-1 rounded-full">
+      <i data-lucide="clock" style="width:14px;height:14px;color:#94a3b8"></i><span id="timer-display" class="text-slate-300 font-mono text-sm">05:00</span>
+     </div>
+     <div class="text-sm">
+      <span class="text-slate-400">Score: </span><span id="live-score" class="text-white font-bold">0</span>
+     </div>
+    </div>
+    <div id="question-area" class="bg-slate-800/60 rounded-2xl p-6 border border-slate-700/50">
+     <p id="question-text" class="text-white text-lg font-medium mb-1"></p>
+     <p id="question-marks" class="text-xs text-slate-400 mb-4"></p>
+     <div id="options-container" class="space-y-3"></div>
+    </div>
+    <div id="answer-feedback" class="mt-4 text-center text-sm font-medium hidden"></div><button id="next-q-btn" onclick="nextQuestion()" class="mt-6 w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold hidden transition-colors">Next →</button>
+   </div>
+  </div><!-- RESULTS VIEW -->
+  <div id="view-results" class="view">
+   <div class="max-w-2xl mx-auto px-4 py-12 text-center">
+    <div class="text-5xl mb-4" id="result-emoji">
+     🏆
+    </div>
+    <h2 data-template-id="results-heading" class="canva-text font-display"></h2>
+    <div class="mt-6 bg-slate-800/60 rounded-2xl p-6 border border-slate-700/50 space-y-3">
+     <div class="flex justify-between">
+      <span class="text-slate-400">Total Marks</span><span id="res-marks" class="text-white font-bold"></span>
+     </div>
+     <div class="flex justify-between">
+      <span class="text-slate-400">Correct</span><span id="res-correct" class="text-emerald-400 font-bold"></span>
+     </div>
+     <div class="flex justify-between">
+      <span class="text-slate-400">Wrong (penalty)</span><span id="res-wrong" class="text-rose-400 font-bold"></span>
+     </div>
+     <div class="flex justify-between">
+      <span class="text-slate-400">Skipped</span><span id="res-skip" class="text-slate-300 font-bold"></span>
+     </div>
+     <hr class="border-slate-700">
+     <div class="flex justify-between">
+      <span class="text-yellow-400 font-bold">Coins Earned</span><span id="res-coins" class="text-yellow-400 font-bold"></span>
+     </div>
+     <div class="flex justify-between">
+      <span class="text-indigo-400 font-bold">Points Earned</span><span id="res-points" class="text-indigo-300 font-bold"></span>
+     </div>
+    </div>
+    <p id="res-pass-msg" class="mt-4 text-emerald-400 font-medium hidden">✓ Level Passed! Next level unlocked.</p>
+    <p id="res-fail-msg" class="mt-4 text-rose-400 font-medium hidden">✗ You need ≥40% to pass. Try again!</p><button onclick="afterResults()" data-template-id="continue-btn" class="canva-button mt-8 px-8 py-3 rounded-xl font-bold text-lg"></button>
+   </div>
+  </div><!-- DAILY PRACTICE VIEW -->
+  <div id="view-practice" class="view">
+   <div class="max-w-3xl mx-auto px-4 py-8 text-center">
+    <h2 data-template-id="practice-heading" class="canva-text font-display mb-2"></h2>
+    <p data-template-id="practice-desc" class="canva-text opacity-70 mb-6"></p>
+    <div class="inline-flex items-center gap-2 bg-amber-500/20 px-4 py-2 rounded-full border border-amber-500/40 mb-8"><i data-lucide="flame" style="width:20px;height:20px;color:#f59e0b"></i> <span id="practice-streak-num" class="text-amber-400 font-bold"></span> <span class="text-amber-300 text-sm">day streak</span>
+    </div><button id="start-practice-btn" onclick="startDailyPractice()" data-template-id="practice-start-btn" class="canva-button block mx-auto px-8 py-3 rounded-xl font-bold text-lg"></button>
+    <p id="practice-done-msg" class="text-emerald-400 font-medium mt-4 hidden">✓ You've completed today's practice! Come back tomorrow.</p>
+   </div>
+  </div>
+  <script src="/_sdk/a051f9537983733d.editing_sdk.js" integrity="sha512-IWn3eBHnVt7zQ0Rp79J72qSgJoLbskCA9lcfY4retf+5km4LjuhSHpvx+182KCHmEZ6EbJtWqVsybpV8Sd8PQQ=="></script>
+  <script src="/_sdk/0e8d3a91e1c6f495.data_sdk.js" integrity="sha512-c00oDoGjsMgluCLLEyVl3suwEkgjOGGplVFbsilUoBg4aMKNmsL3mwsc9r0dPn95qiSZyjBousQXgROkAW7p/w=="></script>
+  <script>
+// ---------- State ----------
+function defaultState(){
+  return { coins:0, points:0, currentCourse:'', currentLevel:1, currentStep:1, levelsCompleted:{}, dailyStreak:0, lastPracticeDate:'', testScores:{} };
+}
+let state = defaultState();
+let userData = null;          // the logged-in account's backend record
+let allRecords = [];          // every record the data SDK gives us
+let currentUser = null;       // normalised username of the logged-in account
+let savesInFlight = 0;        // guards against onDataChanged clobbering unsaved local state
+let authMode = 'login';
+let authBusy = false;
+const SESSION_KEY = 'diffeq_arena_session';
+
+let currentQuestions = [];
+let currentQIndex = 0;
+let testScore = 0, testCorrect = 0, testWrong = 0, testSkipped = 0;
+let timerInterval = null, timeLeft = 300;
+let isTestMode = true;
+
+// Course content: 9 levels × 8 steps each. Each step has text + 1 mini quiz question.
+const courseContent = {
+  ode1: {
+    1: [
+      {text:"<h3 class='text-white font-bold mb-2'>What is a Differential Equation?</h3><p>A differential equation (DE) is an equation involving a function and its derivatives. For example: dy/dx = 2x.</p><p class='mt-2'>The <strong>order</strong> is the highest derivative present. The <strong>degree</strong> is the power of the highest derivative.</p>", quiz:{q:"What is the order of d²y/dx² + 3dy/dx = 0?", opts:["2","1","3","0"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Types of ODEs</h3><p>An ODE involves derivatives with respect to a single variable. Key classifications:</p><ul class='list-disc pl-5 mt-2 space-y-1'><li>Linear vs Non-linear</li><li>Homogeneous vs Non-homogeneous</li><li>Autonomous vs Non-autonomous</li></ul>", quiz:{q:"Which is a linear ODE?", opts:["dy/dx + 2y = x","(dy/dx)² = y","y·dy/dx = y²","sin(dy/dx)=0"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Separable Equations</h3><p>Form: dy/dx = f(x)·g(y). Rewrite as dy/g(y) = f(x)dx and integrate both sides.</p><p class='mt-2'><strong>Example:</strong> dy/dx = xy → ∫dy/y = ∫x dx → ln|y| = x²/2 + C</p>", quiz:{q:"Solve dy/dx = 2x, y(0)=1", opts:["y = x² + 1","y = 2x + 1","y = x²","y = e²ˣ"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Direct Integration</h3><p>When dy/dx = f(x) (no y on the right), simply integrate: y = ∫f(x)dx + C.</p><p class='mt-2'>This is the simplest form — just anti-differentiate!</p>", quiz:{q:"Solve dy/dx = 3x²", opts:["y = x³ + C","y = 6x + C","y = x³/3 + C","y = 3x³ + C"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Initial Value Problems (IVP)</h3><p>An IVP gives a DE plus an initial condition y(x₀) = y₀. Use it to find the particular solution (find C).</p><p class='mt-2'><strong>Example:</strong> dy/dx = 2x, y(0) = 3 → y = x² + 3</p>", quiz:{q:"For dy/dx = 1, y(0)=5, find y(2).", opts:["7","5","2","3"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Existence & Uniqueness (Intro)</h3><p>Given dy/dx = f(x,y), y(x₀)=y₀: if f and ∂f/∂y are continuous near (x₀,y₀), a unique solution exists locally.</p><p class='mt-2'>This is the Picard–Lindelöf theorem in its basic form.</p>", quiz:{q:"Uniqueness fails if ∂f/∂y is:", opts:["Discontinuous at the point","Zero","Positive","Negative"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Direction Fields</h3><p>A direction field (slope field) draws short line segments with slope f(x,y) at grid points. Solution curves follow these slopes.</p><p class='mt-2'>They give qualitative behaviour without solving.</p>", quiz:{q:"Direction fields show:", opts:["Slope at each point","Exact solutions","Only equilibria","Nothing useful"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Summary & Preparation</h3><p>You've learned: DE classification, separable equations, direct integration, IVPs, existence/uniqueness basics, and direction fields.</p><p class='mt-2 text-indigo-300 font-medium'>Ready for the Level 1 Test? 5 questions, timed. You need ≥40% to pass!</p>", quiz:{q:"A separable equation can be written as:", opts:["g(y)dy = f(x)dx","y'' + y = 0","dy/dx = x + y","None of these"], ans:0}},
+    ],
+    2: [
+      {text:"<h3 class='text-white font-bold mb-2'>Linear First-Order ODEs</h3><p>Standard form: dy/dx + P(x)y = Q(x). The key tool is the <strong>integrating factor</strong> μ(x) = e^(∫P(x)dx).</p>", quiz:{q:"Integrating factor for dy/dx + 3y = eˣ?", opts:["e³ˣ","e⁻³ˣ","3eˣ","eˣ"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Solving with Integrating Factor</h3><p>Multiply both sides by μ: d/dx[μy] = μQ. Then integrate: y = (1/μ)∫μQ dx + C/μ.</p>", quiz:{q:"Solve dy/dx + y = 2 with μ=eˣ:", opts:["y = 2 + Ce⁻ˣ","y = 2eˣ","y = Ce²ˣ","y = 2x"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Exact Equations</h3><p>M(x,y)dx + N(x,y)dy = 0 is exact if ∂M/∂y = ∂N/∂x. Then ∃F with ∂F/∂x=M, ∂F/∂y=N, solution: F=C.</p>", quiz:{q:"Test exactness: (2xy)dx + (x²)dy = 0. ∂M/∂y=?", opts:["2x","x²","2y","2xy"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Finding the Potential Function</h3><p>If exact, integrate M w.r.t. x → F(x,y) = ∫M dx + g(y). Then differentiate w.r.t. y and compare with N to find g(y).</p>", quiz:{q:"If F = x²y + g(y) and N = x² + 3y², then g'(y) =?", opts:["3y²","x²","0","y"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Homogeneous Equations</h3><p>dy/dx = f(y/x). Substitute v = y/x, so y = vx, dy/dx = v + x·dv/dx. This reduces to separable.</p>", quiz:{q:"Substitution for dy/dx = (x+y)/x?", opts:["v = y/x","v = xy","v = x+y","v = x/y"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Bernoulli Equations</h3><p>Form: dy/dx + P(x)y = Q(x)yⁿ (n≠0,1). Substitute w = y^(1-n) to reduce to linear.</p>", quiz:{q:"For dy/dx + y = y³, what substitution?", opts:["w = y⁻²","w = y²","w = y³","w = 1/y"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Applications</h3><p>First-order ODEs model: population growth, Newton's cooling, mixing problems, RL circuits, compound interest.</p>", quiz:{q:"Newton's cooling: dT/dt = -k(T-Tₐ) is:", opts:["Linear first-order","Second-order","Non-linear","Exact only"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Level 2 Summary</h3><p>Covered: integrating factors, exact equations, homogeneous substitution, Bernoulli, and applications.</p><p class='mt-2 text-indigo-300 font-medium'>Time for the Level 2 Test!</p>", quiz:{q:"Which method uses μ = e^(∫P dx)?", opts:["Integrating factor","Separation","Exact","Bernoulli"], ans:0}},
+    ],
+    3: [
+      {text:"<h3 class='text-white font-bold mb-2'>Second-Order Linear ODEs</h3><p>Form: ay'' + by' + cy = g(x). When g(x)=0, it's homogeneous. The characteristic equation ar²+br+c=0 gives the solution form.</p>", quiz:{q:"Characteristic eq of y''-4y=0?", opts:["r²-4=0","r²+4=0","r-4=0","2r²=4"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Real Distinct Roots</h3><p>If r₁≠r₂ are real: y = C₁e^(r₁x) + C₂e^(r₂x).</p><p class='mt-2'>Example: y''-5y'+6y=0 → r=2,3 → y=C₁e²ˣ+C₂e³ˣ</p>", quiz:{q:"Roots of r²-5r+6=0?", opts:["r=2,3","r=1,6","r=-2,-3","r=5,1"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Repeated Roots</h3><p>If r₁=r₂=r: y = (C₁ + C₂x)eʳˣ. The xe^(rx) term handles the degeneracy.</p>", quiz:{q:"y''-6y'+9y=0 has roots:", opts:["r=3 (repeated)","r=3,-3","r=9","r=1,9"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Complex Roots</h3><p>If r = α ± βi: y = e^(αx)(C₁cos βx + C₂sin βx). Oscillatory with exponential envelope.</p>", quiz:{q:"y''+4y=0 → solution involves:", opts:["cos 2x, sin 2x","e²ˣ, e⁻²ˣ","x, x²","cos x, sin x"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Non-Homogeneous: Undetermined Coefficients</h3><p>For g(x) = polynomial, exponential, or sin/cos, guess a particular solution form and determine coefficients.</p>", quiz:{q:"For y''+y=3x, guess yₚ=?", opts:["Ax+B","Ae^x","A sin x","Ax²"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Variation of Parameters</h3><p>Works for any g(x). If y₁,y₂ are homogeneous solutions: yₚ = -y₁∫(y₂g/W)dx + y₂∫(y₁g/W)dx where W is the Wronskian.</p>", quiz:{q:"The Wronskian W(y₁,y₂) = ?", opts:["y₁y₂'-y₂y₁'","y₁+y₂","y₁y₂","y₁'/y₂'"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Wronskian & Linear Independence</h3><p>W≠0 on an interval ⟹ y₁,y₂ are linearly independent there ⟹ they form a fundamental set.</p>", quiz:{q:"If W=0 everywhere, solutions are:", opts:["Linearly dependent","Independent","Unique","Undefined"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Level 3 Summary</h3><p>Second-order homogeneous (3 root cases), undetermined coefficients, variation of parameters, Wronskian.</p><p class='mt-2 text-indigo-300 font-medium'>Ready for the test!</p>", quiz:{q:"General solution has how many constants for 2nd-order?", opts:["2","1","3","0"], ans:0}},
+    ],
+    4: [
+      {text:"<h3 class='text-white font-bold mb-2'>Laplace Transform Definition</h3><p>L{f(t)} = F(s) = ∫₀^∞ e^(-st)f(t)dt. Converts time-domain functions to s-domain for easier algebra.</p>", quiz:{q:"L{e^(2t)} = ?", opts:["1/(s-2)","1/(s+2)","s/(s-2)","2/s"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Basic Transforms</h3><p>L{1}=1/s, L{t}=1/s², L{tⁿ}=n!/s^(n+1), L{eᵃᵗ}=1/(s-a), L{sin bt}=b/(s²+b²), L{cos bt}=s/(s²+b²).</p>", quiz:{q:"L{t²} = ?", opts:["2/s³","1/s²","2/s²","s²"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Transform of Derivatives</h3><p>L{f'(t)} = sF(s) - f(0). L{f''(t)} = s²F(s) - sf(0) - f'(0). This is how we solve IVPs!</p>", quiz:{q:"L{y'} if y(0)=3?", opts:["sY(s)-3","sY(s)","Y(s)-3","3sY(s)"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Solving ODEs with Laplace</h3><p>1) Take L of both sides. 2) Solve for Y(s) algebraically. 3) Inverse transform to get y(t).</p>", quiz:{q:"After Laplace transform, the ODE becomes:", opts:["Algebraic in s","Another ODE","A PDE","Unsolvable"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Partial Fractions</h3><p>To invert Y(s), decompose into simpler fractions: A/(s-a) + B/(s-b) etc., then use the table.</p>", quiz:{q:"1/((s-1)(s-2)) decomposes as:", opts:["1/(s-2) - 1/(s-1)","1/(s-1) + 1/(s-2)","s/(s-1)(s-2)","Cannot decompose"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Shifting Theorems</h3><p>First: L{eᵃᵗf(t)}=F(s-a). Second: L{u(t-a)f(t-a)}=e^(-as)F(s). Handles delayed/shifted functions.</p>", quiz:{q:"L{e³ᵗ sin 2t} uses which shift?", opts:["First (s → s-3)","Second (time delay)","No shift needed","Both"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Convolution</h3><p>L{f*g}=F(s)G(s) where (f*g)(t)=∫₀ᵗf(τ)g(t-τ)dτ. Useful for inverse transforms of products.</p>", quiz:{q:"Convolution of f and g means:", opts:["∫₀ᵗ f(τ)g(t-τ)dτ","f(t)·g(t)","f+g","f(g(t))"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Level 4 Summary</h3><p>Laplace transforms, derivatives property, solving ODEs algebraically, partial fractions, shifting, convolution.</p><p class='mt-2 text-indigo-300 font-medium'>Test time!</p>", quiz:{q:"L{δ(t)} (Dirac delta) = ?", opts:["1","1/s","s","0"], ans:0}},
+    ],
+    5: [
+      {text:"<h3 class='text-white font-bold mb-2'>Power Series Solutions</h3><p>Assume y = Σₙ₌₀^∞ aₙxⁿ. Substitute into the ODE, collect like powers of x, and solve for coefficients recursively.</p>", quiz:{q:"First step in series method:", opts:["Assume y = Σaₙxⁿ","Guess y=eˣ","Factor the equation","Use Laplace"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Ordinary Points</h3><p>x₀ is ordinary if P(x) and Q(x) in y''+P(x)y'+Q(x)y=0 are analytic at x₀. Series solutions converge near ordinary points.</p>", quiz:{q:"For y''+y=0, x=0 is:", opts:["Ordinary","Singular","Irregular","Undefined"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Recurrence Relations</h3><p>After substitution, matching coefficients of xⁿ gives a recurrence: aₙ₊₂ = f(aₙ, aₙ₊₁, n). Solve iteratively from a₀, a₁.</p>", quiz:{q:"If aₙ₊₂ = -aₙ/(n+2)(n+1), this generates:", opts:["cos x or sin x series","eˣ","ln x","No pattern"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Radius of Convergence</h3><p>The series converges at least up to the nearest singular point. Use the ratio test: R = lim|aₙ/aₙ₊₁|.</p>", quiz:{q:"Radius of convergence is found by:", opts:["Ratio or root test","Graphing","Guessing","Integration"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Regular Singular Points</h3><p>x₀ is regular singular if (x-x₀)P and (x-x₀)²Q are analytic. Otherwise it's irregular singular.</p>", quiz:{q:"For x²y''+xy'+y=0, x=0 is:", opts:["Regular singular","Ordinary","Irregular singular","Not a singular point"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Frobenius Method</h3><p>At a regular singular point, assume y = Σaₙx^(n+r). The indicial equation gives r. Two solutions may differ by a log term.</p>", quiz:{q:"Frobenius assumes y = ?", opts:["Σaₙx^(n+r)","Σaₙxⁿ","aeˣ","sin(rx)"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Bessel & Legendre (Intro)</h3><p>Bessel's eq: x²y''+xy'+(x²-n²)y=0 → Bessel functions Jₙ(x). Legendre: (1-x²)y''-2xy'+n(n+1)y=0 → Pₙ(x).</p>", quiz:{q:"Bessel functions arise from:", opts:["Cylindrical/circular problems","Cartesian only","1D problems","Algebraic equations"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Level 5 Summary</h3><p>Power series, ordinary/singular points, Frobenius method, special functions (Bessel, Legendre).</p><p class='mt-2 text-indigo-300 font-medium'>Test time!</p>", quiz:{q:"Indicial equation determines:", opts:["The exponent r in Frobenius","The coefficients aₙ","Convergence","Nothing"], ans:0}},
+    ],
+    6: [
+      {text:"<h3 class='text-white font-bold mb-2'>Boundary Value Problems</h3><p>Unlike IVPs (conditions at one point), BVPs specify conditions at two points: y(a)=α, y(b)=β. May have 0, 1, or ∞ solutions.</p>", quiz:{q:"A BVP has conditions at:", opts:["Two different points","One point","No points","Three points"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Eigenvalue Problems</h3><p>y''+λy=0 with y(0)=0, y(L)=0. Non-trivial solutions exist only for special λ (eigenvalues): λₙ=(nπ/L)².</p>", quiz:{q:"Eigenvalues of y''+λy=0, y(0)=y(π)=0:", opts:["λ=n²","λ=n","λ=nπ","λ=1/n²"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Eigenfunctions</h3><p>Corresponding eigenfunctions: φₙ(x) = sin(nπx/L). These form a complete orthogonal set on [0,L].</p>", quiz:{q:"Eigenfunctions of the above problem:", opts:["sin(nx)","cos(nx)","eⁿˣ","xⁿ"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Sturm-Liouville Theory</h3><p>General form: d/dx[p(x)y'] + [q(x)+λr(x)]y = 0. Under certain conditions, eigenvalues are real, eigenfunctions orthogonal w.r.t. weight r(x).</p>", quiz:{q:"Sturm-Liouville eigenvalues are:", opts:["Real","Complex","Zero","Negative only"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Orthogonality</h3><p>∫ₐᵇ φₘ(x)φₙ(x)r(x)dx = 0 for m≠n. This is the key property enabling Fourier-type expansions.</p>", quiz:{q:"Orthogonality means the integral of φₘφₙ is:", opts:["0 for m≠n","1 always","∞","Undefined"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Fourier Series Connection</h3><p>Any 'nice' f(x) on [0,L] can be expanded: f(x) = Σbₙsin(nπx/L) where bₙ = (2/L)∫f(x)sin(nπx/L)dx.</p>", quiz:{q:"Fourier sine coefficients bₙ involve:", opts:["∫f(x)sin(nπx/L)dx","f(0)","Derivatives of f","Random values"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Green's Functions (Intro)</h3><p>G(x,ξ) solves Ly = δ(x-ξ). The solution to Ly=f is y = ∫G(x,ξ)f(ξ)dξ. Powerful for BVPs.</p>", quiz:{q:"Green's function solves:", opts:["Ly = δ(x-ξ)","y'=0","Algebraic equations","y=constant"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Level 6 Summary</h3><p>BVPs, eigenvalue problems, Sturm-Liouville theory, orthogonality, Fourier series, Green's functions.</p><p class='mt-2 text-indigo-300 font-medium'>Test time!</p>", quiz:{q:"Self-adjoint means:", opts:["<Lu,v> = <u,Lv>","Lu=0","L=I","L²=0"], ans:0}},
+    ],
+    7: [
+      {text:"<h3 class='text-white font-bold mb-2'>Systems of ODEs</h3><p>x' = Ax where x is a vector and A is a matrix. Solutions involve eigenvalues/eigenvectors of A.</p>", quiz:{q:"A 2×2 system has how many eigenvalues?", opts:["2","1","4","Infinite"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Phase Plane Analysis</h3><p>For 2D autonomous systems x'=f(x,y), y'=g(x,y), the phase plane shows trajectories. Equilibria where f=g=0.</p>", quiz:{q:"Equilibrium points satisfy:", opts:["f=0 and g=0","x=0 only","y'=1","t=0"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Classification of Equilibria</h3><p>Based on eigenvalues of the Jacobian: stable/unstable nodes (real, same sign), saddles (real, opposite sign), spirals (complex), centres (pure imaginary).</p>", quiz:{q:"Eigenvalues -2, -3 give a:", opts:["Stable node","Unstable node","Saddle","Spiral"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Stability</h3><p>Asymptotically stable: all eigenvalues have Re<0. Unstable: any Re>0. Stable (Lyapunov): Re≤0 with no defective zero.</p>", quiz:{q:"For asymptotic stability, eigenvalues need:", opts:["All Re < 0","All Re > 0","Re = 0","Mixed signs"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Nullclines</h3><p>x-nullcline: f(x,y)=0 (horizontal arrows). y-nullcline: g(x,y)=0 (vertical arrows). Intersections are equilibria.</p>", quiz:{q:"On the x-nullcline:", opts:["dx/dt = 0","dy/dt = 0","x = 0","y = 0"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Limit Cycles</h3><p>Isolated periodic orbits in the phase plane. Poincaré–Bendixson: bounded trajectories in R² must approach a fixed point or limit cycle.</p>", quiz:{q:"A limit cycle is:", opts:["An isolated periodic orbit","A fixed point","A straight line","An open curve"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Lyapunov Functions</h3><p>V(x,y)>0 and V'(along trajectories)≤0 proves stability without solving. V'<0 gives asymptotic stability.</p>", quiz:{q:"Lyapunov stability needs V>0 and:", opts:["V' ≤ 0","V' > 0","V = 0","V' = V"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Level 7 Summary</h3><p>Systems, phase planes, equilibrium classification, stability, nullclines, limit cycles, Lyapunov functions.</p><p class='mt-2 text-indigo-300 font-medium'>Test awaits!</p>", quiz:{q:"Poincaré–Bendixson applies in:", opts:["R² autonomous systems","R³","Discrete maps","PDEs"], ans:0}},
+    ],
+    8: [
+      {text:"<h3 class='text-white font-bold mb-2'>Why Numerical Methods?</h3><p>Most ODEs lack closed-form solutions. Numerical methods approximate y(t) at discrete points t₀, t₁, t₂, ... with step h.</p>", quiz:{q:"Numerical methods give:", opts:["Approximate solutions at discrete points","Exact formulas","Only qualitative info","Nothing useful"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Euler's Method</h3><p>yₙ₊₁ = yₙ + h·f(tₙ,yₙ). Simple but O(h) globally — errors accumulate. First-order accurate.</p>", quiz:{q:"Euler's method formula:", opts:["yₙ₊₁ = yₙ + hf(tₙ,yₙ)","yₙ₊₁ = yₙ·h","yₙ₊₁ = f(yₙ)","yₙ₊₁ = yₙ/h"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Improved Euler (Heun's)</h3><p>Predict: ỹ = yₙ + hf(tₙ,yₙ). Correct: yₙ₊₁ = yₙ + (h/2)[f(tₙ,yₙ)+f(tₙ₊₁,ỹ)]. Second-order accurate.</p>", quiz:{q:"Heun's method is order:", opts:["2","1","3","4"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Runge-Kutta 4 (RK4)</h3><p>Computes 4 slopes k₁,k₂,k₃,k₄ and averages: yₙ₊₁ = yₙ + (h/6)(k₁+2k₂+2k₃+k₄). Fourth-order: very popular.</p>", quiz:{q:"RK4 uses how many slope evaluations per step?", opts:["4","1","2","6"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Error Analysis</h3><p>Local truncation error (LTE): error per step. Global error accumulates over N steps. RK4 LTE is O(h⁵), global O(h⁴).</p>", quiz:{q:"Global error of Euler's method:", opts:["O(h)","O(h²)","O(h⁴)","O(1)"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Stiff Equations</h3><p>Stiff ODEs have widely separated time scales. Explicit methods need tiny h → use implicit methods (backward Euler, BDF).</p>", quiz:{q:"Stiff equations need:", opts:["Implicit methods","Only Euler","Exact solutions","Larger h"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Multi-Step Methods</h3><p>Adams-Bashforth (explicit) and Adams-Moulton (implicit) use previous steps. More efficient but need startup values.</p>", quiz:{q:"Adams-Bashforth is:", opts:["Multi-step explicit","Single-step","Implicit only","Analytical"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Level 8 Summary</h3><p>Euler, Heun, RK4, error analysis, stiffness, multi-step methods. You now have computational tools!</p><p class='mt-2 text-indigo-300 font-medium'>Final numerical test!</p>", quiz:{q:"Most popular general-purpose ODE solver:", opts:["RK4","Euler","Backward Euler","Trapezoidal"], ans:0}},
+    ],
+    9: [
+      {text:"<h3 class='text-white font-bold mb-2'>Existence & Uniqueness Theorems</h3><p>Picard-Lindelöf: f continuous + Lipschitz in y ⟹ unique local solution. Peano: f continuous ⟹ existence (not necessarily unique).</p>", quiz:{q:"Lipschitz condition ensures:", opts:["Uniqueness","Existence only","Periodicity","Boundedness"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Gronwall's Inequality</h3><p>If u(t) ≤ α + ∫β·u ds, then u(t) ≤ α·e^(βt). Used to bound solutions and prove continuous dependence on initial data.</p>", quiz:{q:"Gronwall's inequality helps:", opts:["Bound solutions","Find exact solutions","Plot graphs","Factor polynomials"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Bifurcation Theory</h3><p>As a parameter μ changes, the number/stability of equilibria can change abruptly — a bifurcation. Types: saddle-node, pitchfork, Hopf.</p>", quiz:{q:"Bifurcation means:", opts:["Qualitative change as parameter varies","Solution = 0","Time → ∞","No change"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Saddle-Node & Pitchfork</h3><p>Saddle-node: two equilibria appear/disappear. Pitchfork: one equilibrium splits into three (supercritical) or vice versa (subcritical).</p>", quiz:{q:"In saddle-node bifurcation:", opts:["Two equilibria collide and vanish","Nothing happens","Three appear","Chaos begins"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Hopf Bifurcation</h3><p>Equilibrium loses stability and a limit cycle is born. Eigenvalues cross the imaginary axis. Supercritical → stable cycle.</p>", quiz:{q:"Hopf bifurcation creates:", opts:["A limit cycle","A new equilibrium","Chaos immediately","Nothing"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Chaos in ODEs</h3><p>Chaos requires dimension ≥ 3 for autonomous systems (Poincaré–Bendixson excludes it in 2D). Lorenz system is the classic example.</p>", quiz:{q:"Minimum dimension for chaos in autonomous ODE:", opts:["3","1","2","4"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Strange Attractors</h3><p>Chaotic trajectories are bounded but never repeat — they lie on a fractal structure called a strange attractor. Sensitive to initial conditions.</p>", quiz:{q:"Strange attractors have:", opts:["Fractal structure","Integer dimension","Periodicity","No sensitivity"], ans:0}},
+      {text:"<h3 class='text-white font-bold mb-2'>Level 9: Final Summary</h3><p>Existence theorems, Gronwall, bifurcations, chaos, strange attractors. You've completed the entire advanced theory!</p><p class='mt-2 text-indigo-300 font-medium'>One last test to conquer the course!</p>", quiz:{q:"Lorenz system demonstrates:", opts:["Deterministic chaos","Linear stability","Exact solutions","Separability"], ans:0}},
+    ]
+  }
+};
+// Clone for other courses
+courseContent.ode2 = JSON.parse(JSON.stringify(courseContent.ode1));
+courseContent.pde = JSON.parse(JSON.stringify(courseContent.ode1));
+
+// Test questions per level (5 questions each)
+const testBank = {
+  ode1: {
+    1: [
+      {q:"Solve: dy/dx = 2x", opts:["y = x² + C","y = 2x + C","y = x³ + C","y = 2x²"], ans:0, marks:2},
+      {q:"Order of dy/dx + y = 0?", opts:["1","2","0","3"], ans:0, marks:1},
+      {q:"Solve: dy/dx = y, y(0)=1", opts:["y = eˣ","y = e⁻ˣ","y = x","y = ln x"], ans:0, marks:3},
+      {q:"Which is separable?", opts:["dy/dx = xy","dy/dx = x+y","d²y/dx²=y","dy/dx=x²+y²"], ans:0, marks:2},
+      {q:"Integrating factor of dy/dx + y = eˣ?", opts:["eˣ","e⁻ˣ","x","1/x"], ans:0, marks:3},
+    ],
+    2: [
+      {q:"Solve: dy/dx + 2y = 4", opts:["y = 2 + Ce⁻²ˣ","y = 4e²ˣ","y = 2x + C","y = 4+Ce²ˣ"], ans:0, marks:2},
+      {q:"Exact condition: M dx + N dy = 0?", opts:["∂M/∂y = ∂N/∂x","∂M/∂x = ∂N/∂y","M = N","dM = dN"], ans:0, marks:3},
+      {q:"Bernoulli form?", opts:["dy/dx+Py=Qyⁿ","d²y/dx²+y=0","dy/dx=f(y/x)","none"], ans:0, marks:2},
+      {q:"Homogeneous function: f(tx,ty)=?", opts:["tⁿf(x,y)","f(x,y)/t","t+f(x,y)","f(x+t,y+t)"], ans:0, marks:2},
+      {q:"Solution of dy/dx = -x/y?", opts:["x²+y²=C","xy=C","y=Cx","y²-x²=C"], ans:0, marks:3},
+    ],
+    3: [
+      {q:"Wronskian=0 means?", opts:["Linearly dependent","Independent","Unique","None"], ans:0, marks:3},
+      {q:"y''+y=0 solution?", opts:["Acos x+Bsin x","Aeˣ+Be⁻ˣ","Ax+B","Acos 2x"], ans:0, marks:2},
+      {q:"Char eq of y''-5y'+6y=0?", opts:["r²-5r+6=0","r²+5r+6=0","r²-5r-6=0","r-6=0"], ans:0, marks:2},
+      {q:"Variation of parameters is for?", opts:["Non-homogeneous with any g(x)","Homogeneous only","Algebraic","Separable"], ans:0, marks:3},
+      {q:"Complex roots a±bi give?", opts:["eᵃˣ(cos bx, sin bx)","eᵇˣcos ax","xeᵃˣ","ln(a+b)"], ans:0, marks:4},
+    ],
+    4: [
+      {q:"L{eᵃᵗ} = ?", opts:["1/(s-a)","s/(s-a)","a/(s²+a²)","1/s"], ans:0, marks:3},
+      {q:"L{t} = ?", opts:["1/s²","1/s","s","2/s³"], ans:0, marks:2},
+      {q:"L⁻¹{1/(s²+1)} = ?", opts:["sin t","cos t","eᵗ","t"], ans:0, marks:3},
+      {q:"Convolution: L{f*g}=?", opts:["F(s)G(s)","F+G","F/G","sF"], ans:0, marks:4},
+      {q:"L{δ(t)} = ?", opts:["1","1/s","s","0"], ans:0, marks:2},
+    ],
+    5: [
+      {q:"Power series assumes y=?", opts:["Σaₙxⁿ","aeˣ+b","sin(nx)","log x"], ans:0, marks:3},
+      {q:"Regular singular point needs?", opts:["(x-x₀)P,(x-x₀)²Q analytic","P,Q analytic","P=0","Q=∞"], ans:0, marks:4},
+      {q:"Frobenius used when?", opts:["Regular singular point","All ordinary","Exact","Separable"], ans:0, marks:3},
+      {q:"Convergence radius by?", opts:["Ratio test","Integration","Differentiation","Graphing"], ans:0, marks:2},
+      {q:"Legendre arises in?", opts:["Spherical coords","Cartesian only","Polar 2D","None"], ans:0, marks:4},
+    ],
+    6: [
+      {q:"Sturm-Liouville involves?", opts:["Eigenvalue BVPs","IVP only","Algebra","None"], ans:0, marks:4},
+      {q:"Eigenvalues of y''+λy=0, y(0)=y(π)=0?", opts:["λ=n²","λ=n","λ=nπ","λ=1/n"], ans:0, marks:3},
+      {q:"Orthogonality: ∫φₘφₙ dx=?", opts:["0 for m≠n","1","∞","φₘ"], ans:0, marks:3},
+      {q:"Green's function solves?", opts:["Ly=δ(x-ξ)","y'=0","y=constant","Ly=0"], ans:0, marks:4},
+      {q:"Self-adjoint: <Lu,v>=?", opts:["<u,Lv>","0","Lu","Lv"], ans:0, marks:5},
+    ],
+    7: [
+      {q:"Phase plane for?", opts:["Autonomous systems","3rd order","PDE","Algebraic"], ans:0, marks:3},
+      {q:"Equilibrium where?", opts:["f=g=0","x=0","y'=1","t=0"], ans:0, marks:3},
+      {q:"Stable node eigenvalues?", opts:["Both real negative","Both positive","Complex","Zero"], ans:0, marks:4},
+      {q:"Limit cycle is?", opts:["Isolated periodic orbit","Fixed point","Line","Parabola"], ans:0, marks:4},
+      {q:"Lyapunov: V>0, V'≤0 proves?", opts:["Stability","Instability","Chaos","Nothing"], ans:0, marks:5},
+    ],
+    8: [
+      {q:"Euler's formula?", opts:["yₙ₊₁=yₙ+hf(tₙ,yₙ)","yₙ₊₁=yₙ/h","yₙ₊₁=f(yₙ)","yₙ₊₁=hyₙ²"], ans:0, marks:2},
+      {q:"RK4 order?", opts:["4","2","1","3"], ans:0, marks:2},
+      {q:"Euler LTE?", opts:["O(h²)","O(h)","O(h³)","O(1)"], ans:0, marks:3},
+      {q:"Stiff equations need?", opts:["Implicit methods","Euler only","Exact","Graphs"], ans:0, marks:4},
+      {q:"Adams-Bashforth is?", opts:["Multi-step explicit","Single step","Implicit","Analytical"], ans:0, marks:4},
+    ],
+    9: [
+      {q:"Picard-Lindelöf requires?", opts:["Lipschitz in y","f=0","Polynomial f","Constant f"], ans:0, marks:4},
+      {q:"Gronwall bounds?", opts:["Solutions","Exact values","Eigenvalues","Nothing"], ans:0, marks:4},
+      {q:"Bifurcation: qualitative change at?", opts:["Parameter value","t=0","x=∞","y=0"], ans:0, marks:5},
+      {q:"Chaos needs dim ≥?", opts:["3","1","2","4"], ans:0, marks:4},
+      {q:"Poincaré-Bendixson in?", opts:["R² autonomous","R³","Discrete","PDEs"], ans:0, marks:5},
+    ]
+  }
+};
+testBank.ode2 = JSON.parse(JSON.stringify(testBank.ode1));
+testBank.pde = JSON.parse(JSON.stringify(testBank.ode1));
+
+const courseNames = { ode1:"First-Order ODEs & Beyond", ode2:"Systems & Transforms", pde:"Partial Differential Equations" };
+const courseColors = { ode1:"indigo", ode2:"emerald", pde:"rose" };
+
+const dailyQuestions = [
+  {q:"d/dx(sin x)=?", opts:["cos x","-cos x","sin x","-sin x"], ans:0, marks:1},
+  {q:"∫eˣ dx=?", opts:["eˣ+C","xeˣ","eˣ/x","ln x"], ans:0, marks:1},
+  {q:"Solve dy/dx=3x²", opts:["y=x³+C","y=6x","y=3x³","y=x²"], ans:0, marks:2},
+  {q:"Order of d³y/dx³+y=0?", opts:["3","1","2","0"], ans:0, marks:1},
+  {q:"L{1}=?", opts:["1/s","s","1","0"], ans:0, marks:2},
+];
+
+function penalty(marks){ return marks>=5?-2:marks>=3?-1.5:-1; }
+
+// ---------- Password hashing ----------
+// Passwords are never stored. We keep a random per-account salt plus a
+// PBKDF2-SHA256 digest of (password, salt) and compare digests on login.
+const PBKDF2_ITERATIONS = 150000;
+
+function bytesToHex(buffer){
+  return Array.from(new Uint8Array(buffer)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+function randomSalt(){
+  const bytes=new Uint8Array(16);
+  if(window.crypto&&window.crypto.getRandomValues) window.crypto.getRandomValues(bytes);
+  else for(let i=0;i<bytes.length;i++) bytes[i]=Math.floor(Math.random()*256);
+  return bytesToHex(bytes.buffer);
+}
+
+function subtleAvailable(){
+  return !!(window.crypto&&window.crypto.subtle&&window.crypto.subtle.importKey);
+}
+
+async function pbkdf2Hash(password, salt){
+  const enc=new TextEncoder();
+  const key=await window.crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits=await window.crypto.subtle.deriveBits(
+    {name:'PBKDF2', salt:enc.encode(salt), iterations:PBKDF2_ITERATIONS, hash:'SHA-256'}, key, 256);
+  return 'pbkdf2$'+bytesToHex(bits);
+}
+
+// Only used where WebCrypto is unavailable (e.g. a non-secure context), so a
+// login created in one context can still be verified in the other.
+function legacyHash(password, salt){
+  const input=salt+'::'+password;
+  let h1=0x811c9dc5, h2=0x1000193;
+  for(let round=0;round<4096;round++){
+    for(let i=0;i<input.length;i++){
+      h1=(h1^input.charCodeAt(i))>>>0; h1=Math.imul(h1,16777619)>>>0;
+      h2=(h2+input.charCodeAt(i)*(i+round+1))>>>0; h2=Math.imul(h2,2246822519)>>>0;
+    }
+  }
+  return 'legacy$'+(h1>>>0).toString(16).padStart(8,'0')+(h2>>>0).toString(16).padStart(8,'0');
+}
+
+async function hashPassword(password, salt){
+  if(subtleAvailable()){
+    try{ return await pbkdf2Hash(password, salt); }catch(e){ /* fall through */ }
+  }
+  return legacyHash(password, salt);
+}
+
+async function verifyPassword(password, salt, storedHash){
+  if(!storedHash||!salt) return false;
+  let candidate;
+  if(storedHash.indexOf('legacy$')===0) candidate=legacyHash(password, salt);
+  else if(subtleAvailable()){
+    try{ candidate=await pbkdf2Hash(password, salt); }catch(e){ return false; }
+  } else return false;
+  return timingSafeEqual(candidate, storedHash);
+}
+
+function timingSafeEqual(a, b){
+  if(a.length!==b.length) return false;
+  let diff=0;
+  for(let i=0;i<a.length;i++) diff|=a.charCodeAt(i)^b.charCodeAt(i);
+  return diff===0;
+}
+
+// ---------- Accounts ----------
+function normaliseUsername(name){ return (name||'').trim().toLowerCase(); }
+
+function findRecord(name){
+  const target=normaliseUsername(name);
+  if(!target) return null;
+  return allRecords.find(r=>normaliseUsername(r&&r.username)===target)||null;
+}
+
+function readSession(){
+  try{ return window.localStorage.getItem(SESSION_KEY)||''; }catch(e){ return ''; }
+}
+function writeSession(name){
+  try{ if(name) window.localStorage.setItem(SESSION_KEY,name); else window.localStorage.removeItem(SESSION_KEY); }catch(e){}
+}
+
+function isAuthed(){ return !!(currentUser&&userData); }
+
+function setAuthMode(mode){
+  authMode=mode;
+  const login=mode==='login';
+  const tabLogin=document.getElementById('tab-login');
+  const tabSignup=document.getElementById('tab-signup');
+  tabLogin.className='flex-1 py-2 rounded-lg text-sm font-bold transition-colors '+(login?'auth-tab-active':'auth-tab-idle');
+  tabSignup.className='flex-1 py-2 rounded-lg text-sm font-bold transition-colors '+(login?'auth-tab-idle':'auth-tab-active');
+  document.getElementById('confirm-wrap').classList.toggle('hidden', login);
+  document.getElementById('auth-submit').textContent=login?'Log In':'Create Account';
+  document.getElementById('auth-password').setAttribute('autocomplete', login?'current-password':'new-password');
+  document.getElementById('auth-hint').textContent=login
+    ? "No account yet? Tap Sign Up to create one."
+    : "Already have an account? Tap Log In.";
+  clearAuthMessage();
+}
+
+function showAuthMessage(text, kind){
+  const el=document.getElementById('auth-message');
+  el.textContent=text;
+  el.className='text-sm font-medium '+(kind==='ok'?'text-emerald-400':'text-rose-400');
+  el.classList.remove('hidden');
+}
+function clearAuthMessage(){
+  const el=document.getElementById('auth-message');
+  el.textContent='';
+  el.classList.add('hidden');
+}
+
+function setAuthBusy(busy, label){
+  authBusy=busy;
+  const btn=document.getElementById('auth-submit');
+  btn.disabled=busy;
+  btn.textContent=busy?(label||'Please wait…'):(authMode==='login'?'Log In':'Create Account');
+}
+
+async function submitAuth(){
+  if(authBusy) return;
+  clearAuthMessage();
+  const rawName=document.getElementById('auth-username').value;
+  const username=rawName.trim();
+  const password=document.getElementById('auth-password').value;
+
+  if(username.length<3){ showAuthMessage('Username must be at least 3 characters.'); return; }
+  if(!/^[A-Za-z0-9_.-]+$/.test(username)){ showAuthMessage('Username can use letters, numbers, and . _ - only.'); return; }
+  if(password.length<6){ showAuthMessage('Password must be at least 6 characters.'); return; }
+
+  if(authMode==='signup'){
+    const confirm=document.getElementById('auth-confirm').value;
+    if(password!==confirm){ showAuthMessage('Passwords do not match.'); return; }
+    await doSignup(username, password);
+  } else {
+    await doLogin(username, password);
+  }
+}
+
+async function doLogin(username, password){
+  const record=findRecord(username);
+  if(!record){
+    showAuthMessage('No account found with that username. Switch to Sign Up to create it.');
+    return;
+  }
+  setAuthBusy(true,'Checking…');
+  try{
+    const ok=await verifyPassword(password, record.password_salt, record.password_hash);
+    if(!ok){ showAuthMessage('Incorrect password. Please try again.'); return; }
+    enterApp(record);
+  } finally { setAuthBusy(false); }
+}
+
+async function doSignup(username, password){
+  if(findRecord(username)){
+    showAuthMessage('That username is already taken. Switch to Log In instead.');
+    return;
+  }
+  setAuthBusy(true,'Creating account…');
+  try{
+    const salt=randomSalt();
+    const hash=await hashPassword(password, salt);
+    const fresh=defaultState();
+    const record={
+      username:username,
+      password_hash:hash,
+      password_salt:salt,
+      created_at:new Date().toISOString(),
+      user_coins:fresh.coins, user_points:fresh.points,
+      current_course:'', current_level:1, current_step:1,
+      levels_completed:'{}', daily_streak:0, last_practice_date:'', test_scores:'{}'
+    };
+    const created=extractRecord(await window.dataSdk.create(record));
+    const saved=created||await waitForRecord(username, 8000);
+    if(!saved){
+      showAuthMessage('Account could not be saved — please check your connection and try again.');
+      return;
+    }
+    enterApp(saved);
+  } catch(e){
+    console.error('Signup failed', e);
+    showAuthMessage('Something went wrong creating the account. Please try again.');
+  } finally { setAuthBusy(false); }
+}
+
+function extractRecord(result){
+  if(!result) return null;
+  if(result.__backendId) return result;
+  if(result.value&&result.value.__backendId) return result.value;
+  if(result.data&&result.data.__backendId) return result.data;
+  return null;
+}
+
+function waitForRecord(username, timeoutMs){
+  const deadline=Date.now()+(timeoutMs||5000);
+  return new Promise(resolve=>{
+    (function poll(){
+      const found=findRecord(username);
+      if(found) return resolve(found);
+      if(Date.now()>deadline) return resolve(null);
+      setTimeout(poll, 250);
+    })();
+  });
+}
+
+function enterApp(record){
+  currentUser=normaliseUsername(record.username);
+  userData=record;
+  hydrateState(record);
+  writeSession(currentUser);
+  document.getElementById('auth-username').value='';
+  document.getElementById('auth-password').value='';
+  document.getElementById('auth-confirm').value='';
+  clearAuthMessage();
+  document.getElementById('nav-stats').classList.remove('hidden');
+  document.getElementById('nav-stats').classList.add('flex');
+  updateUI();
+  updateProgressBars();
+  showView('home');
+}
+
+function logout(){
+  clearInterval(timerInterval);
+  currentUser=null;
+  userData=null;
+  state=defaultState();
+  currentStepInLevel=1;
+  writeSession('');
+  document.getElementById('nav-stats').classList.add('hidden');
+  document.getElementById('nav-stats').classList.remove('flex');
+  updateUI();
+  setAuthMode('login');
+  showView('auth');
+}
+
+function hydrateState(d){
+  state.coins=d.user_coins||0;
+  state.points=d.user_points||0;
+  state.currentCourse=d.current_course||'';
+  state.currentLevel=d.current_level||1;
+  state.dailyStreak=d.daily_streak||0;
+  state.lastPracticeDate=d.last_practice_date||'';
+  try{state.levelsCompleted=JSON.parse(d.levels_completed||'{}');}catch(e){state.levelsCompleted={};}
+  try{state.testScores=JSON.parse(d.test_scores||'{}');}catch(e){state.testScores={};}
+}
+
+// ---------- Views ----------
+function showView(name){
+  if(name!=='auth'&&!isAuthed()) name='auth';
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  if(name==='home') updateProgressBars();
+  if(name==='practice') updatePracticeView();
+  window.scrollTo(0,0);
+}
+
+function selectCourse(id){
+  state.currentCourse=id;
+  showView('course');
+  renderLevels();
+}
+
+function renderLevels(){
+  const container=document.getElementById('levels-container');
+  const completed=state.levelsCompleted[state.currentCourse]||[];
+  const color=courseColors[state.currentCourse];
+  container.innerHTML='';
+  document.getElementById('course-title-display').textContent=courseNames[state.currentCourse];
+  const allDone=completed.length>=9;
+  document.getElementById('course-complete-banner').classList.toggle('hidden',!allDone);
+
+  for(let i=1;i<=9;i++){
+    const done=completed.includes(i);
+    const unlocked=i===1||completed.includes(i-1);
+    const node=document.createElement('button');
+    node.className=`level-node w-full max-w-md flex items-center gap-4 p-4 rounded-xl border transition-all ${done?'bg-'+color+'-500/20 border-'+color+'-500/50':unlocked?'bg-slate-800/60 border-slate-700/50 hover:border-'+color+'-500/40':'bg-slate-900/40 border-slate-800/30 locked'}`;
+    // Show step progress
+    const stepsDone = getStepProgress(state.currentCourse, i);
+    const stepInfo = done ? 'Completed' : unlocked ? (stepsDone > 0 ? `Step ${stepsDone}/8` : 'Ready') : 'Locked';
+    node.innerHTML=`<div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${done?'bg-'+color+'-500 text-white':unlocked?'bg-slate-700 text-slate-300':'bg-slate-800 text-slate-600'}">${done?'✓':i}</div><div class="text-left flex-1"><div class="font-bold ${unlocked?'text-white':'text-slate-600'}">Level ${i}</div><div class="text-xs ${unlocked?'text-slate-400':'text-slate-700'}">${stepInfo}</div></div>${done?'<span class="text-'+color+'-400 text-sm font-bold">★</span>':''}`;
+    if(unlocked&&!done) node.onclick=()=>openLevel(i);
+    else if(done) node.onclick=()=>openLevel(i); // allow revisit
+    container.appendChild(node);
+  }
+}
+
+function getStepProgress(course, level){
+  const key=course+'_'+level;
+  return state.testScores[key+'_step']||0;
+}
+function setStepProgress(course, level, step){
+  const key=course+'_'+level+'_step';
+  state.testScores[key]=step;
+}
+
+let currentStepInLevel=1;
+
+function openLevel(level){
+  state.currentLevel=level;
+  currentStepInLevel=getStepProgress(state.currentCourse, level)||1;
+  // If level completed, allow review from step 1
+  const completed=(state.levelsCompleted[state.currentCourse]||[]).includes(level);
+  if(completed) currentStepInLevel=1;
+  showView('level');
+  renderStep();
+}
+
+function renderStep(){
+  document.getElementById('level-title').textContent=`Level ${state.currentLevel} — Step ${currentStepInLevel}/8`;
+  const content=courseContent[state.currentCourse]?.[state.currentLevel]?.[currentStepInLevel-1];
+  if(!content) return;
+
+  // Dots
+  const dots=document.getElementById('step-dots');
+  dots.innerHTML='';
+  const stepsDone=getStepProgress(state.currentCourse, state.currentLevel)||0;
+  for(let i=1;i<=8;i++){
+    const dot=document.createElement('div');
+    dot.className=`step-dot w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold ${i<currentStepInLevel||i<=stepsDone?'completed text-white':'border-slate-600 text-slate-500'} ${i===currentStepInLevel?'current':''}`;
+    dot.textContent=i;
+    dots.appendChild(dot);
+  }
+  // Add test dot
+  const testDot=document.createElement('div');
+  const levelDone=(state.levelsCompleted[state.currentCourse]||[]).includes(state.currentLevel);
+  testDot.className=`step-dot w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold ${levelDone?'completed text-white':'border-amber-600 text-amber-500'}`;
+  testDot.textContent='T';
+  dots.appendChild(testDot);
+
+  document.getElementById('step-text').innerHTML=content.text;
+  // Quiz
+  const quizQ=document.getElementById('step-quiz-question');
+  const quizOpts=document.getElementById('step-quiz-options');
+  const quizFb=document.getElementById('step-quiz-feedback');
+  quizQ.textContent=content.quiz.q;
+  quizOpts.innerHTML='';
+  quizFb.classList.add('hidden');
+  document.getElementById('step-next-btn').classList.add('hidden');
+  document.getElementById('take-test-btn').classList.add('hidden');
+
+  content.quiz.opts.forEach((opt,idx)=>{
+    const btn=document.createElement('button');
+    btn.className='w-full text-left p-3 rounded-lg border border-slate-600/50 text-slate-200 hover:border-indigo-500 hover:bg-indigo-500/10 transition-colors';
+    btn.textContent=opt;
+    btn.onclick=()=>answerStepQuiz(idx, content.quiz.ans);
+    quizOpts.appendChild(btn);
+  });
+}
+
+function answerStepQuiz(idx, correct){
+  const opts=document.getElementById('step-quiz-options').querySelectorAll('button');
+  opts.forEach(b=>{b.disabled=true;b.classList.add('pointer-events-none');});
+  const fb=document.getElementById('step-quiz-feedback');
+  fb.classList.remove('hidden');
+
+  if(idx===correct){
+    opts[idx].classList.add('bg-emerald-500/20','border-emerald-500');
+    fb.textContent='✓ Correct!';
+    fb.className='mt-3 text-sm font-medium text-emerald-400';
+    // Advance step progress
+    const prog=getStepProgress(state.currentCourse, state.currentLevel)||0;
+    if(currentStepInLevel>prog){
+      setStepProgress(state.currentCourse, state.currentLevel, currentStepInLevel);
+      saveState();
+    }
+    // Show next or test button
+    if(currentStepInLevel<8){
+      document.getElementById('step-next-btn').classList.remove('hidden');
+    } else {
+      document.getElementById('take-test-btn').classList.remove('hidden');
+    }
+  } else {
+    opts[idx].classList.add('bg-rose-500/20','border-rose-500');
+    opts[correct].classList.add('bg-emerald-500/20','border-emerald-500');
+    fb.textContent='✗ Wrong. Try reviewing the material, then tap Next.';
+    fb.className='mt-3 text-sm font-medium text-rose-400';
+    // Still allow proceeding (they can retry the level)
+    if(currentStepInLevel<8){
+      document.getElementById('step-next-btn').classList.remove('hidden');
+    } else {
+      document.getElementById('take-test-btn').classList.remove('hidden');
+    }
+  }
+}
+
+function goNextStep(){
+  currentStepInLevel++;
+  renderStep();
+}
+
+function startLevelTest(){
+  isTestMode=true;
+  const bank=testBank[state.currentCourse]?.[state.currentLevel]||testBank.ode1[1];
+  currentQuestions=[...bank].sort(()=>Math.random()-0.5);
+  currentQIndex=0;
+  testScore=0;testCorrect=0;testWrong=0;testSkipped=0;
+  timeLeft=currentQuestions.length*60;
+  showView('test');
+  renderQuestion();
+  startTimer();
+}
+
+function startDailyPractice(){
+  const today=new Date().toISOString().split('T')[0];
+  if(state.lastPracticeDate===today) return;
+  isTestMode=false;
+  currentQuestions=[...dailyQuestions].sort(()=>Math.random()-0.5).slice(0,5);
+  currentQIndex=0;
+  testScore=0;testCorrect=0;testWrong=0;testSkipped=0;
+  timeLeft=120;
+  showView('test');
+  renderQuestion();
+  startTimer();
+}
+
+function renderQuestion(){
+  const q=currentQuestions[currentQIndex];
+  document.getElementById('q-counter').textContent=`${currentQIndex+1}/${currentQuestions.length}`;
+  document.getElementById('question-text').textContent=q.q;
+  document.getElementById('question-marks').textContent=`+${q.marks} marks | ${penalty(q.marks)} if wrong`;
+  document.getElementById('live-score').textContent=testScore;
+  document.getElementById('answer-feedback').classList.add('hidden');
+  document.getElementById('next-q-btn').classList.add('hidden');
+  const container=document.getElementById('options-container');
+  container.innerHTML='';
+  q.opts.forEach((opt,idx)=>{
+    const btn=document.createElement('button');
+    btn.className='w-full text-left p-3 rounded-lg border border-slate-600/50 text-slate-200 hover:border-indigo-500 hover:bg-indigo-500/10 transition-colors';
+    btn.textContent=opt;
+    btn.onclick=()=>selectAnswer(idx);
+    container.appendChild(btn);
+  });
+}
+
+function selectAnswer(idx){
+  const q=currentQuestions[currentQIndex];
+  const buttons=document.getElementById('options-container').querySelectorAll('button');
+  buttons.forEach(b=>{b.disabled=true;b.classList.add('pointer-events-none');});
+  const feedback=document.getElementById('answer-feedback');
+  feedback.classList.remove('hidden');
+  if(idx===q.ans){
+    buttons[idx].classList.add('bg-emerald-500/20','border-emerald-500');
+    testScore+=q.marks;testCorrect++;
+    feedback.textContent=`✓ Correct! +${q.marks}`;
+    feedback.className='mt-4 text-center text-sm font-medium text-emerald-400';
+  } else {
+    buttons[idx].classList.add('bg-rose-500/20','border-rose-500');
+    buttons[q.ans].classList.add('bg-emerald-500/20','border-emerald-500');
+    const pen=penalty(q.marks);
+    testScore+=pen;testWrong++;
+    feedback.textContent=`✗ Wrong! ${pen} marks`;
+    feedback.className='mt-4 text-center text-sm font-medium text-rose-400';
+  }
+  document.getElementById('live-score').textContent=testScore;
+  document.getElementById('next-q-btn').classList.remove('hidden');
+}
+
+function nextQuestion(){
+  currentQIndex++;
+  if(currentQIndex>=currentQuestions.length) endTest();
+  else renderQuestion();
+}
+
+function startTimer(){
+  clearInterval(timerInterval);
+  updateTimerDisplay();
+  timerInterval=setInterval(()=>{
+    timeLeft--;
+    updateTimerDisplay();
+    if(timeLeft<=0){clearInterval(timerInterval);endTest();}
+  },1000);
+}
+function updateTimerDisplay(){
+  const m=Math.floor(timeLeft/60),s=timeLeft%60;
+  document.getElementById('timer-display').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+function endTest(){
+  clearInterval(timerInterval);
+  testSkipped=currentQuestions.length-testCorrect-testWrong;
+  const maxMarks=currentQuestions.reduce((s,q)=>s+q.marks,0);
+  const pct=Math.max(0,testScore)/maxMarks;
+  const coins=Math.max(0,Math.floor(testScore*2));
+  const pts=Math.max(0,Math.floor(testScore*5));
+
+  document.getElementById('result-emoji').textContent=pct>=0.8?'🏆':pct>=0.5?'⭐':'📚';
+  document.getElementById('res-marks').textContent=`${testScore}/${maxMarks}`;
+  document.getElementById('res-correct').textContent=testCorrect;
+  document.getElementById('res-wrong').textContent=testWrong;
+  document.getElementById('res-skip').textContent=testSkipped;
+  document.getElementById('res-coins').textContent=`+${coins} 🪙`;
+  document.getElementById('res-points').textContent=`+${pts} ⭐`;
+
+  state.coins+=coins;state.points+=pts;
+
+  const passed=pct>=0.4;
+  document.getElementById('res-pass-msg').classList.toggle('hidden',!isTestMode||!passed);
+  document.getElementById('res-fail-msg').classList.toggle('hidden',!isTestMode||passed);
+
+  if(isTestMode&&passed){
+    if(!state.levelsCompleted[state.currentCourse]) state.levelsCompleted[state.currentCourse]=[];
+    if(!state.levelsCompleted[state.currentCourse].includes(state.currentLevel)){
+      state.levelsCompleted[state.currentCourse].push(state.currentLevel);
+    }
+  }
+  if(!isTestMode){
+    const today=new Date().toISOString().split('T')[0];
+    if(state.lastPracticeDate){
+      const diff=Math.floor((new Date(today)-new Date(state.lastPracticeDate))/86400000);
+      state.dailyStreak=diff===1?state.dailyStreak+1:diff===0?state.dailyStreak:1;
+    } else state.dailyStreak=1;
+    state.lastPracticeDate=today;
+    if(state.dailyStreak>=7) state.coins+=10;
+    else if(state.dailyStreak>=3) state.coins+=5;
+  }
+  updateUI();saveState();showView('results');
+}
+
+function afterResults(){
+  showView(isTestMode?'course':'home');
+  if(isTestMode) renderLevels();
+}
+
+function updateUI(){
+  document.getElementById('coins-display').textContent=state.coins;
+  document.getElementById('points-display').textContent=state.points;
+  document.getElementById('streak-display').textContent=state.dailyStreak;
+  document.getElementById('user-display').textContent=userData&&userData.username?userData.username:'';
+}
+function updateProgressBars(){
+  ['ode1','ode2','pde'].forEach(c=>{
+    const n=(state.levelsCompleted[c]||[]).length;
+    const el=document.getElementById('prog-'+c);
+    if(el) el.style.width=(n/9*100)+'%';
+  });
+}
+function updatePracticeView(){
+  const today=new Date().toISOString().split('T')[0];
+  document.getElementById('practice-streak-num').textContent=state.dailyStreak;
+  const done=state.lastPracticeDate===today;
+  document.getElementById('start-practice-btn').classList.toggle('hidden',done);
+  document.getElementById('practice-done-msg').classList.toggle('hidden',!done);
+}
+
+// ---------- Data SDK ----------
+const dataHandler={
+  onDataChanged(data){
+    allRecords=Array.isArray(data)?data:[];
+    if(!currentUser) return;
+    const record=findRecord(currentUser);
+    if(!record) return;
+    userData=record;                 // keep __backendId fresh
+    if(savesInFlight>0) return;      // a local save is pending; don't overwrite it
+    hydrateState(record);
+    updateUI();updateProgressBars();
+  }
+};
+
+async function saveState(){
+  if(!isAuthed()) return;
+  const record={
+    username:userData.username,
+    password_hash:userData.password_hash,
+    password_salt:userData.password_salt,
+    created_at:userData.created_at||new Date().toISOString(),
+    user_coins:state.coins, user_points:state.points,
+    current_course:state.currentCourse, current_level:state.currentLevel,
+    current_step:currentStepInLevel,
+    levels_completed:JSON.stringify(state.levelsCompleted),
+    daily_streak:state.dailyStreak, last_practice_date:state.lastPracticeDate,
+    test_scores:JSON.stringify(state.testScores)
+  };
+  savesInFlight++;
+  try{
+    await window.dataSdk.update({...record,__backendId:userData.__backendId});
+  } catch(e){
+    console.error('Save failed', e);
+  } finally { savesInFlight--; }
+}
+
+async function restoreSession(){
+  const saved=readSession();
+  if(!saved) return false;
+  const record=findRecord(saved);
+  if(!record){ writeSession(''); return false; }
+  enterApp(record);
+  return true;
+}
+
+async function init(){
+  setAuthMode('login');
+  ['auth-username','auth-password','auth-confirm'].forEach(id=>{
+    document.getElementById(id).addEventListener('keydown', e=>{
+      if(e.key==='Enter'){ e.preventDefault(); submitAuth(); }
+    });
+  });
+
+  const r=await window.dataSdk.init(dataHandler);
+  if(!r.isOk){
+    console.error('SDK init failed');
+    showAuthMessage('Could not reach the account store. Please reload the page.');
+    return;
+  }
+  // The first onDataChanged may land a tick later than init resolves.
+  if(!allRecords.length) await new Promise(res=>setTimeout(res,300));
+  const resumed=await restoreSession();
+  if(!resumed) showView('auth');
+  lucide.createIcons();
+}
+init();
+</script>
+ </body>
+</html>
