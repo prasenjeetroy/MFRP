@@ -411,6 +411,18 @@ body.hard .hard-badge{display:inline-flex}
       <div class="bg-slate-900/60 rounded-xl p-3"><div id="profile-streak" class="text-amber-400 font-bold text-xl">0</div><div class="text-xs text-slate-400">Streak</div></div>
      </div>
      <div id="profile-courses" class="mt-6 space-y-2"></div>
+
+     <div class="mt-8 pt-4 border-t border-slate-700/50">
+      <h3 class="font-bold text-white mb-1">Back up your progress</h3>
+      <p id="storage-note" class="text-xs text-slate-400 mb-3"></p>
+      <div class="flex gap-3 flex-wrap">
+       <button onclick="exportProgress()" class="flex-1 py-2 px-4 rounded-xl border border-slate-600/60 text-slate-200 hover:border-indigo-500 hover:bg-indigo-500/10 font-medium text-sm transition-colors">Save to a file</button>
+       <button onclick="document.getElementById('restore-input').click()" class="flex-1 py-2 px-4 rounded-xl border border-slate-600/60 text-slate-200 hover:border-indigo-500 hover:bg-indigo-500/10 font-medium text-sm transition-colors">Restore from a file</button>
+      </div>
+      <input id="restore-input" type="file" accept="application/json,.json" class="hidden" onchange="importProgress(this)">
+      <p id="backup-msg" class="hidden mt-3 text-sm font-medium"></p>
+     </div>
+
      <button onclick="logout()" class="mt-8 w-full py-3 rounded-xl border border-rose-500/50 text-rose-300 hover:bg-rose-500/10 font-bold transition-colors">Log out</button>
     </div>
    </div>
@@ -1999,6 +2011,36 @@ let testWasHard = false;   // the mode the finished test was played in
 
 const SESSION_KEY = "diffeq_arena_session";
 
+/* ---------- storage ----------
+   Browser storage is not guaranteed: a sandboxed frame or a browser set to
+   block site data makes localStorage throw on touch. Probe once, and fall
+   back to memory so play never breaks — progress then lasts for the visit
+   only, which the profile screen says out loud. */
+const safeStorage = (() => {
+  const memory = new Map();
+  let usable = false;
+  try {
+    localStorage.setItem("__probe__", "1");
+    localStorage.removeItem("__probe__");
+    usable = true;
+  } catch (e) { usable = false; }
+  return {
+    get usable(){ return usable; },
+    get(key){
+      try { return usable ? localStorage.getItem(key) : (memory.has(key) ? memory.get(key) : null); }
+      catch (e) { usable = false; return memory.has(key) ? memory.get(key) : null; }
+    },
+    set(key, value){
+      try { if (usable) { localStorage.setItem(key, value); return; } } catch (e) { usable = false; }
+      memory.set(key, value);
+    },
+    remove(key){
+      try { if (usable) { localStorage.removeItem(key); return; } } catch (e) { usable = false; }
+      memory.delete(key);
+    }
+  };
+})();
+
 /* ---------- small helpers ---------- */
 const mode = () => (state.hardMode ? "hard" : "normal");
 const meta = (c) => courseMeta[c];
@@ -2121,7 +2163,7 @@ document.getElementById("auth-form").addEventListener("submit", async (e) => {
     const hash = await hashPassword(pass, salt);
     resetStateForNewUser(name, salt, hash);
     await saveState(true);
-    localStorage.setItem(SESSION_KEY, name);
+    safeStorage.set(SESSION_KEY, name);
     closeAuth();
     afterLogin();
   } else {
@@ -2129,7 +2171,7 @@ document.getElementById("auth-form").addEventListener("submit", async (e) => {
     const hash = await hashPassword(pass, existing.pw_salt || "");
     if (hash !== existing.pw_hash) return authError("Wrong password.");
     hydrateFrom(existing);
-    localStorage.setItem(SESSION_KEY, name);
+    safeStorage.set(SESSION_KEY, name);
     closeAuth();
     afterLogin();
   }
@@ -2174,7 +2216,7 @@ function afterLogin(){
 }
 
 function logout(){
-  localStorage.removeItem(SESSION_KEY);
+  safeStorage.remove(SESSION_KEY);
   state.displayName = "";
   state.hardMode = false;
   userData = null;
@@ -2553,6 +2595,79 @@ function afterResults(){
   else showView("practice");
 }
 
+/* ---------- backing up progress ----------
+   Progress lives wherever this copy of the page is running: Canva's data
+   layer when embedded, otherwise this browser. Neither follows a player to
+   another device, so a progress file is the way across. */
+function backupMsg(text, good){
+  const el = document.getElementById("backup-msg");
+  el.textContent = text;
+  el.className = "mt-3 text-sm font-medium " + (good ? "text-emerald-400" : "text-rose-400");
+  el.classList.remove("hidden");
+}
+
+async function exportProgress(){
+  if (!state.displayName) return backupMsg("Sign in first.", false);
+  const payload = JSON.stringify(
+    { app: "DiffEq Arena", version: 1, saved: new Date().toISOString(), record: buildRecord() }, null, 2);
+  const filename = `diffeq-arena-${state.displayName.replace(/[^a-z0-9]+/gi, "-").toLowerCase()}.json`;
+
+  // In the hosted viewer the page cannot start a download itself; the
+  // downloads capability asks the viewer instead. Everywhere else a blob
+  // link is fine.
+  let downloads = null;
+  try { downloads = window.claude && claude.use ? await claude.use("downloads") : null; } catch (e) { downloads = null; }
+  if (downloads) {
+    try {
+      await downloads.save({ filename, data: payload });
+      backupMsg("Progress file saved. Keep it somewhere safe.", true);
+    } catch (err) {
+      backupMsg(err && err.code === "declined" ? "Save cancelled." : "Could not save the file — try again.", false);
+    }
+    return;
+  }
+  try {
+    const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    backupMsg("Progress file saved. Keep it somewhere safe.", true);
+  } catch (e) {
+    backupMsg("This browser blocked the download.", false);
+  }
+}
+
+function importProgress(input){
+  const file = input.files && input.files[0];
+  input.value = "";
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onerror = () => backupMsg("Could not read that file.", false);
+  reader.onload = async () => {
+    let rec;
+    try {
+      const parsed = JSON.parse(reader.result);
+      rec = parsed && parsed.record ? parsed.record : parsed;
+    } catch (e) {
+      return backupMsg("That file isn't a DiffEq Arena progress file.", false);
+    }
+    if (!rec || !rec.display_name) return backupMsg("That file has no player in it.", false);
+
+    const existing = findRecord(rec.display_name);
+    hydrateFrom(rec);
+    userData = existing || null;
+    await saveState(!existing);
+    safeStorage.set(SESSION_KEY, state.displayName);
+    applyHardMode();
+    updateUI();
+    renderCourseGrid();
+    renderProfile();
+    backupMsg(`Restored ${state.displayName} — ${state.points} points, ${state.coins} coins.`, true);
+  };
+  reader.readAsText(file);
+}
+
 /* ---------- profile & chrome ---------- */
 function updateUI(){
   document.getElementById("coins-display").textContent = state.coins;
@@ -2564,6 +2679,10 @@ function updateUI(){
 }
 
 function renderProfile(){
+  document.getElementById("backup-msg").classList.add("hidden");
+  document.getElementById("storage-note").textContent = safeStorage.usable
+    ? "Your progress is saved in this browser as you play. It won't follow you to another device or survive clearing your browser data — save a file to carry it across."
+    : "This browser is blocking saved data, so progress will only last until you close the page. Save a file to keep it.";
   document.getElementById("profile-name").textContent = state.displayName || "Guest";
   document.getElementById("profile-avatar").textContent = (state.displayName || "?").charAt(0).toUpperCase();
   document.getElementById("profile-coins").textContent = state.coins;
@@ -2645,8 +2764,8 @@ function installLocalDataSdk(){
   if (window.dataSdk) return;
   const KEY = "diffeq_arena_records";
   let handler = null;
-  const read = () => { try { return JSON.parse(localStorage.getItem(KEY) || "[]"); } catch (e) { return []; } };
-  const write = (rows) => localStorage.setItem(KEY, JSON.stringify(rows));
+  const read = () => { try { return JSON.parse(safeStorage.get(KEY) || "[]"); } catch (e) { return []; } };
+  const write = (rows) => safeStorage.set(KEY, JSON.stringify(rows));
   window.dataSdk = {
     async init(h){ handler = h; h.onDataChanged(read()); return { isOk: true }; },
     async create(rec){
@@ -2679,7 +2798,7 @@ async function init(){
 
   if (window.lucide && lucide.createIcons) lucide.createIcons();
 
-  const remembered = localStorage.getItem(SESSION_KEY);
+  const remembered = safeStorage.get(SESSION_KEY);
   const rec = remembered ? findRecord(remembered) : null;
   if (rec) {
     hydrateFrom(rec);
