@@ -83,10 +83,10 @@ def order(categories):
         print(f"Remaining {dish_name} quantity: {selected_dish['quantity']}")
         print("--- Order Complete ---\n")
 
-        # Explicitly ask to continue for the main loop
+        # Keep asking for another order until the user chooses to quit
         while True:
-            another_order = input("Do you want to place another order? (yes/no): ").strip().lower()
-            if another_order in ('no', 'n'):
+            another_order = input("Do you want to place another order? (yes/no or 'exit' to quit): ").strip().lower()
+            if another_order in ('no', 'n', 'exit'):
                 print("Exiting order system. Goodbye!")
                 return
             if another_order in ('yes', 'y'):
