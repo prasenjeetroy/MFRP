@@ -3,13 +3,6 @@
 
 def sip_future_value(monthly_investment: float, annual_rate: float, years: float) -> float:
     """Future value of a monthly SIP, assuming contributions at the start of each month."""
-    if monthly_investment <= 0:
-        raise ValueError("monthly investment must be greater than 0")
-    if annual_rate < 0:
-        raise ValueError("expected return rate cannot be negative")
-    if years <= 0:
-        raise ValueError("investment period must be greater than 0")
-
     months = int(round(years * 12))
     monthly_rate = annual_rate / 12 / 100
     if monthly_rate == 0:
@@ -20,25 +13,49 @@ def sip_future_value(monthly_investment: float, annual_rate: float, years: float
 
 def lumpsum_future_value(principal: float, annual_rate: float, years: float) -> float:
     """Future value of a one-time investment compounded annually."""
-    if principal <= 0:
-        raise ValueError("investment amount must be greater than 0")
-    if annual_rate < 0:
-        raise ValueError("expected return rate cannot be negative")
-    if years <= 0:
-        raise ValueError("investment period must be greater than 0")
-
     return principal * (1 + annual_rate / 100) ** years
 
 
-def read_float(prompt: str) -> float:
-    """Keep asking until the user types a number."""
+def check_amount(value: float) -> None:
+    if value <= 0:
+        raise ValueError("the amount must be greater than 0")
+
+
+def check_rate(value: float) -> None:
+    if value < 0:
+        raise ValueError("the return rate cannot be negative")
+    if value > 100:
+        raise ValueError("a return rate above 100% is not realistic")
+
+
+def check_years(value: float) -> None:
+    if value <= 0:
+        raise ValueError("the investment period must be greater than 0")
+    if value > 100:
+        raise ValueError("the investment period cannot be more than 100 years")
+
+
+def read_float(prompt: str, check) -> float:
+    """Ask for one number and re-ask that same field until it is valid."""
     while True:
         try:
-            return float(input(prompt).strip())
-        except ValueError:
-            print("False input: that is not a number. Please try again.")
+            text = input(prompt).strip()
         except EOFError:
             raise KeyboardInterrupt
+
+        try:
+            value = float(text)
+        except ValueError:
+            print(f"  False input: '{text}' is not a number. Please enter this value again.")
+            continue
+
+        try:
+            check(value)
+        except ValueError as error:
+            print(f"  False input: {error}. Please enter this value again.")
+            continue
+
+        return value
 
 
 def report(invested: float, future_value: float) -> None:
@@ -49,27 +66,17 @@ def report(invested: float, future_value: float) -> None:
 
 
 def run_sip() -> None:
-    monthly = read_float("Monthly investment amount: ")
-    rate = read_float("Expected annual return rate (%): ")
-    years = read_float("Investment period (years): ")
-    try:
-        future_value = sip_future_value(monthly, rate, years)
-    except ValueError as error:
-        print(f"False input: {error}.")
-        return
-    report(monthly * int(round(years * 12)), future_value)
+    monthly = read_float("Monthly investment amount: ", check_amount)
+    rate = read_float("Expected annual return rate (%): ", check_rate)
+    years = read_float("Investment period (years): ", check_years)
+    report(monthly * int(round(years * 12)), sip_future_value(monthly, rate, years))
 
 
 def run_lumpsum() -> None:
-    principal = read_float("Lumpsum investment amount: ")
-    rate = read_float("Expected annual return rate (%): ")
-    years = read_float("Investment period (years): ")
-    try:
-        future_value = lumpsum_future_value(principal, rate, years)
-    except ValueError as error:
-        print(f"False input: {error}.")
-        return
-    report(principal, future_value)
+    principal = read_float("Lumpsum investment amount: ", check_amount)
+    rate = read_float("Expected annual return rate (%): ", check_rate)
+    years = read_float("Investment period (years): ", check_years)
+    report(principal, lumpsum_future_value(principal, rate, years))
 
 
 MENU = """
