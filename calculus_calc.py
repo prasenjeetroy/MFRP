@@ -37,8 +37,7 @@ BINARY = {
 PRECEDENCE = {"+": 1, "-": 1, "*": 2, "/": 2, "neg": 3, "^": 4}
 
 def _fail(error):
-    """Raise from inside a lambda."""
-    raise error
+    raise error                      # lets the lambdas above report bad input
 
 class ParseError(ValueError):
     """Raised when an expression cannot be tokenized or parsed."""
@@ -316,13 +315,12 @@ def d1(node, variable):
 def derivative(f, x, h=None):
     """Numerical derivative by a five-point central difference."""
     h = h or (abs(x) + 1.0) * 1e-5
-    return (f(x - 2 * h) - 8 * f(x - h) + 8 * f(x + h) - f(x + 2 * h)) / (12 * h)
+    return (f(x - 2*h) - 8*f(x - h) + 8*f(x + h) - f(x + 2*h)) / (12 * h)
 
 def simpson(f, a, b, n=1000):
     """Composite Simpson's rule with n subintervals."""
-    n += n % 2
-    h = (b - a) / n
-    return h / 3 * (f(a) + f(b) + sum(f(a + i * h) * (4 if i % 2 else 2)
+    n, h = n + n % 2, (b - a) / (n + n % 2)
+    return h / 3 * (f(a) + f(b) + sum(f(a + i*h) * (4 if i % 2 else 2)
                                       for i in range(1, n)))
 
 def integrate(f, a, b, tolerance=1e-10):
@@ -405,7 +403,7 @@ def series(source, variable="x", centre=0.0, order=5):
         if abs(c) < 1e-9: continue
         c = round(c, 9)
         shift = variable if centre == 0 else "(%s - %g)" % (variable, centre)
-        body = shift if power == 1 else "%s^%d" % (shift, power)
+        body = shift if power == 1 else "%s^%d" % (shift, power)   # x, x^2, ...
         terms.append("%g" % c if power == 0 else
                      ("-" if c < 0 else "") + body if abs(abs(c) - 1) < 1e-12 else
                      "%g*%s" % (c, body))
@@ -431,10 +429,9 @@ HELP = """\
   int <expr> a b     integrate expr from a to b  (a, b may be -inf / inf)
   lim <expr> a       limit of expr as x approaches a
   taylor <expr> n    Taylor series of expr about 0, to order n
-  solve <expr> g     root of expr found from the guess g
-  vars / help / quit
-Functions: sin cos tan asin acos atan sinh cosh tanh exp ln log log10 sqrt
-abs floor ceil erf gamma.  Constants: pi e tau."""
+  solve <expr> g     root of expr found from the guess g   |   vars help quit
+Functions: sin cos tan asin acos atan sinh cosh tanh exp ln log log10 sqrt abs
+floor ceil erf gamma.  Constants: pi e tau."""
 
 def value_of(word):
     """Read a number, allowing 'pi/2', '-inf' and other expressions."""
@@ -462,10 +459,8 @@ def run(line, memory):
         name, _, body = line.partition("=")
         memory[name.strip()] = ev(parse(body.strip()), memory)
         return "%s = %.12g" % (name.strip(), memory[name.strip()])
-    memory["ans"] = ev(parse(line), memory)
+    memory["ans"] = ev(parse(line), memory)          # plain expression
     return "= %.12g" % memory["ans"]
-
-ERRORS = (ParseError, ValueError, NameError, ZeroDivisionError, ArithmeticError)
 
 def main(argv):
     """Evaluate the arguments, or start the calculator if there are none."""
@@ -474,7 +469,7 @@ def main(argv):
         try:
             print(run(" ".join(argv), memory))
             return 0
-        except ERRORS as error:
+        except (ValueError, NameError, ArithmeticError) as error:
             print("error: %s" % error, file=sys.stderr)
             return 1
     print("Calculus calculator - 'help' for commands, 'quit' to exit")
@@ -493,8 +488,13 @@ def main(argv):
                 print("\n".join("  %s = %.12g" % kv for kv in sorted(memory.items()))
                       or "  (nothing stored)")
             else: print(run(line, memory))
-        except ERRORS as error:
+        except (ValueError, NameError, ArithmeticError) as error:
             print("error: %s" % error)
 
-
-if __name__ == "__main__": sys.exit(main(sys.argv[1:]))
+if __name__ == "__main__":
+    # Jupyter and Colab fill sys.argv with the kernel's own arguments, so read
+    # it only when this really is a script; in a notebook just load the names.
+    if "ipykernel" in sys.modules:
+        print("Loaded.  Try:  text(diff('x**2*sin(x)'))   or   main([])")
+    else:
+        sys.exit(main(sys.argv[1:]))
