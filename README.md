@@ -12,6 +12,12 @@ the command line.
 
 It has **no third-party dependencies**: everything is built on the standard
 library, including the expression parser and the computer algebra rules.
+It needs **Python 3.9 or newer** - `math.gcd` and `math.lcm` are called with
+several arguments, which 3.9 introduced.
+
+The same code ships two ways: as the `mathkit/` package, and merged into a
+single self-contained script, `calc.py`, for pasting into an editor or
+notebook without a folder layout.
 
 ### Quick start
 

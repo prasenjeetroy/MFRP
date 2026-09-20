@@ -11,7 +11,8 @@ theory, statistics, geometry and ASCII plotting.
     python3 calc.py integrate "exp(-x**2)" -inf inf
     python3 calc.py plot "sin(x)/x" -20 20
 
-Needs Python 3.8 or newer.
+Needs Python 3.9 or newer (it uses math.gcd and math.lcm with several
+arguments, which arrived in 3.9).
 """
 
 import argparse
