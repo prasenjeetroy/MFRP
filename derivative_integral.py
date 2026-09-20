@@ -18,6 +18,15 @@ ALLOWED = {
 }
 
 
+class Quit(Exception):
+    """Raised when you type 'quit' at any prompt."""
+
+
+def wants_out(answer):
+    """Whether what was typed means 'stop here'."""
+    return answer.strip().lower() in ("quit", "exit", "q", "stop")
+
+
 def make_function(expression):
     """Turn a typed string such as 'x**2 + sin(x)' into a Python function."""
     code = compile(expression.replace("^", "**"), "<typed function>", "eval")
@@ -46,10 +55,13 @@ def integral(f, a, b, n=1000):
 
 
 def ask(question):
-    """Ask a question until the answer is a number."""
+    """Ask a question until the answer is a number, or until you quit."""
     while True:
+        answer = input(question).strip()
+        if wants_out(answer):
+            raise Quit
         try:
-            return float(eval(input(question), {"__builtins__": {}}, ALLOWED))
+            return float(eval(answer, {"__builtins__": {}}, ALLOWED))
         except Exception:
             print("  that is not a number - try again, e.g. 0, 2.5 or pi")
 
@@ -57,11 +69,13 @@ def ask(question):
 def main():
     print("Derivative and integral calculator")
     print("Type a function of x, for example:  x**2 + sin(x)")
-    print("You can use: sin cos tan exp ln log10 sqrt abs, and pi and e.\n")
+    print("You can use functions like sin, cos, tan, asin, acos, atan, sinh,")
+    print("cosh, tanh, exp, ln, log10, sqrt and abs, plus the constants pi and e.")
+    print("Type 'quit' at any prompt to leave.\n")
 
     while True:
         typed = input("f(x) = ").strip()
-        if typed.lower() in ("quit", "exit", ""):
+        if wants_out(typed) or not typed:
             return
         try:
             f = make_function(typed)
@@ -88,4 +102,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (Quit, EOFError, KeyboardInterrupt):
+        pass
+    print("\nBye.")
