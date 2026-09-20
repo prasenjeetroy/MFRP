@@ -15,9 +15,16 @@ library, including the expression parser and the computer algebra rules.
 It needs **Python 3.9 or newer** - `math.gcd` and `math.lcm` are called with
 several arguments, which 3.9 introduced.
 
-The same code ships two ways: as the `mathkit/` package, and merged into a
-single self-contained script, `calc.py`, for pasting into an editor or
-notebook without a folder layout.
+The same code ships three ways:
+
+| File | Lines | What it is |
+| --- | --- | --- |
+| `mathkit/` | 4,600 | the full package, split by branch of mathematics, with `tests/` |
+| `calc.py` | 3,388 | the whole package merged into one self-contained script |
+| `calculus_calc.py` | 500 | a small calculus-only calculator: evaluate, differentiate, integrate, limits, Taylor series, roots |
+
+`calculus_calc.py` needs only **Python 3.6**, since it avoids the
+multi-argument `math.gcd`/`math.lcm` that set 3.9 for the other two.
 
 ### Quick start
 
