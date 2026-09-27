@@ -23,15 +23,26 @@
 # (b) purges any cached student_courses modules before importing, so
 # it works whether or not you've restarted the runtime.
 #
-# Copy each "### CELL n" block below into its own Colab cell, in order.
+# HOW TO USE THIS FILE
+# ------------------------------------------------------------
+# Each cell's content is fenced between a ">>> COPY CELL N BELOW >>>"
+# line and a "<<< COPY CELL N ABOVE <<<" line. Copy ONLY the lines
+# strictly between those two fences into a fresh Colab cell — do NOT
+# include the fence lines themselves. This matters most for any cell
+# starting with %%writefile: that must be the very first line typed
+# into the cell, with nothing above it (no comments, no blank lines),
+# or Colab will raise:
+#     UsageError: Line magic function `%%writefile` not found.
 # ============================================================
 
-### CELL 1
+
+# >>> COPY CELL 1 BELOW >>>
 !mkdir -p student_courses
 print("Created 'student_courses' directory")
+# <<< COPY CELL 1 ABOVE <<<
 
 
-### CELL 2
+# >>> COPY CELL 2 BELOW >>>
 %%writefile student_courses/__init__.py
 # This file makes 'student_courses' a Python package
 
@@ -42,9 +53,10 @@ from . import grades
 from . import main_menu
 
 print("Created 'student_courses/__init__.py'")
+# <<< COPY CELL 2 ABOVE <<<
 
 
-### CELL 3
+# >>> COPY CELL 3 BELOW >>>
 %%writefile student_courses/courses.py
 class Student:
     def __init__(self, student_id, name, age, grade):
@@ -91,9 +103,10 @@ class Course:
 
 
 print("Created 'student_courses/courses.py'")
+# <<< COPY CELL 3 ABOVE <<<
 
 
-### CELL 4
+# >>> COPY CELL 4 BELOW >>>
 %%writefile student_courses/academics.py
 from .courses import Student, Course  # relative import
 
@@ -147,9 +160,10 @@ class Academics:
 
 
 print("Created 'student_courses/academics.py'")
+# <<< COPY CELL 4 ABOVE <<<
 
 
-### CELL 5
+# >>> COPY CELL 5 BELOW >>>
 %%writefile student_courses/grades.py
 from datetime import datetime
 from .courses import Student, Course  # relative import
@@ -221,12 +235,11 @@ class GradeBook:
 
 
 print("Created 'student_courses/grades.py'")
+# <<< COPY CELL 5 ABOVE <<<
 
 
-### CELL 6
+# >>> COPY CELL 6 BELOW >>>
 %%writefile student_courses/main_menu.py
-# NOTE: these were the bug -- must be relative imports since this
-# module lives inside the student_courses package.
 from .academics import Academics
 from .courses import Student, Course
 from .grades import Grade, GradeBook
@@ -419,14 +432,10 @@ class MainMenu:
 
 
 print("Created 'student_courses/main_menu.py'")
+# <<< COPY CELL 6 ABOVE <<<
 
 
-### CELL 7
-# Purge any previously cached copies of the package before importing.
-# This is what actually fixes the AttributeError: without a runtime
-# restart, Python keeps reusing whatever `student_courses` object it
-# built the first time this session ran `import student_courses`,
-# and that stale object doesn't have `.main_menu` yet.
+# >>> COPY CELL 7 BELOW >>>
 import sys
 
 for mod_name in list(sys.modules):
@@ -435,6 +444,6 @@ for mod_name in list(sys.modules):
 
 import student_courses
 
-# Create an instance of the MainMenu and run it
 menu = student_courses.main_menu.MainMenu()
 menu.run()
+# <<< COPY CELL 7 ABOVE <<<
