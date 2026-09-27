@@ -1,0 +1,440 @@
+# ============================================================
+# student_courses — fixed Colab notebook script
+#
+# WHAT WAS CAUSING THE AttributeError
+# ------------------------------------------------------------
+# 1. student_courses/main_menu.py used ABSOLUTE imports:
+#        from academics import Academics
+#        from courses import Student, Course
+#        from grades import Grade, GradeBook
+#    Inside a package these must be RELATIVE imports (from .academics
+#    import Academics, etc.), otherwise Python looks for top-level
+#    modules named "academics"/"courses"/"grades" that don't exist.
+#
+# 2. Even after fixing the imports, Colab keeps `student_courses`
+#    (and its submodules) cached in sys.modules from earlier cell
+#    runs. Re-running `%%writefile` just rewrites the file on disk —
+#    it does NOT re-import it. So `import student_courses` reuses the
+#    stale cached module object, which was built before main_menu.py
+#    existed, and `student_courses.main_menu` is missing:
+#        AttributeError: module 'student_courses' has no attribute 'main_menu'
+#
+# The fix below (a) makes main_menu.py use relative imports and
+# (b) purges any cached student_courses modules before importing, so
+# it works whether or not you've restarted the runtime.
+#
+# Copy each "### CELL n" block below into its own Colab cell, in order.
+# ============================================================
+
+### CELL 1
+!mkdir -p student_courses
+print("Created 'student_courses' directory")
+
+
+### CELL 2
+%%writefile student_courses/__init__.py
+# This file makes 'student_courses' a Python package
+
+# Expose submodules directly under the package namespace
+from . import courses
+from . import academics
+from . import grades
+from . import main_menu
+
+print("Created 'student_courses/__init__.py'")
+
+
+### CELL 3
+%%writefile student_courses/courses.py
+class Student:
+    def __init__(self, student_id, name, age, grade):
+        self.student_id = student_id
+        self.name = name
+        self.age = age
+        self.grade = grade
+
+    def change_age(self, new_age):
+        if isinstance(new_age, int) and new_age > 0:
+            self.age = new_age
+            return f"Student {self.name}'s age updated to {new_age}."
+        else:
+            return "Invalid age provided."
+
+    def change_grade(self, new_grade):
+        valid_grades = ['A', 'B', 'C', 'D', 'F']
+        if isinstance(new_grade, str) and new_grade.upper() in valid_grades:
+            self.grade = new_grade.upper()
+            return f"Student {self.name}'s grade updated to {self.grade}."
+        else:
+            return "Invalid grade provided (use A, B, C, D, F)."
+
+    def change_name(self, new_name: str):
+        if isinstance(new_name, str) and new_name.strip():
+            old_name = self.name
+            self.name = new_name.strip()
+            return f"Student name changed from '{old_name}' to '{self.name}'."
+        else:
+            return "Invalid name provided."
+
+    def __repr__(self):
+        return f"Student(ID:{self.student_id}, Name:'{self.name}', Age:{self.age}, Grade:'{self.grade}')"
+
+
+class Course:
+    def __init__(self, course_code, name, credits):
+        self.course_code = course_code
+        self.name = name
+        self.credits = credits
+
+    def __repr__(self):
+        return f"Course(Code:'{self.course_code}', Name:'{self.name}', Credits:{self.credits})"
+
+
+print("Created 'student_courses/courses.py'")
+
+
+### CELL 4
+%%writefile student_courses/academics.py
+from .courses import Student, Course  # relative import
+
+class Academics:
+    def __init__(self, department_name):
+        self.department_name = department_name
+        # self.courses: { course_name (str): { student_id (int): Student_object } }
+        self.courses = {}
+
+    def add_student_to_course(self, student_obj: Student, course_name: str):
+        if not isinstance(student_obj, Student):
+            return "Error: Must provide a Student object."
+
+        if course_name not in self.courses:
+            self.courses[course_name] = {}
+
+        if student_obj.student_id not in self.courses[course_name]:
+            self.courses[course_name][student_obj.student_id] = student_obj
+            return f"SUCCESS: Student '{student_obj.name}' (ID: {student_obj.student_id}) added to course '{course_name}'."
+        else:
+            return f"WARNING: Student '{student_obj.name}' (ID: {student_obj.student_id}) is already enrolled in '{course_name}'."
+
+    def remove_student_from_course(self, student_id: int, course_name: str):
+        if course_name in self.courses and student_id in self.courses[course_name]:
+            student_name = self.courses[course_name][student_id].name
+            del self.courses[course_name][student_id]
+            return f"SUCCESS: Student '{student_name}' (ID: {student_id}) removed from course '{course_name}'."
+        else:
+            return f"WARNING: Student ID {student_id} not found in course '{course_name}'. Please ensure the student ID and course name are correct."
+
+    def get_student_in_course(self, student_id: int, course_name: str):
+        return self.courses.get(course_name, {}).get(student_id)
+
+    def get_students_in_course(self, course_name: str):
+        return list(self.courses.get(course_name, {}).values())
+
+    def display_course_rosters(self):
+        print(f"\n--- Roster for {self.department_name} Department ---")
+        if not self.courses:
+            print("No courses currently offered.")
+            return
+
+        for course_name, students_dict in self.courses.items():
+            print(f"Course: {course_name} (Total students: {len(students_dict)})")
+            if students_dict:
+                for student_id, student_obj in students_dict.items():
+                    print(f"  - {student_obj.name} (ID: {student_id}, Age: {student_obj.age}, Grade: {student_obj.grade})")
+            else:
+                print("  (No students enrolled)")
+        print("-----------------------------------\n")
+
+
+print("Created 'student_courses/academics.py'")
+
+
+### CELL 5
+%%writefile student_courses/grades.py
+from datetime import datetime
+from .courses import Student, Course  # relative import
+
+class Grade:
+    def __init__(self, student: Student, course: Course, score: float, date: datetime = None):
+        self.student = student
+        self.course = course
+        self.score = score
+        self.date = date if date else datetime.now()
+
+    def to_letter_grade(self):
+        if self.score >= 90: return 'A'
+        elif self.score >= 80: return 'B'
+        elif self.score >= 70: return 'C'
+        elif self.score >= 60: return 'D'
+        else: return 'F'
+
+    def __repr__(self):
+        return f"Grade(Student:{self.student.name}, Course:{self.course.name}, Score:{self.score}, Letter:{self.to_letter_grade()}, Date:{self.date.strftime('%Y-%m-%d')})"
+
+
+class GradeBook:
+    def __init__(self, name="University GradeBook"):
+        self.name = name
+        # self.grades: { student_id (int): { course_code (str): list[Grade_object] } }
+        self.grades = {}
+
+    def add_grade(self, grade: Grade):
+        if not isinstance(grade, Grade):
+            raise ValueError("Please enter a valid Grade object. A Grade object is required to add grades.")
+
+        student_id = grade.student.student_id
+        course_code = grade.course.course_code
+
+        if student_id not in self.grades:
+            self.grades[student_id] = {}
+        if course_code not in self.grades[student_id]:
+            self.grades[student_id][course_code] = []
+
+        self.grades[student_id][course_code].append(grade)
+        return f"Grade {grade.score} recorded for {grade.student.name} in {grade.course.name}."
+
+    def get_grades_for_student_in_course(self, student_id: int, course_code: str):
+        return self.grades.get(student_id, {}).get(course_code, [])
+
+    def get_gpa_for_student(self, student: Student):
+        student_grades = self.grades.get(student.student_id, {})
+        if not student_grades:
+            return 0.0
+
+        total_points = 0
+        total_credits = 0
+        grade_to_points = {'A': 4.0, 'B': 3.0, 'C': 2.0, 'D': 1.0, 'F': 0.0}
+
+        for course_code, grades_list in student_grades.items():
+            if grades_list:
+                latest_grade = max(grades_list, key=lambda g: g.date)
+                course_obj = latest_grade.course
+                if course_obj:
+                    letter_grade = latest_grade.to_letter_grade()
+                    points = grade_to_points.get(letter_grade, 0.0)
+                    total_points += points * course_obj.credits
+                    total_credits += course_obj.credits
+
+        if total_credits == 0:
+            return 0.0
+        return round(total_points / total_credits, 2)
+
+
+print("Created 'student_courses/grades.py'")
+
+
+### CELL 6
+%%writefile student_courses/main_menu.py
+# NOTE: these were the bug -- must be relative imports since this
+# module lives inside the student_courses package.
+from .academics import Academics
+from .courses import Student, Course
+from .grades import Grade, GradeBook
+from datetime import datetime
+
+class MainMenu:
+    def __init__(self):
+        self.academics = Academics("University Department")
+        self.gradebook = GradeBook("University GradeBook")
+        self.students = {}
+        self.courses = {}
+        print("\n--- Initializing Student Management System ---")
+        print("Default department and gradebook created.")
+
+    def _get_input(self, prompt, type_func=str, error_message="Please enter valid input."):
+        while True:
+            try:
+                user_input = input(prompt).strip()
+                if not user_input:
+                    raise ValueError("Input cannot be empty.")
+                return type_func(user_input)
+            except ValueError:
+                print(f"Invalid input: {error_message}")
+            except Exception as e:
+                print(f"An unexpected error occurred: {e}")
+
+    def _display_menu(self):
+        print("\n--- Main Menu ---")
+        print("1. Add New Student")
+        print("2. Enroll Student in Course")
+        print("3. Remove Student from Course")
+        print("4. Update Student Details (Age/Grade/Name)")
+        print("5. Add New Course")
+        print("6. Assign Grade to Student")
+        print("7. Display Course Rosters")
+        print("8. Calculate Student GPA")
+        print("9. List All Registered Students")
+        print("10. List All Defined Courses")
+        print("0. Exit")
+        print("-----------------")
+
+    def _add_new_student(self):
+        print("\n--- Add New Student ---")
+        student_id = self._get_input("Enter student ID (integer): ", int, "Student ID must be an integer.")
+        if student_id in self.students:
+            print(f"WARNING: Student with ID {student_id} is already registered. Please choose a different ID or update existing student.")
+            return
+        name = self._get_input("Enter student name: ")
+        age = self._get_input("Enter student age (integer): ", int, "Age must be an integer.")
+        grade = self._get_input("Enter initial grade (e.g., A, B, C): ").upper()
+        new_student = Student(student_id, name, age, grade)
+        self.students[student_id] = new_student
+        print(f"SUCCESS: Student '{name}' (ID: {student_id}) added.")
+
+    def _enroll_student_in_course(self):
+        print("\n--- Enroll Student in Course ---")
+        student_id = self._get_input("Enter student ID to enroll: ", int, "Student ID must be an integer.")
+        if student_id not in self.students:
+            print(f"ERROR: Student with ID {student_id} not found. Please add the student first.")
+            return
+
+        course_name = self._get_input("Enter course name: ")
+        if course_name not in self.courses:
+            print(f"ERROR: Course '{course_name}' not found. Please add the course first.")
+            return
+
+        result = self.academics.add_student_to_course(self.students[student_id], course_name)
+        print(result)
+
+    def _remove_student_from_course(self):
+        print("\n--- Remove Student from Course ---")
+        student_id = self._get_input("Enter student ID to remove: ", int, "Student ID must be an integer.")
+        course_name = self._get_input("Enter course name to remove from: ")
+        result = self.academics.remove_student_from_course(student_id, course_name)
+        print(result)
+
+    def _update_student_details(self):
+        print("\n--- Update Student Details ---")
+        student_id = self._get_input("Enter student ID to update: ", int, "Student ID must be an integer.")
+        student = self.students.get(student_id)
+        if not student:
+            print(f"ERROR: Student with ID {student_id} not found.")
+            return
+
+        print(f"Current details for {student.name}: Age={student.age}, Grade={student.grade}")
+
+        update_choice = self._get_input("What would you like to update? (name/age/grade): ").lower()
+        if update_choice == 'name':
+            new_name = self._get_input("Enter new name: ")
+            print(student.change_name(new_name))
+        elif update_choice == 'age':
+            new_age = self._get_input("Enter new age (integer): ", int, "Age must be an integer.")
+            print(student.change_age(new_age))
+        elif update_choice == 'grade':
+            new_grade = self._get_input("Enter new grade (e.g., A, B, C): ").upper()
+            print(student.change_grade(new_grade))
+        else:
+            print("Invalid update choice.")
+
+    def _add_new_course(self):
+        print("\n--- Add New Course ---")
+        course_code = self._get_input("Enter course code (e.g., CS101): ")
+        if course_code in self.courses:
+            print(f"WARNING: Course with code '{course_code}' already exists.")
+            return
+        name = self._get_input("Enter course name: ")
+        credits = self._get_input("Enter course credits (integer): ", int, "Credits must be an integer.")
+        new_course = Course(course_code, name, credits)
+        self.courses[course_code] = new_course
+        print(f"SUCCESS: Course '{name}' ({course_code}) added.")
+
+    def _assign_grade_to_student(self):
+        print("\n--- Assign Grade to Student ---")
+        student_id = self._get_input("Enter student ID: ", int, "Student ID must be an integer.")
+        student = self.students.get(student_id)
+        if not student:
+            print(f"ERROR: Student with ID {student_id} not found.")
+            return
+
+        course_code = self._get_input("Enter course code: ")
+        course = self.courses.get(course_code)
+        if not course:
+            print(f"ERROR: Course with code '{course_code}' not found.")
+            return
+
+        score = self._get_input("Enter score (float, 0-100): ", float, "Score must be a number.")
+        grade = Grade(student, course, score, datetime.now())
+        print(self.gradebook.add_grade(grade))
+
+    def _display_rosters(self):
+        self.academics.display_course_rosters()
+
+    def _calculate_student_gpa(self):
+        print("\n--- Calculate Student GPA ---")
+        student_id = self._get_input("Enter student ID: ", int, "Student ID must be an integer.")
+        student = self.students.get(student_id)
+        if not student:
+            print(f"ERROR: Student with ID {student_id} not found.")
+            return
+
+        gpa = self.gradebook.get_gpa_for_student(student)
+        print(f"GPA for {student.name} (ID: {student_id}): {gpa:.2f}")
+
+    def _list_all_students(self):
+        print("\n--- All Registered Students ---")
+        if not self.students:
+            print("No students registered.")
+            return
+        for student_id, student in self.students.items():
+            print(student)
+
+    def _list_all_courses(self):
+        print("\n--- All Defined Courses ---")
+        if not self.courses:
+            print("No courses defined.")
+            return
+        for course_code, course in self.courses.items():
+            print(course)
+
+    def run(self):
+        while True:
+            self._display_menu()
+            choice = self._get_input("Enter your choice: ", int, "Please enter a number between 0 and 10.")
+
+            if choice == 1:
+                self._add_new_student()
+            elif choice == 2:
+                self._enroll_student_in_course()
+            elif choice == 3:
+                self._remove_student_from_course()
+            elif choice == 4:
+                self._update_student_details()
+            elif choice == 5:
+                self._add_new_course()
+            elif choice == 6:
+                self._assign_grade_to_student()
+            elif choice == 7:
+                self._display_rosters()
+            elif choice == 8:
+                self._calculate_student_gpa()
+            elif choice == 9:
+                self._list_all_students()
+            elif choice == 10:
+                self._list_all_courses()
+            elif choice == 0:
+                print("Exiting program. Goodbye!")
+                break
+            else:
+                print("Invalid choice. Please try again.")
+
+
+print("Created 'student_courses/main_menu.py'")
+
+
+### CELL 7
+# Purge any previously cached copies of the package before importing.
+# This is what actually fixes the AttributeError: without a runtime
+# restart, Python keeps reusing whatever `student_courses` object it
+# built the first time this session ran `import student_courses`,
+# and that stale object doesn't have `.main_menu` yet.
+import sys
+
+for mod_name in list(sys.modules):
+    if mod_name == "student_courses" or mod_name.startswith("student_courses."):
+        del sys.modules[mod_name]
+
+import student_courses
+
+# Create an instance of the MainMenu and run it
+menu = student_courses.main_menu.MainMenu()
+menu.run()
