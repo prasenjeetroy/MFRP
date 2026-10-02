@@ -98,11 +98,7 @@ button { font: inherit; color: inherit; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; text-align: left; padding: 0; transition: transform .18s, box-shadow .18s; }
 .card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
-.card .ph { position: relative; aspect-ratio: 16 / 10; max-width: 100%; overflow: hidden; background: #0b0820; }
-.card .ph img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s; }
-.card:hover .ph img { transform: scale(1.05); }
-.card .ph .badge { left: 8px; bottom: 8px; }
-.card .body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.card .body { padding: 18px 18px 20px; flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .card .meta { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
 .zone { font-family: var(--f-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; display: inline-flex; gap: 6px; align-items: center; }
 .zone .dot { width: 8px; height: 8px; border-radius: 50%; }
@@ -125,23 +121,16 @@ button { font: inherit; color: inherit; }
 dialog { border: none; padding: 0; border-radius: 20px; width: min(980px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); background: var(--surface); color: var(--fg); box-shadow: 0 30px 80px rgba(0,0,0,.5); }
 dialog::backdrop { background: rgba(10, 6, 20, .7); }
 .dlg { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
-.gallery { background: #0b0820; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
+.gallery { background: var(--surface-2); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
 .gallery .main { position: relative; }
-.gallery .main { aspect-ratio: 4 / 3; max-width: 100%; border-radius: 12px; overflow: hidden; background: #0b0820; }
-.gallery .main .blur { position: absolute; inset: -20px; background-size: cover; background-position: center; filter: blur(18px) brightness(.55); }
-.gallery .main img { position: relative; width: 100%; height: 100%; object-fit: contain; display: block; }
-.badge { position: absolute; left: 10px; bottom: 10px; font-family: var(--f-mono); font-size: 11px; background: rgba(0,0,0,.6); color: #fff; padding: 3px 8px; border-radius: 6px; }
-.thumbs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.thumbs button { padding: 0; border: 2px solid transparent; border-radius: 9px; overflow: hidden; cursor: pointer; background: none; }
-.thumbs button[aria-current="true"] { border-color: #F4B73C; }
-.thumbs img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+.gallery svg { width: 100%; height: auto; display: block; border-radius: 12px; }
 .realphotos { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 12px; border-radius: 10px; background: #F4B73C; color: #1D1430; font-weight: 600; text-decoration: none; font-size: 14px; }
-.gallery .cap { color: #CFC5E0; font-size: 13px; margin: 0; }
+.gallery .cap { color: var(--muted); font-size: 13px; margin: 0; }
 .info { padding: 24px; overflow-y: auto; max-height: calc(100dvh - 24px); display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .info h2 { font-size: 34px; }
 .info .bn { color: var(--sindoor); font-weight: 600; font-size: 17px; }
 .info p { margin: 0; }
-.close { position: absolute; top: 10px; right: 10px; width: 38px; height: 38px; border-radius: 50%; border: none; background: rgba(0,0,0,.6); color: #fff; font-size: 20px; cursor: pointer; z-index: 2; }
+.close { position: absolute; top: 10px; right: 10px; width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--fg); font-size: 20px; cursor: pointer; z-index: 2; }
 .facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 16px; margin: 0; }
 .facts div { min-width: 0; }
 .facts dt { font-family: var(--f-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
@@ -150,8 +139,7 @@ dialog::backdrop { background: rgba(10, 6, 20, .7); }
 .crowd i { width: 8px; height: 12px; border-radius: 2px; background: var(--line); }
 .crowd i.on { background: var(--sindoor); }
 .highlights { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
-.locbox { background: var(--surface-2); border-radius: 14px; padding: 14px; display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 14px; align-items: center; }
-.locbox svg { width: 100%; height: auto; display: block; border-radius: 8px; background: var(--land); }
+.locbox { background: var(--surface-2); border-radius: 14px; padding: 14px; display: grid; gap: 6px; }
 .addr { font-weight: 500; }
 .coords { font-family: var(--f-mono); font-size: 13px; color: var(--muted); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .copy { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 2px 8px; cursor: pointer; font-size: 12px; }
@@ -169,10 +157,9 @@ dialog::backdrop { background: rgba(10, 6, 20, .7); }
 }
 @media (max-width: 480px) {
   .tithi b { font-size: 15px; }
-  .locbox { grid-template-columns: 90px minmax(0, 1fr); }
   .facts { grid-template-columns: minmax(0, 1fr); }
 }
-@media (prefers-reduced-motion: reduce) { .card .ph img, .band img, .card, .marker circle.pin { transition: none; } .card:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .band img, .card, .marker circle.pin { transition: none; } .card:hover { transform: none; } }
 </style>
 
 <div class="wrap">
@@ -230,15 +217,15 @@ dialog::backdrop { background: rgba(10, 6, 20, .7); }
     <div class="tip"><h3>Dashami is for Bagbazar</h3><p>Sindoor khela on Bijoya Dashami at the North Kolkata bari and baroari pujas is the festival's emotional close. Bring clothes you don't mind turning red.</p></div>
   </section>
 
-  <footer class="foot">Photos on this page show Durga Puja in Kolkata and are representative. They are not necessarily of the pandal they appear with. Each pandal's page has a “See real photos” link for that pandal. Pandal themes change every year and are announced close to Mahalaya. Check the organisers' pages for this year's theme.</footer>
+  <footer class="foot">The photos at the top show Durga Puja in Kolkata in general and are not tied to any pandal listed here. Each pandal's page has a “See real photos” link for that pandal. Pandal themes change every year and are announced close to Mahalaya. Check the organisers' pages for this year's theme.</footer>
 </div>
 
 <dialog id="dlg" aria-labelledby="d-name">
   <button class="close" id="d-close" aria-label="Close">×</button>
   <div class="dlg">
     <div class="gallery">
-      <div class="main"><div class="blur" id="d-blur"></div><img id="d-main" alt=""><span class="badge" id="d-badge">Representative photo</span></div>
-      <div class="thumbs" id="d-thumbs"></div>
+      <div class="eyebrow">Where it is</div>
+      <div class="main"><svg id="d-big" viewBox="0 0 630 800" role="img" aria-label="Map showing the pandal's location"></svg></div>
       <p class="cap" id="d-cap"></p>
       <a class="realphotos" id="d-photos" target="_blank" rel="noopener">See real photos of this pandal ↗</a>
     </div>
@@ -255,12 +242,9 @@ dialog::backdrop { background: rgba(10, 6, 20, .7); }
         <ul class="highlights" id="d-high"></ul>
       </div>
       <div class="locbox">
-        <svg id="d-mini" viewBox="0 0 630 800" aria-hidden="true"></svg>
-        <div style="min-width:0;display:grid;gap:6px">
-          <div class="eyebrow">Location</div>
-          <div class="addr" id="d-addr"></div>
-          <div class="coords"><span id="d-coords"></span><button class="copy" id="d-copy">Copy</button></div>
-        </div>
+        <div class="eyebrow">Location</div>
+        <div class="addr" id="d-addr"></div>
+        <div class="coords"><span id="d-coords"></span><button class="copy" id="d-copy">Copy</button></div>
       </div>
       <div class="actions">
         <a class="btn primary" id="d-maps" target="_blank" rel="noopener">Open in Google Maps ↗</a>
@@ -454,32 +438,13 @@ PANDALS.forEach((p, i) => {
 });
 function hot(id, on) { const p = PANDALS.find(x => x.id === id); p.marker.classList.toggle("hot", on); if (on) markerLayer.appendChild(p.marker); }
 
-/* ---------- Photos ---------- */
-const PHOTOS = {
-  palace:  { src:"photos/palace-pandal.jpg", cap:"A palace-style pandal lit in gold" },
-  temple:  { src:"photos/temple-pandal.jpg", cap:"A temple-style pandal at night" },
-  golden:  { src:"photos/golden-chalchitra.jpg", cap:"Durga before a golden chalchitra" },
-  arch:    { src:"photos/red-arch-idol.jpg", cap:"A theme pandal's lit arch and pratima" },
-  ekchala: { src:"photos/ekchala-idol.jpg", cap:"A traditional ek-chala pratima" },
-  crowd:   { src:"photos/sindoor-crowd.jpg", cap:"Devotees before a traditional pratima" }
-};
-const BY_STYLE = {
-  traditional: ["ekchala","golden","crowd"],
-  temple: ["temple","palace","golden"],
-  rajbari: ["ekchala","crowd","golden"],
-  tower: ["palace","temple","arch"],
-  art: ["arch","golden","palace"],
-  pond: ["palace","arch","ekchala"]
-};
-function photosFor(p, i) { const list = BY_STYLE[p.style].slice(); const k = i % list.length; return list.slice(k).concat(list.slice(0, k)).map(x => PHOTOS[x]); }
 
 /* ---------- Cards ---------- */
 const cardsEl = document.getElementById("cards");
 PANDALS.forEach(p => {
   const b = document.createElement("button");
   b.className = "card"; b.dataset.id = p.id;
-  p.photos = photosFor(p, PANDALS.indexOf(p));
-  b.innerHTML = `<div class="ph"><img src="${p.photos[0].src}" alt="" loading="lazy"><span class="badge">Representative photo</span></div>
+  b.innerHTML = `
     <div class="body"><div class="meta"><span class="zone"><span class="dot" style="background:${ZONECOL[p.zone]}"></span>${p.zone}</span><span class="key">map ${p.key}</span></div>
     <h3>${p.name}</h3><div class="bn" lang="bn">${p.bn}</div><div class="tag">${p.tag}</div><div class="metro">Metro: ${p.metro}</div></div>`;
   b.addEventListener("click", () => openPandal(p));
@@ -509,15 +474,6 @@ applyFilter();
 
 /* ---------- Detail dialog ---------- */
 const dlg = document.getElementById("dlg");
-const mainCv = document.getElementById("d-main");
-let current = null;
-function setView(v) {
-  const ph = current.photos[v];
-  mainCv.src = ph.src; mainCv.alt = ph.cap;
-  document.getElementById("d-blur").style.backgroundImage = `url("${ph.src}")`;
-  document.getElementById("d-cap").textContent = ph.cap + ". Representative photo of Durga Puja in Kolkata, not necessarily " + current.name + ".";
-  document.querySelectorAll("#d-thumbs button").forEach((b, i) => b.setAttribute("aria-current", i === v));
-}
 function openPandal(p) {
   current = p;
   const q = encodeURIComponent(p.name + " Durga Puja Kolkata");
@@ -536,13 +492,15 @@ function openPandal(p) {
   document.getElementById("d-maps").href = "https://www.google.com/maps/search/?api=1&query=" + q;
   document.getElementById("d-dir").href = "https://www.google.com/maps/dir/?api=1&destination=" + q;
   document.getElementById("d-photos").href = "https://www.google.com/search?tbm=isch&q=" + q;
-  const mini = document.getElementById("d-mini"); baseMap(mini, false);
+  const big = document.getElementById("d-big"); baseMap(big, true);
   const [x, y] = proj(p.lat, p.lon);
-  mini.insertAdjacentHTML("beforeend", PANDALS.map(o => { const [ox, oy] = proj(o.lat, o.lon); return `<circle cx="${ox}" cy="${oy}" r="9" fill="var(--muted)" opacity=".35"/>`; }).join("") +
-    `<circle cx="${x}" cy="${y}" r="34" fill="none" stroke="var(--marigold)" stroke-width="8"/><circle cx="${x}" cy="${y}" r="18" fill="${ZONECOL[p.zone]}"/>`);
-  const th = document.getElementById("d-thumbs"); th.innerHTML = "";
-  p.photos.forEach((ph, i) => { const b = document.createElement("button"); b.setAttribute("aria-label", "Show photo: " + ph.cap); const im = document.createElement("img"); im.src = ph.src; im.alt = ""; b.appendChild(im); b.addEventListener("click", () => setView(i)); th.appendChild(b); });
-  setView(0);
+  const near = PANDALS.filter(o => o !== p).map(o => ({ o, d: Math.hypot(o.lat - p.lat, (o.lon - p.lon) * 0.924) })).sort((a, b) => a.d - b.d);
+  const right = x < 400;
+  big.insertAdjacentHTML("beforeend", PANDALS.filter(o => o !== p).map(o => { const [ox, oy] = proj(o.lat, o.lon); return `<circle cx="${ox}" cy="${oy}" r="8" fill="${ZONECOL[o.zone]}" opacity=".45"/>`; }).join("") +
+    `<circle cx="${x}" cy="${y}" r="26" fill="none" stroke="var(--marigold)" stroke-width="5"/><circle cx="${x}" cy="${y}" r="13" fill="${ZONECOL[p.zone]}" stroke="var(--surface)" stroke-width="3"/>` +
+    `<text x="${right ? x + 34 : x - 34}" y="${y + 7}" text-anchor="${right ? "start" : "end"}" font-family="Rozha One, Georgia, serif" font-size="24" fill="var(--fg)" stroke="var(--land)" stroke-width="6" paint-order="stroke">${p.name}</text>`);
+  const nb = near.slice(0, 2).map(n => n.o.name + " (" + (n.d * 111).toFixed(1) + " km)").join(" and ");
+  document.getElementById("d-cap").textContent = "Nearest pandals in this guide: " + nb + ", in a straight line.";
   if (!dlg.open) dlg.showModal();
   document.querySelector(".info").scrollTop = 0;
   try { history.replaceState(null, "", "#" + p.id); } catch (e) {}
