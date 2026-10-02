@@ -63,6 +63,16 @@ button { font: inherit; color: inherit; }
 .tithi.today span { color: #fff; }
 .mahalaya { font-size: 13px; color: var(--muted); margin-top: 10px; }
 
+/* Photo band */
+.band { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1.3fr; grid-template-rows: 170px 170px; gap: 8px; margin-block: 8px 28px; }
+.band figure { margin: 0; position: relative; overflow: hidden; border-radius: 14px; background: #0b0820; min-width: 0; }
+.band img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .8s ease; }
+.band figure:hover img { transform: scale(1.06); }
+.band figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 12px 8px; font-size: 13px; color: #fff; background: linear-gradient(transparent, rgba(0,0,0,.7)); }
+.band .f1 { grid-row: span 2; }
+.band .f4 { grid-row: span 2; }
+@media (max-width: 700px) { .band { grid-template-columns: 1fr 1fr; grid-template-rows: 200px 140px 140px; } .band .f1 { grid-column: span 2; grid-row: auto; } .band .f4 { grid-row: auto; } .band .f5 { display: none; } }
+
 /* Explorer */
 .toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; padding-block: 18px; border-top: 1px solid var(--line); position: sticky; top: env(safe-area-inset-top, 0px); background: var(--bg); z-index: 5; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -88,7 +98,10 @@ button { font: inherit; color: inherit; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; text-align: left; padding: 0; transition: transform .18s, box-shadow .18s; }
 .card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
-.card canvas { width: 100%; aspect-ratio: 16 / 10; display: block; background: #0b0820; }
+.card .ph { position: relative; aspect-ratio: 16 / 10; max-width: 100%; overflow: hidden; background: #0b0820; }
+.card .ph img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .5s; }
+.card:hover .ph img { transform: scale(1.05); }
+.card .ph .badge { left: 8px; bottom: 8px; }
 .card .body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .card .meta { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
 .zone { font-family: var(--f-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; display: inline-flex; gap: 6px; align-items: center; }
@@ -114,12 +127,14 @@ dialog::backdrop { background: rgba(10, 6, 20, .7); }
 .dlg { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
 .gallery { background: #0b0820; padding: 14px; display: flex; flex-direction: column; gap: 10px; }
 .gallery .main { position: relative; }
-.gallery .main canvas { width: 100%; aspect-ratio: 4 / 3; display: block; border-radius: 12px; }
+.gallery .main { aspect-ratio: 4 / 3; max-width: 100%; border-radius: 12px; overflow: hidden; background: #0b0820; }
+.gallery .main .blur { position: absolute; inset: -20px; background-size: cover; background-position: center; filter: blur(18px) brightness(.55); }
+.gallery .main img { position: relative; width: 100%; height: 100%; object-fit: contain; display: block; }
 .badge { position: absolute; left: 10px; bottom: 10px; font-family: var(--f-mono); font-size: 11px; background: rgba(0,0,0,.6); color: #fff; padding: 3px 8px; border-radius: 6px; }
 .thumbs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .thumbs button { padding: 0; border: 2px solid transparent; border-radius: 9px; overflow: hidden; cursor: pointer; background: none; }
 .thumbs button[aria-current="true"] { border-color: #F4B73C; }
-.thumbs canvas { width: 100%; aspect-ratio: 4 / 3; display: block; }
+.thumbs img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
 .realphotos { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 12px; border-radius: 10px; background: #F4B73C; color: #1D1430; font-weight: 600; text-decoration: none; font-size: 14px; }
 .gallery .cap { color: #CFC5E0; font-size: 13px; margin: 0; }
 .info { padding: 24px; overflow-y: auto; max-height: calc(100dvh - 24px); display: flex; flex-direction: column; gap: 16px; min-width: 0; }
@@ -157,7 +172,7 @@ dialog::backdrop { background: rgba(10, 6, 20, .7); }
   .locbox { grid-template-columns: 90px minmax(0, 1fr); }
   .facts { grid-template-columns: minmax(0, 1fr); }
 }
-@media (prefers-reduced-motion: reduce) { .card, .marker circle.pin { transition: none; } .card:hover { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .card .ph img, .band img, .card, .marker circle.pin { transition: none; } .card:hover { transform: none; } }
 </style>
 
 <div class="wrap">
@@ -175,6 +190,15 @@ dialog::backdrop { background: rgba(10, 6, 20, .7); }
       <div class="mahalaya">Mahalaya: Saturday 10 October 2026 · Dates follow the Bengali calendar.</div>
     </aside>
   </header>
+
+  <section class="band" aria-label="Durga Puja in Kolkata">
+    <figure class="f1"><img src="photos/palace-pandal.jpg" alt="A palace-style pandal lit in gold at night, with visitors in front"><figcaption>Pandals glow gold after dark</figcaption></figure>
+    <figure class="f2"><img src="photos/golden-chalchitra.jpg" alt="Durga idol with a golden chalchitra backdrop"><figcaption>The golden chalchitra</figcaption></figure>
+    <figure class="f3"><img src="photos/temple-pandal.jpg" alt="Temple-style pandal with a white shikhara, lit at night"><figcaption>Temple replicas</figcaption></figure>
+    <figure class="f4"><img src="photos/red-arch-idol.jpg" alt="Durga idol under a lit arch flanked by red lights and marigold garlands"><figcaption>Theme pandals</figcaption></figure>
+    <figure class="f5"><img src="photos/ekchala-idol.jpg" alt="Traditional ek-chala Durga idol with Lakshmi, Saraswati, Ganesh and Kartik"><figcaption>The ek-chala family</figcaption></figure>
+    <figure class="f6"><img src="photos/sindoor-crowd.jpg" alt="Women in red-bordered saris gathered before a traditional Durga idol"><figcaption>Devotees at the pratima</figcaption></figure>
+  </section>
 
   <div class="toolbar">
     <div class="chips" role="group" aria-label="Filter by area">
@@ -206,14 +230,14 @@ dialog::backdrop { background: rgba(10, 6, 20, .7); }
     <div class="tip"><h3>Dashami is for Bagbazar</h3><p>Sindoor khela on Bijoya Dashami at the North Kolkata bari and baroari pujas is the festival's emotional close. Bring clothes you don't mind turning red.</p></div>
   </section>
 
-  <footer class="foot">Pictures on this page are illustrations drawn for each pandal, not photographs. Each pandal's page has a “See real photos” link. Pandal themes change every year and are announced close to Mahalaya. Check the organisers' pages for this year's theme.</footer>
+  <footer class="foot">Photos on this page show Durga Puja in Kolkata and are representative. They are not necessarily of the pandal they appear with. Each pandal's page has a “See real photos” link for that pandal. Pandal themes change every year and are announced close to Mahalaya. Check the organisers' pages for this year's theme.</footer>
 </div>
 
 <dialog id="dlg" aria-labelledby="d-name">
   <button class="close" id="d-close" aria-label="Close">×</button>
   <div class="dlg">
     <div class="gallery">
-      <div class="main"><canvas id="d-main" width="960" height="720"></canvas><span class="badge" id="d-badge">Illustration</span></div>
+      <div class="main"><div class="blur" id="d-blur"></div><img id="d-main" alt=""><span class="badge" id="d-badge">Representative photo</span></div>
       <div class="thumbs" id="d-thumbs"></div>
       <p class="cap" id="d-cap"></p>
       <a class="realphotos" id="d-photos" target="_blank" rel="noopener">See real photos of this pandal ↗</a>
@@ -430,159 +454,34 @@ PANDALS.forEach((p, i) => {
 });
 function hot(id, on) { const p = PANDALS.find(x => x.id === id); p.marker.classList.toggle("hot", on); if (on) markerLayer.appendChild(p.marker); }
 
-/* ---------- Illustrations ---------- */
-function rng(seed) { let a = 0; for (const c of seed) a = (a * 31 + c.charCodeAt(0)) >>> 0; return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
-const hsl = (h, s, l, a = 1) => `hsla(${h},${s}%,${l}%,${a})`;
-function sky(c, w, h, p) {
-  const g = c.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, "#07051a"); g.addColorStop(.6, hsl((p.hue + 260) % 360, 45, 14)); g.addColorStop(1, hsl(p.hue, 55, 22));
-  c.fillStyle = g; c.fillRect(0, 0, w, h);
-}
-function bokeh(c, w, h, r, n, yMax) {
-  for (let i = 0; i < n; i++) {
-    const x = r() * w, y = r() * h * yMax, rad = 2 + r() * w * .02;
-    const col = r() < .6 ? "255,190,70" : (r() < .5 ? "255,90,110" : "190,170,255");
-    const g = c.createRadialGradient(x, y, 0, x, y, rad);
-    g.addColorStop(0, `rgba(${col},.85)`); g.addColorStop(1, `rgba(${col},0)`);
-    c.fillStyle = g; c.beginPath(); c.arc(x, y, rad, 0, 7); c.fill();
-  }
-}
-function glow(c, x, y, rad, col) { const g = c.createRadialGradient(x, y, 0, x, y, rad); g.addColorStop(0, col); g.addColorStop(1, "rgba(0,0,0,0)"); c.fillStyle = g; c.fillRect(x - rad, y - rad, rad * 2, rad * 2); }
-function crowd(c, w, h, r) {
-  c.fillStyle = "#06040f";
-  for (let row = 0; row < 2; row++) {
-    const base = h - (1 - row) * h * .04;
-    for (let x = -10; x < w + 20; x += w * .035 + r() * w * .02) {
-      const hr = w * (.016 + r() * .006), top = base - h * (.07 + r() * .04) + row * h * .03;
-      c.beginPath(); c.arc(x, top, hr, 0, 7); c.fill();
-      c.beginPath(); c.ellipse(x, top + hr * 3.2, hr * 1.9, hr * 2.6, 0, Math.PI, 0); c.lineTo(x + hr * 1.9, h); c.lineTo(x - hr * 1.9, h); c.fill();
-    }
-  }
-}
-function lightString(c, x0, y0, x1, y1, sag, n, col) {
-  c.strokeStyle = "rgba(255,255,255,.12)"; c.lineWidth = 1; c.beginPath(); c.moveTo(x0, y0); c.quadraticCurveTo((x0+x1)/2, (y0+y1)/2 + sag, x1, y1); c.stroke();
-  for (let i = 0; i <= n; i++) { const t = i / n, x = (1-t)*(1-t)*x0 + 2*(1-t)*t*(x0+x1)/2 + t*t*x1, y = (1-t)*(1-t)*y0 + 2*(1-t)*t*((y0+y1)/2+sag) + t*t*y1; glow(c, x, y, 7, col); c.fillStyle = "#fff"; c.fillRect(x-1, y-1, 2, 2); }
-}
-function facade(c, w, h, p, r) {
-  const cx = w / 2, gy = h * .86, acc = hsl(p.hue, 80, 60), dark = hsl(p.hue, 50, 18), mid = hsl(p.hue, 55, 34);
-  glow(c, cx, gy - h * .3, w * .5, hsl(p.hue, 90, 55, .35));
-  c.lineJoin = "round";
-  if (p.style === "temple") {
-    c.fillStyle = mid; c.fillRect(cx - w*.3, gy - h*.3, w*.6, h*.3);
-    for (let i = 0; i < 4; i++) { const tw = w*(.26 - i*.055), y = gy - h*.3 - i*h*.1; c.fillStyle = i % 2 ? dark : mid; c.beginPath(); c.moveTo(cx - tw, y); c.lineTo(cx - tw*.8, y - h*.1); c.lineTo(cx + tw*.8, y - h*.1); c.lineTo(cx + tw, y); c.fill(); }
-    c.fillStyle = acc; c.beginPath(); c.arc(cx, gy - h*.72, w*.03, 0, 7); c.fill(); c.fillRect(cx - 1.5, gy - h*.8, 3, h*.06);
-    [-.22, .22].forEach(o => { c.fillStyle = dark; c.fillRect(cx + o*w - w*.05, gy - h*.42, w*.1, h*.42); c.fillStyle = mid; c.beginPath(); c.moveTo(cx + o*w - w*.06, gy - h*.42); c.lineTo(cx + o*w, gy - h*.52); c.lineTo(cx + o*w + w*.06, gy - h*.42); c.fill(); });
-  } else if (p.style === "traditional") {
-    c.fillStyle = mid; c.fillRect(cx - w*.34, gy - h*.38, w*.68, h*.38);
-    c.fillStyle = dark; c.beginPath(); c.moveTo(cx - w*.38, gy - h*.38); c.lineTo(cx, gy - h*.6); c.lineTo(cx + w*.38, gy - h*.38); c.fill();
-    c.strokeStyle = acc; c.lineWidth = 2; for (let i = 0; i < 9; i++) { const x = cx - w*.34 + i * w*.085; c.beginPath(); c.moveTo(x, gy - h*.38); c.lineTo(x, gy); c.stroke(); }
-    for (let i = 0; i < 3; i++) { const x = cx + (i-1) * w*.14; glow(c, x, gy - h*.3, w*.05, "rgba(255,220,140,.9)"); }
-  } else if (p.style === "tower") {
-    c.fillStyle = dark; c.beginPath(); c.moveTo(cx - w*.08, gy); c.lineTo(cx - w*.03, gy - h*.7); c.lineTo(cx, gy - h*.82); c.lineTo(cx + w*.03, gy - h*.7); c.lineTo(cx + w*.08, gy); c.fill();
-    for (let i = 0; i < 26; i++) { const y = gy - i * h*.027; const ww = w*.08 * (1 - i/32); c.fillStyle = hsl(p.hue + i*6, 90, 65, .8); c.fillRect(cx - ww, y - 2, ww*2, 2); }
-    c.fillStyle = mid; c.fillRect(cx - w*.3, gy - h*.16, w*.6, h*.16);
-  } else if (p.style === "rajbari") {
-    c.fillStyle = hsl(p.hue, 35, 40); c.fillRect(cx - w*.4, gy - h*.42, w*.8, h*.42);
-    c.fillStyle = hsl(p.hue, 30, 50); c.fillRect(cx - w*.42, gy - h*.46, w*.84, h*.05);
-    c.beginPath(); c.moveTo(cx - w*.16, gy - h*.46); c.lineTo(cx, gy - h*.56); c.lineTo(cx + w*.16, gy - h*.46); c.fill();
-    for (let i = 0; i < 8; i++) { const x = cx - w*.36 + i * w*.103; c.fillStyle = "rgba(255,240,210,.85)"; c.fillRect(x, gy - h*.4, w*.025, h*.36); c.fillStyle = "rgba(255,190,90,.45)"; c.fillRect(x + w*.03, gy - h*.38, w*.065, h*.3); }
-  } else if (p.style === "pond") {
-    c.fillStyle = mid; c.fillRect(cx - w*.3, gy - h*.45, w*.6, h*.25);
-    c.beginPath(); c.moveTo(cx - w*.3, gy - h*.45); c.lineTo(cx, gy - h*.6); c.lineTo(cx + w*.3, gy - h*.45); c.fillStyle = dark; c.fill();
-    for (let i = 0; i < 40; i++) { const x = cx - w*.3 + r() * w*.6, y = gy - h*.45 + r() * h*.25; glow(c, x, y, 6, hsl(p.hue + r()*80, 90, 65, .9)); }
-    const wy = gy - h*.2; c.fillStyle = "rgba(10,20,50,.85)"; c.fillRect(0, wy, w, h - wy);
-    for (let i = 0; i < 60; i++) { const x = cx - w*.3 + r() * w*.6, y = wy + r() * h*.18; c.fillStyle = hsl(p.hue + r()*80, 90, 65, .35 + r()*.3); c.fillRect(x, y, 6 + r()*24, 2); }
-    return;
-  } else {
-    const cols = 7, rows = 5, pw = w*.66, ph = h*.48, x0 = cx - pw/2, y0 = gy - ph;
-    for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) {
-      const x = x0 + i * pw/cols, y = y0 + j * ph/rows, s = pw/cols;
-      c.fillStyle = hsl(p.hue + (r()*40 - 20), 55, 22 + r()*25); c.fillRect(x+1, y+1, s-2, ph/rows - 2);
-      if (r() < .5) { c.strokeStyle = hsl(p.hue + 30, 90, 70, .8); c.lineWidth = 1.5; c.beginPath(); c.arc(x + s/2, y + ph/rows/2, Math.min(s, ph/rows)*.3, 0, 7); c.stroke(); }
-    }
-    c.fillStyle = "#0b0820"; c.beginPath(); c.moveTo(cx - w*.07, gy); c.lineTo(cx - w*.07, gy - h*.18); c.arc(cx, gy - h*.18, w*.07, Math.PI, 0); c.lineTo(cx + w*.07, gy); c.fill();
-    glow(c, cx, gy - h*.12, w*.07, "rgba(255,200,120,.8)");
-  }
-  c.fillStyle = "#0b0820"; c.fillRect(cx - w*.06, gy - h*.17, w*.12, h*.17);
-  glow(c, cx, gy - h*.08, w*.06, "rgba(255,200,120,.7)");
-}
-function idol(c, w, h, p, r) {
-  const cx = w/2, cy = h*.5, gold = "#F2B53A", sari = hsl(p.hue < 60 || p.hue > 300 ? p.hue : 355, 75, 45);
-  glow(c, cx, cy, w*.55, hsl(p.hue, 80, 50, .35));
-  // chalchitra arch
-  const R = h * .6, base = h * .84;
-  c.fillStyle = hsl(p.hue, 40, 16); c.beginPath(); c.ellipse(cx, base, R*1.05, R*1.05, 0, Math.PI, 0); c.fill();
-  for (let i = 0; i < 3; i++) { c.strokeStyle = i === 1 ? hsl(p.hue, 70, 55) : gold; c.lineWidth = 3; c.beginPath(); c.ellipse(cx, base, R*(1 - i*.07), R*(1 - i*.07), 0, Math.PI, 0); c.stroke(); }
-  for (let a = Math.PI; a <= Math.PI*2 + .01; a += Math.PI/24) { const x = cx + Math.cos(a)*R*.9, y = base + Math.sin(a)*R*.9; c.fillStyle = gold; c.beginPath(); c.arc(x, y, 3, 0, 7); c.fill(); }
-
-  function figure(x, s, robe, skin) {
-    c.fillStyle = robe; c.beginPath(); c.moveTo(x - s*.55, base); c.lineTo(x - s*.2, base - s*1.25); c.lineTo(x + s*.2, base - s*1.25); c.lineTo(x + s*.55, base); c.fill();
-    c.fillStyle = skin; c.beginPath(); c.arc(x, base - s*1.42, s*.2, 0, 7); c.fill();
-    c.fillStyle = gold; c.beginPath(); c.moveTo(x - s*.18, base - s*1.55); c.lineTo(x, base - s*1.9); c.lineTo(x + s*.18, base - s*1.55); c.fill();
-  }
-  const S = R * .42;
-  figure(cx - R*.78, S*.75, "#E9E2D0", "#F3C98B"); // Saraswati
-  figure(cx - R*.5, S*.8, "#D83A64", "#F3C98B");  // Lakshmi
-  figure(cx + R*.5, S*.8, "#2E7D5B", "#F3C98B");  // Kartik
-  // Ganesh
-  c.fillStyle = "#C2462C"; c.beginPath(); c.moveTo(cx + R*.78 - S*.4, base); c.lineTo(cx + R*.78 - S*.3, base - S*.8); c.lineTo(cx + R*.78 + S*.3, base - S*.8); c.lineTo(cx + R*.78 + S*.4, base); c.fill();
-  c.fillStyle = "#F0D9C0"; c.beginPath(); c.arc(cx + R*.78, base - S*1.0, S*.28, 0, 7); c.fill(); c.lineWidth = S*.1; c.strokeStyle = "#F0D9C0"; c.beginPath(); c.moveTo(cx + R*.78, base - S*.9); c.quadraticCurveTo(cx + R*.7, base - S*.5, cx + R*.84, base - S*.45); c.stroke();
-  // Durga arms
-  c.strokeStyle = "#F3C98B"; c.lineWidth = Math.max(2, S*.07); c.lineCap = "round";
-  const sh = base - S*1.6;
-  for (let i = 0; i < 10; i++) { const side = i < 5 ? -1 : 1, k = i % 5; const ang = (-.15 + k * .2) * Math.PI; const len = S * (1.05 - Math.abs(k - 2) * .06);
-    const ex = cx + side * Math.cos(ang) * len, ey = sh + Math.sin(ang) * len * .9 - S*.2; c.beginPath(); c.moveTo(cx + side*S*.15, sh); c.lineTo(ex, ey); c.stroke();
-    c.fillStyle = gold; c.beginPath(); c.arc(ex, ey, S*.06, 0, 7); c.fill(); c.strokeStyle = "#E5E0D5"; c.lineWidth = 2; c.beginPath(); c.moveTo(ex, ey); c.lineTo(ex + side*S*.08, ey - S*.25); c.stroke(); c.strokeStyle = "#F3C98B"; c.lineWidth = Math.max(2, S*.07); }
-  // Durga body
-  c.fillStyle = sari; c.beginPath(); c.moveTo(cx - S*.75, base); c.lineTo(cx - S*.25, sh); c.lineTo(cx + S*.25, sh); c.lineTo(cx + S*.75, base); c.fill();
-  c.fillStyle = gold; c.fillRect(cx - S*.6, base - S*.35, S*1.2, S*.06); c.fillRect(cx - S*.4, base - S*.9, S*.8, S*.05);
-  c.fillStyle = "#F7C27A"; c.beginPath(); c.ellipse(cx, sh - S*.32, S*.26, S*.32, 0, 0, 7); c.fill();
-  c.fillStyle = "#1a0d0d"; [-1, 1].forEach(s => { c.beginPath(); c.ellipse(cx + s*S*.1, sh - S*.35, S*.07, S*.035, 0, 0, 7); c.fill(); });
-  c.beginPath(); c.ellipse(cx, sh - S*.48, S*.025, S*.05, 0, 0, 7); c.fill();
-  c.fillStyle = "#C0122C"; c.beginPath(); c.arc(cx, sh - S*.56, S*.03, 0, 7); c.fill();
-  c.fillStyle = gold; c.beginPath(); c.moveTo(cx - S*.32, sh - S*.55); c.lineTo(cx - S*.2, sh - S*1.05); c.lineTo(cx, sh - S*.9); c.lineTo(cx + S*.2, sh - S*1.05); c.lineTo(cx + S*.32, sh - S*.55); c.fill();
-  // lion & asura
-  c.fillStyle = "#E3B04B"; c.beginPath(); c.ellipse(cx - S*.85, base - S*.18, S*.45, S*.2, 0, 0, 7); c.fill(); c.beginPath(); c.arc(cx - S*1.2, base - S*.38, S*.2, 0, 7); c.fill();
-  c.fillStyle = "#3F7D3A"; c.beginPath(); c.ellipse(cx + S*.7, base - S*.2, S*.25, S*.3, .4, 0, 7); c.fill(); c.fillStyle = "#2c1a10"; c.beginPath(); c.arc(cx + S*.62, base - S*.55, S*.16, 0, 7); c.fill();
-  c.fillStyle = hsl(p.hue, 40, 10); c.fillRect(0, base, w, h - base);
-  for (let i = 0; i < 18; i++) glow(c, r()*w, base + r()*(h-base), 10, "rgba(255,170,60,.6)");
-}
-function dhakScene(c, w, h, p, r) {
-  for (let k = 0; k < 4; k++) lightString(c, -20, h*(.08 + k*.08), w + 20, h*(.12 + k*.07), h*.12, 22, hsl((p.hue + k*50) % 360, 90, 65, .9));
-  const gy = h*.82;
-  // kash flowers
-  for (let i = 0; i < 70; i++) { const x = r()*w, top = gy - h*(.15 + r()*.25); c.strokeStyle = "rgba(200,190,150,.5)"; c.lineWidth = 1; c.beginPath(); c.moveTo(x, h); c.quadraticCurveTo(x + 6, (top+h)/2, x + 10*r(), top); c.stroke();
-    c.fillStyle = "rgba(240,238,250,.55)"; c.beginPath(); c.ellipse(x + 5, top, 4, 14, .2, 0, 7); c.fill(); }
-  // dhak
-  const dx = w*.62, dy = gy - h*.12, dw = w*.26, dh = h*.22;
-  c.fillStyle = "#6B2B12"; c.beginPath(); c.ellipse(dx, dy, dw*.5, dh*.5, 0, 0, 7); c.fill();
-  c.fillStyle = "#E8D9B5"; c.beginPath(); c.ellipse(dx - dw*.48, dy, dw*.08, dh*.5, 0, 0, 7); c.fill();
-  c.strokeStyle = "#E8D9B5"; c.lineWidth = 1.2; for (let i = -4; i <= 4; i++) { c.beginPath(); c.moveTo(dx - dw*.45, dy + i*dh*.1); c.lineTo(dx + dw*.45, dy - i*dh*.1); c.stroke(); }
-  c.fillStyle = "#C0122C"; c.fillRect(dx - dw*.5, dy - dh*.05, dw, dh*.1);
-  for (let i = 0; i < 9; i++) { const a = -Math.PI/2 + (i - 4) * .16; c.strokeStyle = "rgba(250,250,255,.9)"; c.lineWidth = 3; c.beginPath(); c.moveTo(dx, dy - dh*.5); c.quadraticCurveTo(dx + Math.cos(a)*dw*.3, dy - dh*.5 + Math.sin(a)*dh*.5, dx + Math.cos(a)*dw*.4, dy - dh*.5 + Math.sin(a)*dh*.9); c.stroke(); }
-  // dhunuchi smoke
-  const sx = w*.25; c.fillStyle = "#3b2a1a"; c.beginPath(); c.moveTo(sx - w*.04, gy - h*.04); c.lineTo(sx + w*.04, gy - h*.04); c.lineTo(sx + w*.015, gy + h*.05); c.lineTo(sx - w*.015, gy + h*.05); c.fill();
-  glow(c, sx, gy - h*.05, w*.05, "rgba(255,120,40,.9)");
-  for (let i = 0; i < 10; i++) { c.fillStyle = `rgba(220,215,235,${.12 - i*.008})`; c.beginPath(); c.arc(sx + Math.sin(i*.9)*w*.03, gy - h*.08 - i*h*.045, w*(.02 + i*.006), 0, 7); c.fill(); }
-}
-const VIEWS = ["The pandal at night", "The pratima", "Lights, dhak and kash"];
-function draw(canvas, p, v) {
-  const c = canvas.getContext("2d"), w = canvas.width, h = canvas.height, r = rng(p.id + v);
-  sky(c, w, h, p);
-  if (v === 0) { bokeh(c, w, h, r, 40, .55); facade(c, w, h, p, r); crowd(c, w, h, r); }
-  else if (v === 1) { bokeh(c, w, h, r, 25, .4); idol(c, w, h, p, r); }
-  else { bokeh(c, w, h, r, 30, .6); dhakScene(c, w, h, p, r); }
-}
+/* ---------- Photos ---------- */
+const PHOTOS = {
+  palace:  { src:"photos/palace-pandal.jpg", cap:"A palace-style pandal lit in gold" },
+  temple:  { src:"photos/temple-pandal.jpg", cap:"A temple-style pandal at night" },
+  golden:  { src:"photos/golden-chalchitra.jpg", cap:"Durga before a golden chalchitra" },
+  arch:    { src:"photos/red-arch-idol.jpg", cap:"A theme pandal's lit arch and pratima" },
+  ekchala: { src:"photos/ekchala-idol.jpg", cap:"A traditional ek-chala pratima" },
+  crowd:   { src:"photos/sindoor-crowd.jpg", cap:"Devotees before a traditional pratima" }
+};
+const BY_STYLE = {
+  traditional: ["ekchala","golden","crowd"],
+  temple: ["temple","palace","golden"],
+  rajbari: ["ekchala","crowd","golden"],
+  tower: ["palace","temple","arch"],
+  art: ["arch","golden","palace"],
+  pond: ["palace","arch","ekchala"]
+};
+function photosFor(p, i) { const list = BY_STYLE[p.style].slice(); const k = i % list.length; return list.slice(k).concat(list.slice(0, k)).map(x => PHOTOS[x]); }
 
 /* ---------- Cards ---------- */
 const cardsEl = document.getElementById("cards");
 PANDALS.forEach(p => {
   const b = document.createElement("button");
   b.className = "card"; b.dataset.id = p.id;
-  b.innerHTML = `<canvas width="480" height="300" aria-hidden="true"></canvas>
+  p.photos = photosFor(p, PANDALS.indexOf(p));
+  b.innerHTML = `<div class="ph"><img src="${p.photos[0].src}" alt="" loading="lazy"><span class="badge">Representative photo</span></div>
     <div class="body"><div class="meta"><span class="zone"><span class="dot" style="background:${ZONECOL[p.zone]}"></span>${p.zone}</span><span class="key">map ${p.key}</span></div>
     <h3>${p.name}</h3><div class="bn" lang="bn">${p.bn}</div><div class="tag">${p.tag}</div><div class="metro">Metro: ${p.metro}</div></div>`;
-  draw(b.querySelector("canvas"), p, 0);
   b.addEventListener("click", () => openPandal(p));
   b.addEventListener("mouseenter", () => hot(p.id, true)); b.addEventListener("mouseleave", () => hot(p.id, false));
   b.addEventListener("focus", () => hot(p.id, true)); b.addEventListener("blur", () => hot(p.id, false));
@@ -613,8 +512,10 @@ const dlg = document.getElementById("dlg");
 const mainCv = document.getElementById("d-main");
 let current = null;
 function setView(v) {
-  draw(mainCv, current, v);
-  document.getElementById("d-cap").textContent = VIEWS[v] + " · illustration for " + current.name;
+  const ph = current.photos[v];
+  mainCv.src = ph.src; mainCv.alt = ph.cap;
+  document.getElementById("d-blur").style.backgroundImage = `url("${ph.src}")`;
+  document.getElementById("d-cap").textContent = ph.cap + ". Representative photo of Durga Puja in Kolkata, not necessarily " + current.name + ".";
   document.querySelectorAll("#d-thumbs button").forEach((b, i) => b.setAttribute("aria-current", i === v));
 }
 function openPandal(p) {
@@ -640,7 +541,7 @@ function openPandal(p) {
   mini.insertAdjacentHTML("beforeend", PANDALS.map(o => { const [ox, oy] = proj(o.lat, o.lon); return `<circle cx="${ox}" cy="${oy}" r="9" fill="var(--muted)" opacity=".35"/>`; }).join("") +
     `<circle cx="${x}" cy="${y}" r="34" fill="none" stroke="var(--marigold)" stroke-width="8"/><circle cx="${x}" cy="${y}" r="18" fill="${ZONECOL[p.zone]}"/>`);
   const th = document.getElementById("d-thumbs"); th.innerHTML = "";
-  VIEWS.forEach((label, i) => { const b = document.createElement("button"); b.setAttribute("aria-label", label); const cv = document.createElement("canvas"); cv.width = 240; cv.height = 180; b.appendChild(cv); draw(cv, p, i); b.addEventListener("click", () => setView(i)); th.appendChild(b); });
+  p.photos.forEach((ph, i) => { const b = document.createElement("button"); b.setAttribute("aria-label", "Show photo: " + ph.cap); const im = document.createElement("img"); im.src = ph.src; im.alt = ""; b.appendChild(im); b.addEventListener("click", () => setView(i)); th.appendChild(b); });
   setView(0);
   if (!dlg.open) dlg.showModal();
   document.querySelector(".info").scrollTop = 0;
