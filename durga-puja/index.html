@@ -77,10 +77,11 @@ button { font: inherit; color: inherit; }
 .marker { cursor: pointer; }
 .marker circle.pin { stroke: var(--surface); stroke-width: 2.5; transition: r .15s; }
 .marker text { font-family: var(--f-mono); font-size: 11px; fill: #fff; pointer-events: none; font-weight: 500; }
-.marker:hover circle.pin, .marker.hot circle.pin { r: 15; }
+@media (hover: hover) { .marker:hover circle.pin { r: 15; } }
+.marker.hot circle.pin { r: 15; }
+.marker .hit { fill: transparent; }
 .marker.dim { opacity: .2; }
-.halo { fill: none; stroke: var(--marigold); stroke-width: 3; opacity: 0; }
-.marker.hot .halo { opacity: 1; }
+.halo { fill: none; stroke: var(--marigold); stroke-width: 3; pointer-events: none; }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
 .card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; text-align: left; padding: 0; transition: transform .18s, box-shadow .18s; }
@@ -410,20 +411,30 @@ function baseMap(svg, labels) {
 const mapSvg = document.getElementById("map");
 baseMap(mapSvg, true);
 const markerLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
-mapSvg.appendChild(markerLayer);
+const haloLayer = document.createElementNS("http://www.w3.org/2000/svg", "g");
+mapSvg.appendChild(markerLayer); mapSvg.appendChild(haloLayer);
 PANDALS.forEach((p, i) => {
   p.key = String(i + 1).padStart(2, "0");
   const [x, y] = proj(p.lat, p.lon);
   const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
   g.setAttribute("class", "marker"); g.setAttribute("tabindex", "0"); g.setAttribute("role", "button");
   g.setAttribute("aria-label", p.name);
-  g.innerHTML = `<title>${p.name}</title><circle class="halo" cx="${x}" cy="${y}" r="21"/><circle class="pin" cx="${x}" cy="${y}" r="12" fill="${ZONECOL[p.zone]}"/><text x="${x}" y="${y+4}" text-anchor="middle">${p.key}</text>`;
+  g.innerHTML = `<title>${p.name}</title><circle class="hit" cx="${x}" cy="${y}" r="20"/><circle class="pin" cx="${x}" cy="${y}" r="12" fill="${ZONECOL[p.zone]}"/><text x="${x}" y="${y+4}" text-anchor="middle">${p.key}</text>`;
   g.addEventListener("click", () => openPandal(p));
   g.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openPandal(p); } });
-  g.addEventListener("mouseenter", () => hot(p.id, true)); g.addEventListener("mouseleave", () => hot(p.id, false));
+  g.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") hot(p.id, true); }); g.addEventListener("pointerleave", () => hot(p.id, false));
   p.marker = g; markerLayer.appendChild(g);
 });
-function hot(id, on) { const p = PANDALS.find(x => x.id === id); p.marker.classList.toggle("hot", on); if (on) markerLayer.appendChild(p.marker); }
+let hotId = null;
+function hot(id, on) {
+  if (!on && id !== hotId) return;
+  if (hotId) PANDALS.find(x => x.id === hotId).marker.classList.remove("hot");
+  haloLayer.innerHTML = ""; hotId = null;
+  if (!on) return;
+  const p = PANDALS.find(x => x.id === id), [x, y] = proj(p.lat, p.lon);
+  p.marker.classList.add("hot"); hotId = id;
+  haloLayer.innerHTML = `<circle class="halo" cx="${x}" cy="${y}" r="21"/>`;
+}
 
 
 /* ---------- Cards ---------- */
@@ -435,8 +446,8 @@ PANDALS.forEach(p => {
     <div class="body"><div class="meta"><span class="zone"><span class="dot" style="background:${ZONECOL[p.zone]}"></span>${p.zone}</span><span class="key">map ${p.key}</span></div>
     <h3>${p.name}</h3><div class="bn" lang="bn">${p.bn}</div><div class="tag">${p.tag}</div><div class="metro">Metro: ${p.metro}</div></div>`;
   b.addEventListener("click", () => openPandal(p));
-  b.addEventListener("mouseenter", () => hot(p.id, true)); b.addEventListener("mouseleave", () => hot(p.id, false));
-  b.addEventListener("focus", () => hot(p.id, true)); b.addEventListener("blur", () => hot(p.id, false));
+  b.addEventListener("pointerenter", e => { if (e.pointerType === "mouse") hot(p.id, true); }); b.addEventListener("pointerleave", () => hot(p.id, false));
+  b.addEventListener("focus", () => { if (b.matches(":focus-visible")) hot(p.id, true); }); b.addEventListener("blur", () => hot(p.id, false));
   p.card = b; cardsEl.appendChild(b);
 });
 
@@ -488,13 +499,14 @@ function openPandal(p) {
     `<text x="${right ? x + 34 : x - 34}" y="${y + 7}" text-anchor="${right ? "start" : "end"}" font-family="Plus Jakarta Sans, system-ui, sans-serif" font-weight="700" font-size="22" fill="var(--fg)" stroke="var(--land)" stroke-width="6" paint-order="stroke">${p.name}</text>`);
   const nb = near.slice(0, 2).map(n => n.o.name + " (" + (n.d * 111).toFixed(1) + " km)").join(" and ");
   document.getElementById("d-cap").textContent = "Nearest pandals in this guide: " + nb + ", in a straight line.";
+  hot(hotId, false);
   if (!dlg.open) dlg.showModal();
   document.querySelector(".info").scrollTop = 0;
   try { history.replaceState(null, "", "#" + p.id); } catch (e) {}
 }
 document.getElementById("d-close").addEventListener("click", () => dlg.close());
 dlg.addEventListener("click", e => { if (e.target === dlg) dlg.close(); });
-dlg.addEventListener("close", () => { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} });
+dlg.addEventListener("close", () => { hot(hotId, false); try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} });
 document.getElementById("d-copy").addEventListener("click", e => {
   const t = current.lat.toFixed(4) + ", " + current.lon.toFixed(4), btn = e.currentTarget;
   const done = () => { btn.textContent = "Copied"; setTimeout(() => btn.textContent = "Copy", 1500); };
