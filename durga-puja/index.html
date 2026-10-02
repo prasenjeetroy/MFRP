@@ -1,47 +1,34 @@
 <title>Kolkata Pandal Atlas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rozha+One&family=Hind+Siliguri:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Hind+Siliguri:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
 /* Layout: a night-map atlas. Hero + puja calendar, then a two-pane explorer (schematic city map | pandal cards), detail opens in a dialog. */
 :root {
-  --bg: #F5F2F8;
+  --bg: #FAFAFC;
   --surface: #FFFFFF;
-  --surface-2: #EEE8F4;
-  --fg: #1D1430;
-  --muted: #645979;
-  --line: #DFD7E8;
-  --sindoor: #C0122C;
-  --marigold: #C98400;
-  --marigold-soft: #F6DFA6;
-  --river: #BCD3E6;
-  --land: #ECE6F2;
-  --north: #C0122C;
-  --central: #8A4FD8;
-  --south: #0E8A72;
-  --shadow: 0 10px 30px rgba(40, 20, 70, .12);
-  --f-display: "Rozha One", "Georgia", "Times New Roman", serif;
+  --surface-2: #F4F2F8;
+  --fg: #1C1A24;
+  --muted: #6B6878;
+  --line: #ECE9F1;
+  --sindoor: #E0343F;
+  --marigold: #F2A516;
+  --marigold-soft: #FFF1D6;
+  --river: #CFE3F5;
+  --land: #F6F4FA;
+  --north: #E0343F;
+  --central: #7C5CFF;
+  --south: #12A594;
+  --shadow: 0 1px 2px rgba(28, 26, 36, .04), 0 8px 24px rgba(28, 26, 36, .06);
+  --f-display: "Plus Jakarta Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
   --f-body: "Hind Siliguri", "Segoe UI", system-ui, -apple-system, sans-serif;
   --f-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #130E1E; --surface: #1E1730; --surface-2: #281F3D; --fg: #F2ECF7; --muted: #A99EBD;
-    --line: #34294B; --sindoor: #FF5468; --marigold: #F4B73C; --marigold-soft: #4A3816;
-    --river: #1F3550; --land: #1A1428; --north: #FF5468; --central: #B48CFF; --south: #3CCFAF;
-    --shadow: 0 10px 30px rgba(0,0,0,.45); color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --bg: #130E1E; --surface: #1E1730; --surface-2: #281F3D; --fg: #F2ECF7; --muted: #A99EBD;
-  --line: #34294B; --sindoor: #FF5468; --marigold: #F4B73C; --marigold-soft: #4A3816;
-  --river: #1F3550; --land: #1A1428; --north: #FF5468; --central: #B48CFF; --south: #3CCFAF;
-  --shadow: 0 10px 30px rgba(0,0,0,.45); color-scheme: dark;
+  color-scheme: light;
 }
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--fg); font-family: var(--f-body); font-size: 16px; line-height: 1.55; }
 .wrap { max-width: 1240px; margin: 0 auto; padding-inline: 16px; padding-block: 0 64px; }
-h1, h2, h3 { font-family: var(--f-display); font-weight: 400; text-wrap: balance; margin: 0; line-height: 1.1; }
+h1, h2, h3 { font-family: var(--f-display); font-weight: 700; letter-spacing: -.02em; text-wrap: balance; margin: 0; line-height: 1.1; }
 a { color: var(--sindoor); }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 3px solid var(--marigold); outline-offset: 2px; border-radius: 6px; }
@@ -49,11 +36,11 @@ button { font: inherit; color: inherit; }
 
 /* Hero */
 .hero { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 32px; align-items: end; padding-block: 48px 28px; }
-.hero h1 { font-size: clamp(44px, 7vw, 84px); letter-spacing: -.01em; }
+.hero h1 { font-size: clamp(40px, 6.4vw, 76px); font-weight: 800; letter-spacing: -.035em; }
 .hero h1 .bn { display: block; font-family: var(--f-body); font-weight: 700; font-size: .42em; color: var(--sindoor); letter-spacing: 0; margin-bottom: 6px; }
 .hero p.lede { max-width: 58ch; color: var(--muted); font-size: 18px; margin: 16px 0 0; }
-.countdown { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; box-shadow: var(--shadow); }
-.countdown .big { font-family: var(--f-display); font-size: 56px; line-height: 1; color: var(--sindoor); font-variant-numeric: tabular-nums; }
+.countdown { background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 20px; box-shadow: var(--shadow); }
+.countdown .big { font-family: var(--f-display); font-weight: 800; letter-spacing: -.03em; font-size: 56px; line-height: 1; color: var(--sindoor); font-variant-numeric: tabular-nums; }
 .countdown .sub { color: var(--muted); margin-top: 6px; }
 .tithis { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: 16px; }
 .tithi { border-radius: 10px; background: var(--surface-2); padding: 8px 6px; text-align: center; }
@@ -65,10 +52,10 @@ button { font: inherit; color: inherit; }
 
 /* Photo band */
 .band { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1.3fr; grid-template-rows: 170px 170px; gap: 8px; margin-block: 8px 28px; }
-.band figure { margin: 0; position: relative; overflow: hidden; border-radius: 14px; background: #0b0820; min-width: 0; }
+.band figure { margin: 0; position: relative; overflow: hidden; border-radius: 18px; background: var(--surface-2); min-width: 0; }
 .band img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .8s ease; }
 .band figure:hover img { transform: scale(1.06); }
-.band figcaption { position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 12px 8px; font-size: 13px; color: #fff; background: linear-gradient(transparent, rgba(0,0,0,.7)); }
+.band figcaption { position: absolute; left: 10px; bottom: 10px; padding: 4px 10px; font-size: 13px; font-weight: 500; color: var(--fg); background: rgba(255,255,255,.88); backdrop-filter: blur(6px); border-radius: 999px; }
 .band .f1 { grid-row: span 2; }
 .band .f4 { grid-row: span 2; }
 @media (max-width: 700px) { .band { grid-template-columns: 1fr 1fr; grid-template-rows: 200px 140px 140px; } .band .f1 { grid-column: span 2; grid-row: auto; } .band .f4 { grid-row: auto; } .band .f5 { display: none; } }
@@ -96,8 +83,8 @@ button { font: inherit; color: inherit; }
 .marker.hot .halo { opacity: 1; }
 
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; text-align: left; padding: 0; transition: transform .18s, box-shadow .18s; }
-.card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; cursor: pointer; display: flex; flex-direction: column; text-align: left; padding: 0; transition: transform .18s, box-shadow .18s; }
+.card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: transparent; }
 .card .body { padding: 18px 18px 20px; flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .card .meta { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
 .zone { font-family: var(--f-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; display: inline-flex; gap: 6px; align-items: center; }
@@ -118,13 +105,13 @@ button { font: inherit; color: inherit; }
 .foot { margin-top: 48px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; }
 
 /* Dialog */
-dialog { border: none; padding: 0; border-radius: 20px; width: min(980px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); background: var(--surface); color: var(--fg); box-shadow: 0 30px 80px rgba(0,0,0,.5); }
-dialog::backdrop { background: rgba(10, 6, 20, .7); }
+dialog { border: none; padding: 0; border-radius: 20px; width: min(980px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); background: var(--surface); color: var(--fg); box-shadow: 0 24px 64px rgba(28, 26, 36, .16); border: 1px solid var(--line); }
+dialog::backdrop { background: rgba(244, 242, 248, .7); backdrop-filter: blur(6px); }
 .dlg { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); }
 .gallery { background: var(--surface-2); padding: 14px; display: flex; flex-direction: column; gap: 10px; }
 .gallery .main { position: relative; }
 .gallery svg { width: 100%; height: auto; display: block; border-radius: 12px; }
-.realphotos { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 12px; border-radius: 10px; background: #F4B73C; color: #1D1430; font-weight: 600; text-decoration: none; font-size: 14px; }
+.realphotos { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 12px; border-radius: 10px; background: var(--marigold-soft); color: var(--fg); border: 1px solid var(--marigold); font-weight: 600; text-decoration: none; font-size: 14px; }
 .gallery .cap { color: var(--muted); font-size: 13px; margin: 0; }
 .info { padding: 24px; overflow-y: auto; max-height: calc(100dvh - 24px); display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .info h2 { font-size: 34px; }
@@ -498,7 +485,7 @@ function openPandal(p) {
   const right = x < 400;
   big.insertAdjacentHTML("beforeend", PANDALS.filter(o => o !== p).map(o => { const [ox, oy] = proj(o.lat, o.lon); return `<circle cx="${ox}" cy="${oy}" r="8" fill="${ZONECOL[o.zone]}" opacity=".45"/>`; }).join("") +
     `<circle cx="${x}" cy="${y}" r="26" fill="none" stroke="var(--marigold)" stroke-width="5"/><circle cx="${x}" cy="${y}" r="13" fill="${ZONECOL[p.zone]}" stroke="var(--surface)" stroke-width="3"/>` +
-    `<text x="${right ? x + 34 : x - 34}" y="${y + 7}" text-anchor="${right ? "start" : "end"}" font-family="Rozha One, Georgia, serif" font-size="24" fill="var(--fg)" stroke="var(--land)" stroke-width="6" paint-order="stroke">${p.name}</text>`);
+    `<text x="${right ? x + 34 : x - 34}" y="${y + 7}" text-anchor="${right ? "start" : "end"}" font-family="Plus Jakarta Sans, system-ui, sans-serif" font-weight="700" font-size="22" fill="var(--fg)" stroke="var(--land)" stroke-width="6" paint-order="stroke">${p.name}</text>`);
   const nb = near.slice(0, 2).map(n => n.o.name + " (" + (n.d * 111).toFixed(1) + " km)").join(" and ");
   document.getElementById("d-cap").textContent = "Nearest pandals in this guide: " + nb + ", in a straight line.";
   if (!dlg.open) dlg.showModal();
