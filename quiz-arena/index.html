@@ -3,12 +3,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
 <style>
-/* Layout: one centred column (max 960px) — header with running total, tabs for Play / Records, then a single active screen. */
+/* Layout: one centred column (max 960px) — header with player + running total, tabs for Play / Records / Account, then a single active screen. */
 :root {
   --bg: #F2F3EC; --surface: #FFFFFF; --surface-2: #E9EBE2; --ink: #16213A; --muted: #586179; --line: #D8DBCF;
   --accent: #2F4BD8; --accent-ink: #FFFFFF; --gold: #D9940A;
   --good: #1B7F50; --good-bg: #DDF1E5; --bad: #BF3328; --bad-bg: #FAE3DF;
-  --m1: #2F4BD8; --m2: #0B7F82; --m3: #C27C00; --m4: #8239A0; --m5: #C9412C;
+  --m1: #2F4BD8; --m2: #0B7F82; --m3: #C27C00; --m4: #8239A0; --m5: #C9412C; --m6: #3A7D1C; --m7: #B02F6C;
   --shadow: 0 1px 0 rgba(22,33,58,.06), 0 8px 24px -12px rgba(22,33,58,.25);
   --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
   --f-body: "Figtree", "Segoe UI", system-ui, sans-serif;
@@ -19,7 +19,7 @@
     --bg: #10141E; --surface: #192030; --surface-2: #222A3D; --ink: #E8EBF4; --muted: #9AA3B9; --line: #2C3549;
     --accent: #8197FF; --accent-ink: #0D1230; --gold: #F2BC52;
     --good: #52C98D; --good-bg: #173527; --bad: #F2806F; --bad-bg: #3B1E1C;
-    --m1: #8197FF; --m2: #3CC3C2; --m3: #F2BC52; --m4: #C98BE6; --m5: #F2806F;
+    --m1: #8197FF; --m2: #3CC3C2; --m3: #F2BC52; --m4: #C98BE6; --m5: #F2806F; --m6: #8BD36A; --m7: #F07AB0;
     --shadow: 0 1px 0 rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.7);
     color-scheme: dark;
   }
@@ -28,7 +28,7 @@
   --bg: #10141E; --surface: #192030; --surface-2: #222A3D; --ink: #E8EBF4; --muted: #9AA3B9; --line: #2C3549;
   --accent: #8197FF; --accent-ink: #0D1230; --gold: #F2BC52;
   --good: #52C98D; --good-bg: #173527; --bad: #F2806F; --bad-bg: #3B1E1C;
-  --m1: #8197FF; --m2: #3CC3C2; --m3: #F2BC52; --m4: #C98BE6; --m5: #F2806F;
+  --m1: #8197FF; --m2: #3CC3C2; --m3: #F2BC52; --m4: #C98BE6; --m5: #F2806F; --m6: #8BD36A; --m7: #F07AB0;
   --shadow: 0 1px 0 rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.7);
   color-scheme: dark;
 }
@@ -40,11 +40,13 @@ button { font: inherit; color: inherit; cursor: pointer; }
 button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
 .label { font-size: 11.5px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 600; }
+.hint { color: var(--muted); }
 
 /* header */
 .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
-.brand { display: flex; align-items: center; gap: 12px; }
-.logo { width: 42px; height: 42px; display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+.top-right { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.logo { width: 42px; height: 42px; flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
 .logo span { border-radius: 3px; }
 .logo span:nth-child(1){background:var(--m1)} .logo span:nth-child(2){background:var(--m3)}
 .logo span:nth-child(3){background:var(--m2)} .logo span:nth-child(4){background:var(--m5)}
@@ -53,10 +55,64 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); ou
 .total { display: flex; align-items: baseline; gap: 8px; background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 10px; }
 .total .num { font-size: 20px; font-weight: 700; }
 .total .label { color: inherit; opacity: .75; }
+.who { display: flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 4px 14px 4px 4px; font-weight: 700; }
+.who:hover { border-color: var(--ac); }
 .tabs { display: flex; gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 12px; width: fit-content; }
-.tab { border: 0; background: transparent; padding: 8px 18px; border-radius: 9px; font-weight: 600; color: var(--muted); }
+.tab { border: 0; background: transparent; padding: 8px 16px; border-radius: 9px; font-weight: 600; color: var(--muted); }
 .tab[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
 .sync { font-size: 12px; color: var(--muted); }
+.link { border: 0; background: none; color: var(--accent); font-weight: 600; padding: 4px 2px; text-decoration: underline; text-underline-offset: 3px; }
+
+/* avatars + players */
+.avatar { width: 34px; height: 34px; flex: none; border-radius: 50%; display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 16px; color: var(--surface); background: var(--ac); }
+.avatar.md { width: 48px; height: 48px; font-size: 22px; }
+.avatar.lg { width: 76px; height: 76px; font-size: 34px; }
+.players { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 14px; }
+.player { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 16px; display: grid; gap: 12px; transition: transform .15s ease, border-color .15s ease; }
+.player:hover { transform: translateY(-2px); border-color: var(--ac); }
+.player-row { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.player-row b { font-size: 17px; overflow-wrap: anywhere; }
+.player-stats { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--muted); }
+.player-stats .num { color: var(--ink); font-weight: 700; }
+.player.new { border-style: dashed; place-items: center; text-align: center; color: var(--muted); font-weight: 600; min-height: 120px; }
+.player.new .plus { font-family: var(--f-display); font-size: 34px; line-height: 1; color: var(--accent); }
+
+/* PIN pad */
+.pin-panel { max-width: 360px; width: 100%; margin: 0 auto; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 24px 20px; display: grid; gap: 16px; justify-items: center; text-align: center; box-shadow: var(--shadow); }
+.pin-panel h2 { font-size: 22px; }
+.pdots { display: flex; gap: 14px; }
+.pdots span { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--ink); }
+.pdots span.on { background: var(--ink); }
+.pdots.shake { animation: shake .4s ease; }
+@keyframes shake { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
+.keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 270px; }
+.keypad button { height: 56px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); font-family: var(--f-mono); font-size: 22px; font-weight: 700; }
+.keypad button:hover:not(:disabled) { border-color: var(--accent); }
+.keypad button.soft { font-family: var(--f-body); font-size: 14px; font-weight: 600; color: var(--muted); }
+.keypad button:disabled { opacity: .4; cursor: default; }
+.msg { min-height: 22px; font-weight: 600; font-size: 14px; margin: 0; }
+.msg.err { color: var(--bad); }
+.msg.ok { color: var(--good); }
+
+/* forms */
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: grid; gap: 12px; align-content: start; }
+.card h3 { font-size: 18px; }
+.card p { margin: 0; }
+.form { display: grid; gap: 12px; }
+.field { display: grid; gap: 4px; min-width: 0; }
+.field label { font-weight: 600; font-size: 13.5px; }
+.input { font: inherit; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; min-width: 0; }
+.input.pin { font-family: var(--f-mono); letter-spacing: .5em; font-size: 18px; max-width: 170px; }
+.row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+.swatch { position: relative; }
+.swatch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.swatch span { display: block; width: 32px; height: 32px; border-radius: 50%; background: var(--ac); border: 3px solid var(--surface); box-shadow: 0 0 0 1.5px var(--line); cursor: pointer; }
+.swatch input:checked + span { box-shadow: 0 0 0 3px var(--ink); }
+.swatch input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 3px; }
+.settings { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
+.banner { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--surface)); border-radius: 12px; padding: 12px 16px; font-weight: 500; }
+.fine { font-size: 12.5px; color: var(--muted); }
 
 /* mode grid */
 .section-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; }
@@ -66,9 +122,10 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); ou
 .mode { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 16px; display: grid; gap: 12px; position: relative; transition: transform .15s ease, border-color .15s ease; }
 .mode:hover { transform: translateY(-2px); border-color: var(--mc); }
 .mode-row { display: flex; gap: 12px; align-items: center; }
-.glyph { width: 46px; height: 46px; flex: none; border-radius: 12px; display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 20px; color: var(--surface); background: var(--mc); }
+.glyph { width: 46px; height: 46px; flex: none; border-radius: 12px; display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 19px; color: var(--surface); background: var(--mc); }
 .mode h3 { font-size: 18px; }
 .mode p { margin: 0; color: var(--muted); font-size: 13.5px; }
+.new-tag { position: absolute; top: 12px; right: 12px; }
 .pips { display: flex; gap: 5px; align-items: center; }
 .pip { width: 100%; height: 6px; border-radius: 3px; background: var(--surface-2); }
 .pip.done { background: var(--mc); }
@@ -76,7 +133,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); ou
 .mode-meta { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted); }
 
 /* level picker */
-.back { border: 0; background: none; color: var(--muted); font-weight: 600; padding: 4px 0; }
+.back { border: 0; background: none; color: var(--muted); font-weight: 600; padding: 4px 0; width: fit-content; }
 .back:hover { color: var(--ink); }
 .levels { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
 .level { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 14px; text-align: left; display: grid; gap: 6px; }
@@ -90,13 +147,13 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); ou
 .chip.bad { background: var(--bad-bg); color: var(--bad); }
 .chip.open { background: var(--surface-2); color: var(--ink); }
 .chip.lock { background: var(--surface-2); color: var(--muted); }
+.chip.accent { background: var(--mc, var(--accent)); color: var(--surface); }
 .rules { background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; padding: 12px 16px; color: var(--muted); font-size: 13.5px; }
 .rules b { color: var(--ink); }
 
 /* game */
 .game { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: grid; gap: 18px; box-shadow: var(--shadow); }
-.hud { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; justify-content: space-between; }
-.hud-group { display: flex; gap: 22px; flex-wrap: wrap; }
+.hud { display: flex; flex-wrap: wrap; gap: 10px 22px; }
 .hud .stat { display: grid; }
 .hud .stat .num { font-size: 18px; font-weight: 700; }
 .timer { display: grid; gap: 6px; }
@@ -106,6 +163,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); ou
 .bar { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
 .bar > i { display: block; height: 100%; width: 100%; background: var(--mc); transform-origin: left; }
 .bar > i.low { background: var(--bad); }
+.bar.calm > i { background: repeating-linear-gradient(90deg, var(--mc) 0 10px, transparent 10px 16px); opacity: .5; }
 .progress { display: flex; gap: 4px; }
 .progress span { flex: 1; height: 4px; border-radius: 2px; background: var(--surface-2); }
 .progress span.ok { background: var(--good); }
@@ -121,13 +179,14 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); ou
 .ans:disabled { cursor: default; }
 .tiles { display: flex; flex-wrap: wrap; gap: 6px; }
 .tile { width: 40px; height: 46px; display: grid; place-items: center; border-radius: 8px; background: var(--surface-2); border-bottom: 3px solid var(--line); font-family: var(--f-display); font-weight: 800; font-size: 22px; }
-.hint { color: var(--muted); }
 .typed { display: flex; gap: 10px; flex-wrap: wrap; }
 .typed input { flex: 1 1 200px; min-width: 0; font: inherit; font-size: 18px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); }
 .typed input.correct { border-color: var(--good); background: var(--good-bg); }
 .typed input.wrong { border-color: var(--bad); background: var(--bad-bg); }
-.btn { border: 0; border-radius: 11px; padding: 12px 18px; font-weight: 700; background: var(--accent); color: var(--accent-ink); }
+.btn { border: 0; border-radius: 11px; padding: 11px 18px; font-weight: 700; background: var(--accent); color: var(--accent-ink); }
 .btn.ghost { background: var(--surface-2); color: var(--ink); }
+.btn.sm { padding: 7px 12px; font-size: 13.5px; }
+.btn.warn { background: var(--bad); color: var(--surface); }
 .btn:disabled { opacity: .5; cursor: default; }
 .feedback { min-height: 24px; font-weight: 600; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
 .feedback .good { color: var(--good); }
@@ -168,10 +227,12 @@ th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--li
 th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
 td.r, th.r { text-align: right; }
 tr:last-child td { border-bottom: 0; }
-.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--mc); margin-right: 8px; }
+tr.me td { background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.cell-player { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+.cell-player .avatar { width: 26px; height: 26px; font-size: 13px; }
+.mdot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--mc); margin-right: 8px; }
 .empty { padding: 28px; text-align: center; color: var(--muted); }
 .danger { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; font-size: 13.5px; color: var(--muted); }
-.btn.warn { background: var(--bad); color: var(--surface); }
 
 @media (max-width: 640px) {
   .tiles-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -189,20 +250,19 @@ tr:last-child td { border-bottom: 0; }
       <div class="logo" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
       <div>
         <h1>Brainstack</h1>
-        <p>Five quiz games, five levels each, every level a fresh set of questions.</p>
+        <p>Seven quiz games, five levels each, every level a fresh set of questions.</p>
       </div>
     </div>
-    <div class="total" title="Points earned across every game you have played">
-      <span class="label">Total points</span><span class="num" id="total-points">0</span>
-    </div>
+    <div class="top-right" id="head-right"></div>
   </header>
 
-  <div class="top">
-    <nav class="tabs" role="tablist">
+  <div class="top" id="nav-row">
+    <nav class="tabs" role="tablist" id="tabs">
       <button class="tab" role="tab" id="tab-play" aria-selected="true">Play</button>
       <button class="tab" role="tab" id="tab-records" aria-selected="false">Records</button>
+      <button class="tab" role="tab" id="tab-account" aria-selected="false">Account</button>
     </nav>
-    <span class="sync" id="sync">Saving records in this browser</span>
+    <span class="sync" id="sync">Saving players in this browser</span>
   </div>
 
   <main id="view"></main>
@@ -217,25 +277,105 @@ const LEVELS = 5, PER_ROUND = 6, PASS = 4;
 const LEVEL_NAMES = ["Warm-up", "Rookie", "Skilled", "Expert", "Master"];
 
 const MODES = [
-  { id: "trivia",    name: "General Trivia", glyph: "?",  color: "--m1", kind: "mc",
-    blurb: "Science, history, art and the natural world." },
-  { id: "capitals",  name: "Capital Cities", glyph: "◎",  color: "--m2", kind: "mc",
+  { id: "olympiad",  name: "Olympiad Math",  glyph: "∑",   color: "--m1", kind: "mc", fresh: true,
+    blurb: "Puzzle-style maths: patterns, counting, logic. Level 5 has no timer." },
+  { id: "science",   name: "Science",        glyph: "Sci", color: "--m6", kind: "mc", fresh: true,
+    blurb: "Easy science to start. Level 5 is trick questions that are simpler than they look." },
+  { id: "trivia",    name: "General Trivia", glyph: "?",   color: "--m7", kind: "mc",
+    blurb: "History, art, geography and the world around you." },
+  { id: "capitals",  name: "Capital Cities", glyph: "◎",   color: "--m2", kind: "mc",
     blurb: "Name the capital. Gets trickier as the map widens." },
-  { id: "math",      name: "Math Sprint",    glyph: "÷",  color: "--m3", kind: "mc",
-    blurb: "Mental arithmetic, freshly generated every round." },
+  { id: "math",      name: "Math Sprint",    glyph: "÷",   color: "--m3", kind: "mc",
+    blurb: "Quick mental arithmetic, freshly generated every round." },
   { id: "truefalse", name: "True or False",  glyph: "T/F", color: "--m4", kind: "tf",
     blurb: "Facts and famous myths. Spot which is which." },
-  { id: "scramble",  name: "Word Scramble",  glyph: "Aa", color: "--m5", kind: "type",
+  { id: "scramble",  name: "Word Scramble",  glyph: "Aa",  color: "--m5", kind: "type",
     blurb: "Unscramble the letters and type the word." },
 ];
 
+// Seconds per question for each level. 0 means no timer.
+const DEFAULT_TIMES = [20, 18, 16, 14, 12];
+const TIMES = {
+  olympiad: [45, 40, 35, 30, 0],
+  science:  [20, 20, 18, 18, 25],
+  scramble: [30, 28, 26, 24, 22],
+};
+const timeFor = (mode, level) => (TIMES[mode] || DEFAULT_TIMES)[level - 1];
+
 // Each level has its own, non-overlapping set of questions.
+// Multiple choice rows: [question, correct, wrong, wrong, wrong, optional note]
+const OLYMPIAD = [
+  [ ["What comes next: 2, 4, 8, 16, …?", "32", "24", "30", "64", "Each number doubles."],
+    ["Tom is 7th from the front and 7th from the back of a line. How many people are in the line?", "13", "14", "12", "15", "6 ahead + Tom + 6 behind."],
+    ["A farm has 5 hens and 3 cows. How many legs are there in total?", "22", "16", "20", "24", "5 × 2 + 3 × 4 = 22."],
+    ["What is 1 + 2 + 3 + … + 10?", "55", "50", "45", "65", "Pair 1+10, 2+9, … : five pairs of 11."],
+    ["Today is Monday. What day is it 10 days from now?", "Thursday", "Wednesday", "Friday", "Sunday", "10 days = 1 week + 3 days."],
+    ["A clock shows exactly 3:00. What is the angle between the hands?", "90°", "60°", "120°", "45°", "3 of 12 hours is a quarter turn."] ],
+  [ ["How many two-digit numbers are there?", "90", "99", "89", "100", "From 10 to 99 inclusive."],
+    ["Three consecutive numbers add up to 48. What is the largest?", "17", "16", "18", "15", "15 + 16 + 17 = 48."],
+    ["5 people each shake hands once with everyone else. How many handshakes?", "10", "20", "25", "15", "5 × 4 ÷ 2 = 10."],
+    ["What is the last digit of 2¹⁰?", "4", "2", "6", "8", "2¹⁰ = 1024."],
+    ["A rectangle has perimeter 20 cm and length 6 cm. What is its area?", "24 cm²", "20 cm²", "36 cm²", "30 cm²", "Width is 4 cm, so 6 × 4."],
+    ["Half of a number is 3 more than a third of it. What is the number?", "18", "12", "24", "36", "n/2 − n/3 = n/6 = 3."] ],
+  [ ["How many times is the digit 1 written when you write the numbers 1 to 20?", "12", "11", "10", "13", "1, 10, 11 (twice), 12–19."],
+    ["What is the smallest number divisible by 2, 3, 4, 5 and 6?", "60", "120", "30", "360", "LCM = 4 × 3 × 5."],
+    ["A snail climbs 3 m up a 10 m wall each day and slips 2 m each night. On which day does it reach the top?", "Day 8", "Day 10", "Day 7", "Day 9", "After 7 nights it's at 7 m, then climbs 3 m on day 8."],
+    ["How many diagonals does a hexagon have?", "9", "6", "12", "8", "6 × 3 ÷ 2 = 9."],
+    ["What is the remainder when 100 is divided by 7?", "2", "1", "3", "5", "7 × 14 = 98."],
+    ["3 cats catch 3 mice in 3 minutes. How many cats catch 100 mice in 100 minutes?", "3", "100", "33", "300", "Each cat catches one mouse every 3 minutes."] ],
+  [ ["How many zeros are at the end of 10! (10 factorial)?", "2", "1", "3", "10", "10! = 3,628,800."],
+    ["What is the sum of the interior angles of a pentagon?", "540°", "360°", "720°", "450°", "(5 − 2) × 180°."],
+    ["How many positive divisors does 36 have?", "9", "8", "6", "10", "1, 2, 3, 4, 6, 9, 12, 18, 36."],
+    ["What is the last digit of 3²⁰²⁵?", "3", "9", "7", "1", "Last digits repeat 3, 9, 7, 1 and 2025 leaves remainder 1 on division by 4."],
+    ["Ann is twice as old as Ben. In 5 years their ages will add up to 40. How old is Ben now?", "10", "15", "20", "8", "3 × Ben + 10 = 40."],
+    ["A painted 3×3×3 cube is cut into 27 small cubes. How many have exactly two painted faces?", "12", "8", "6", "24", "One on the middle of each of the 12 edges."] ],
+  [ ["What is 1 − 2 + 3 − 4 + … + 99 − 100?", "−50", "50", "0", "−100", "50 pairs, each equal to −1."],
+    ["How many squares of any size are on an 8×8 chessboard?", "204", "64", "128", "196", "1² + 2² + … + 8² = 204."],
+    ["What is the sum of the digits of 10²⁵ − 25?", "219", "225", "216", "207", "It is 23 nines followed by 75."],
+    ["In how many ways can you climb 6 stairs taking 1 or 2 steps at a time?", "13", "12", "8", "21", "The counts go 1, 2, 3, 5, 8, 13."],
+    ["What is the smallest number above 1 that leaves remainder 1 when divided by 2, 3, 4, 5 and 6?", "61", "31", "121", "59", "60 + 1."],
+    ["Two numbers multiply to 144 and their greatest common divisor is 4. What is their least common multiple?", "36", "48", "72", "12", "GCD × LCM = product, so 144 ÷ 4."] ],
+];
+
+const SCIENCE = [
+  [ ["What do bees make?", "Honey", "Milk", "Silk", "Butter"],
+    ["Which part of a plant takes in water from the soil?", "Roots", "Leaves", "Flowers", "Petals"],
+    ["What is frozen water called?", "Ice", "Steam", "Fog", "Dew"],
+    ["Which body part do we use to smell?", "Nose", "Ears", "Eyes", "Tongue"],
+    ["What does a caterpillar grow up to become?", "A butterfly", "A bee", "A beetle", "A bird"],
+    ["Which star is closest to Earth?", "The Sun", "Polaris", "Sirius", "The Moon"] ],
+  [ ["What force pulls things down towards the Earth?", "Gravity", "Magnetism", "Friction", "Wind"],
+    ["Which organ pumps blood around the body?", "Heart", "Lungs", "Liver", "Kidneys"],
+    ["Which gas do plants give off that we need to breathe?", "Oxygen", "Carbon dioxide", "Helium", "Hydrogen"],
+    ["How many planets are in our solar system?", "8", "9", "7", "10"],
+    ["At what temperature does water boil at sea level?", "100 °C", "90 °C", "50 °C", "120 °C"],
+    ["Which of these is attracted to a magnet?", "Iron", "Wood", "Plastic", "Glass"] ],
+  [ ["What are the three everyday states of matter?", "Solid, liquid, gas", "Hot, warm, cold", "Rock, water, air", "Big, medium, small"],
+    ["What do we call animals that eat only plants?", "Herbivores", "Carnivores", "Omnivores", "Insectivores"],
+    ["Which planet is famous for its bright rings?", "Saturn", "Mars", "Mercury", "Venus"],
+    ["What does a thermometer measure?", "Temperature", "Weight", "Speed", "Height"],
+    ["Which vitamin does your skin make in sunlight?", "Vitamin D", "Vitamin C", "Vitamin A", "Vitamin B12"],
+    ["What is the centre of an atom called?", "The nucleus", "The electron", "The molecule", "The cell"] ],
+  [ ["What is H₂O?", "Water", "Salt", "Oxygen gas", "Hydrogen peroxide"],
+    ["Which part of the eye controls how much light gets in?", "Iris", "Retina", "Lens", "Eyelash"],
+    ["What kind of energy does a moving car have?", "Kinetic energy", "Nuclear energy", "Sound energy", "Elastic energy"],
+    ["How do plants make food from sunlight?", "Photosynthesis", "Respiration", "Digestion", "Evaporation"],
+    ["What is the chemical symbol for sodium?", "Na", "So", "Sd", "S"],
+    ["Which layer of the atmosphere holds the ozone layer?", "Stratosphere", "Troposphere", "Mesosphere", "Exosphere"] ],
+  [ ["Which weighs more: a kilogram of feathers or a kilogram of iron?", "They weigh the same", "The iron", "The feathers", "It depends on the wind", "A kilogram is a kilogram."],
+    ["How many months of the year have 28 days?", "All 12", "1", "2", "6", "Every month has at least 28 days."],
+    ["A rooster lays an egg on the very top of a pointed roof. Which way does it roll?", "Roosters don't lay eggs", "Left", "Right", "Straight down", "Only hens lay eggs."],
+    ["An electric train travels north while the wind blows west. Which way does its smoke blow?", "There is no smoke", "West", "North", "East", "Electric trains don't make smoke."],
+    ["On the Moon, with no air, you drop a hammer and a feather together. Which lands first?", "They land together", "The hammer", "The feather", "Neither falls", "Apollo 15 astronaut David Scott tried it on live TV."],
+    ["Ice cubes float in a full glass of water. When they melt, what happens to the water level?", "It stays the same", "It overflows", "It goes down", "It doubles", "Floating ice already pushes aside its own weight in water."] ],
+];
+
 const TRIVIA = [
   [ ["How many continents are there on Earth?", "7", "5", "6", "8"],
     ["Which planet is known as the Red Planet?", "Mars", "Venus", "Jupiter", "Mercury"],
     ["What is the largest ocean on Earth?", "Pacific", "Atlantic", "Indian", "Arctic"],
     ["How many legs does a spider have?", "8", "6", "10", "12"],
-    ["Which gas do plants absorb from the air for photosynthesis?", "Carbon dioxide", "Oxygen", "Nitrogen", "Helium"],
+    ["Which instrument has 88 keys?", "Piano", "Guitar", "Violin", "Flute"],
     ["Which big cat is often called the King of the Jungle?", "Lion", "Tiger", "Leopard", "Jaguar"] ],
   [ ["Who painted the Mona Lisa?", "Leonardo da Vinci", "Michelangelo", "Raphael", "Vincent van Gogh"],
     ["What is the hardest natural substance?", "Diamond", "Quartz", "Granite", "Iron"],
@@ -342,8 +482,7 @@ const SCRAMBLE = [
     ["BUTTERFLY", "It starts life as a caterpillar"], ["CROCODILE", "A large reptile with powerful jaws"], ["NEWSPAPER", "Daily printed news"] ],
 ];
 
-const LEVEL_TIME = [20, 18, 16, 14, 12];      // seconds per question
-const SCRAMBLE_EXTRA = 10;
+const PLAYER_COLORS = ["--m1", "--m2", "--m3", "--m4", "--m5", "--m6", "--m7"];
 
 /* ------------------------------------------------------------------ helpers */
 const $ = (s, el = document) => el.querySelector(s);
@@ -351,8 +490,33 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;"
 const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const fmt = n => Number(n).toLocaleString("en-US");
-const modeById = id => MODES.find(m => m.id === id);
-const timeFor = (mode, level) => LEVEL_TIME[level - 1] + (mode === "scramble" ? SCRAMBLE_EXTRA : 0);
+const modeById = id => MODES.find(m => m.id === id) || MODES[0];
+const isPin = v => /^\d{4}$/.test(v);
+const initial = name => (name.trim()[0] || "?").toUpperCase();
+const avatar = (a, size = "") => `<span class="avatar ${size}" style="--ac:var(${a.color})" aria-hidden="true">${esc(initial(a.name))}</span>`;
+function randId(n) {
+  const chars = "abcdefghijklmnopqrstuvwxyz0123456789"; let s = "";
+  try { const b = crypto.getRandomValues(new Uint8Array(n)); b.forEach(x => s += chars[x % 36]); return s; }
+  catch (e) { for (let i = 0; i < n; i++) s += chars[rnd(0, 35)]; return s; }
+}
+function ago(ts) {
+  if (!ts) return "never";
+  const m = Math.round((Date.now() - ts) / 60000);
+  if (m < 1) return "just now"; if (m < 60) return m + " min ago";
+  const h = Math.round(m / 60); if (h < 24) return h + " h ago";
+  const d = Math.round(h / 24); return d === 1 ? "yesterday" : d + " days ago";
+}
+async function hashPin(salt, pin) {
+  const text = "brainstack:" + salt + ":" + pin;
+  try {
+    if (window.crypto && crypto.subtle) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+      return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+  } catch (e) { /* fall through */ }
+  let h = 2166136261; for (const c of text) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); }
+  return "f" + (h >>> 0).toString(16);
+}
 
 /* ------------------------------------------------------------- math engine */
 function mathQuestion(level) {
@@ -395,10 +559,14 @@ function scrambleWord(w) {
   return s;
 }
 
+const mcRow = ([q, a, w1, w2, w3, note]) => ({ q, answer: a, options: shuffle([a, w1, w2, w3]), note });
+
 function buildRound(mode, level) {
   const i = level - 1;
   let qs;
-  if (mode === "trivia") qs = TRIVIA[i].map(([q, a, ...w]) => ({ q, answer: a, options: shuffle([a, ...w]) }));
+  if (mode === "olympiad") qs = OLYMPIAD[i].map(mcRow);
+  else if (mode === "science") qs = SCIENCE[i].map(mcRow);
+  else if (mode === "trivia") qs = TRIVIA[i].map(mcRow);
   else if (mode === "capitals") qs = CAPITALS[i].map(([c, a, ...w]) => ({ q: `What is the capital of ${c}?`, answer: a, options: shuffle([a, ...w]) }));
   else if (mode === "truefalse") qs = TRUEFALSE[i].map(([q, t, note]) => ({ q, answer: t ? "True" : "False", options: ["True", "False"], note }));
   else if (mode === "scramble") qs = SCRAMBLE[i].map(([w, hint]) => ({ q: "Unscramble this word", answer: w, letters: scrambleWord(w), hint }));
@@ -410,20 +578,33 @@ function buildRound(mode, level) {
 }
 
 /* ------------------------------------------------------------------ storage */
-// Records live in this viewer's private store when signed in, with a browser copy as fallback.
-const LS_KEY = "brainstack.v1";
-const state = { games: [], unlocked: {}, cloud: null };
-MODES.forEach(m => state.unlocked[m.id] = 1);
+// Players and games live in the signed-in viewer's private store, mirrored in this browser as a fallback.
+// Docs: "acct-<id>" per player, "g-<id>" per finished game (with an `acct` field).
+const LS_KEY = "brainstack.v2", LS_LEGACY = "brainstack.v1", SS_ACTIVE = "brainstack.active";
+const state = { accounts: [], games: [], active: null, recovery: false, legacy: { games: [], unlocked: {} }, cloud: null };
+const freshUnlocked = () => Object.fromEntries(MODES.map(m => [m.id, 1]));
 
 function readLocal() {
-  try { const raw = localStorage.getItem(LS_KEY); if (!raw) return; const d = JSON.parse(raw);
-    if (Array.isArray(d.games)) state.games = d.games;
-    if (d.unlocked) Object.assign(state.unlocked, d.unlocked);
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (raw) { const d = JSON.parse(raw); state.accounts = d.accounts || []; state.games = d.games || []; }
+    const old = localStorage.getItem(LS_LEGACY);
+    if (old) { const d = JSON.parse(old); state.legacy.games = (d.games || []).filter(g => !g.acct); state.legacy.unlocked = d.unlocked || {}; }
   } catch (e) { /* storage unavailable */ }
+  try { const id = sessionStorage.getItem(SS_ACTIVE); if (id && state.accounts.some(a => a.id === id)) state.active = id; } catch (e) { /* ignore */ }
 }
 function writeLocal() {
-  try { localStorage.setItem(LS_KEY, JSON.stringify({ games: state.games, unlocked: state.unlocked })); } catch (e) { /* ignore */ }
+  try { localStorage.setItem(LS_KEY, JSON.stringify({ accounts: state.accounts, games: state.games })); } catch (e) { /* ignore */ }
 }
+function setActive(id) {
+  state.active = id;
+  try { if (id) sessionStorage.setItem(SS_ACTIVE, id); else sessionStorage.removeItem(SS_ACTIVE); } catch (e) { /* ignore */ }
+}
+const cloudSet = (id, data) => { if (state.cloud) state.cloud.col.doc(id).set(data).catch(() => { $("#sync").textContent = "Couldn't reach your account; saved in this browser"; }); };
+const cloudDel = id => state.cloud ? state.cloud.col.doc(id).delete().catch(() => {}) : Promise.resolve();
+
+function persistAccount(a) { a.updated = Date.now(); writeLocal(); cloudSet("acct-" + a.id, a); }
+function persistGame(g) { writeLocal(); cloudSet(g.id, g); }
 
 async function initCloud() {
   try {
@@ -434,94 +615,371 @@ async function initCloud() {
     if (!uid) return;
     const col = db.collection("data/users/" + uid);
     const snap = await col.get();
-    const games = [], unlocked = {};
+    const cAcc = [], cGames = [], cLegacy = [];
+    let cLegacyUnl = null;
     snap.docs.forEach(d => {
       if (!d.exists) return;
       const v = d.data();
-      if (d.id === "progress") Object.assign(unlocked, v.unlocked || {});
-      else if (d.id.startsWith("g-")) games.push(v);
+      if (d.id.startsWith("acct-")) cAcc.push(v);
+      else if (d.id.startsWith("g-")) (v.acct ? cGames : cLegacy).push(v);
+      else if (d.id === "progress") cLegacyUnl = v.unlocked || {};
     });
     state.cloud = { col };
-    if (games.length || Object.keys(unlocked).length) {
-      // Merge cloud with anything played locally before sign-in.
-      const ids = new Set(games.map(g => g.id));
-      const localOnly = state.games.filter(g => !ids.has(g.id));
-      state.games = games.concat(localOnly).sort((a, b) => b.ts - a.ts);
-      MODES.forEach(m => state.unlocked[m.id] = Math.max(state.unlocked[m.id] || 1, unlocked[m.id] || 1));
-      localOnly.forEach(g => col.doc(g.id).set(g).catch(() => {}));
-    } else if (state.games.length) {
-      state.games.forEach(g => col.doc(g.id).set(g).catch(() => {}));
-      col.doc("progress").set({ unlocked: state.unlocked }).catch(() => {});
-    }
+
+    const accMap = new Map(state.accounts.map(a => [a.id, a]));
+    const pushAcc = new Set(state.accounts.map(a => a.id));
+    cAcc.forEach(a => {
+      const mine = accMap.get(a.id);
+      if (!mine || (a.updated || 0) >= (mine.updated || 0)) accMap.set(a.id, JSON.parse(JSON.stringify(a)));
+      if (!mine || (a.updated || 0) >= (mine.updated || 0)) pushAcc.delete(a.id);
+    });
+    state.accounts = [...accMap.values()];
+    const gameIds = new Set(cGames.map(g => g.id));
+    const localOnly = state.games.filter(g => !gameIds.has(g.id));
+    state.games = cGames.map(g => ({ ...g })).concat(localOnly).sort((a, b) => b.ts - a.ts);
+
+    const legIds = new Set(state.legacy.games.map(g => g.id));
+    cLegacy.forEach(g => { if (!legIds.has(g.id)) state.legacy.games.push({ ...g }); });
+    if (cLegacyUnl) MODES.forEach(m => state.legacy.unlocked[m.id] = Math.max(state.legacy.unlocked[m.id] || 1, cLegacyUnl[m.id] || 1));
+
+    state.accounts.filter(a => pushAcc.has(a.id)).forEach(a => cloudSet("acct-" + a.id, a));
+    localOnly.forEach(g => cloudSet(g.id, g));
     writeLocal();
-    $("#sync").textContent = "Records saved to your account";
-    if (screen.name !== "game") render();
-    else renderTotal();
+    if (state.active && !state.accounts.some(a => a.id === state.active)) setActive(null);
+    $("#sync").textContent = "Players saved to your Claude account";
+    if (screen.name !== "game") render(); else renderHeader();
   } catch (e) {
-    $("#sync").textContent = "Saving records in this browser";
+    $("#sync").textContent = "Saving players in this browser";
   }
 }
 
-function saveGame(rec) {
-  state.games.unshift(rec);
-  writeLocal();
-  if (state.cloud) {
-    state.cloud.col.doc(rec.id).set(rec).catch(() => { $("#sync").textContent = "Couldn't reach your account; saved in this browser"; });
-    state.cloud.col.doc("progress").set({ unlocked: state.unlocked }).catch(() => {});
-  }
-}
-
-async function resetRecords() {
-  const ids = state.games.map(g => g.id);
-  state.games = [];
-  MODES.forEach(m => state.unlocked[m.id] = 1);
-  writeLocal();
-  if (state.cloud) {
-    for (const id of ids) { try { await state.cloud.col.doc(id).delete(); } catch (e) { /* ignore */ } }
-    try { await state.cloud.col.doc("progress").delete(); } catch (e) { /* ignore */ }
-  }
+function claimLegacy(a) {
+  if (!state.legacy.games.length) return 0;
+  const n = state.legacy.games.length;
+  state.legacy.games.forEach(g => { g.acct = a.id; state.games.push(g); cloudSet(g.id, g); });
+  state.games.sort((x, y) => y.ts - x.ts);
+  MODES.forEach(m => a.unlocked[m.id] = Math.max(a.unlocked[m.id] || 1, state.legacy.unlocked[m.id] || 1));
+  state.legacy = { games: [], unlocked: {} };
+  try { localStorage.removeItem(LS_LEGACY); } catch (e) { /* ignore */ }
+  cloudDel("progress");
+  return n;
 }
 
 /* ------------------------------------------------------------------- stats */
-const totalPoints = () => state.games.reduce((s, g) => s + g.points, 0);
-const bestFor = (mode, level) => state.games.filter(g => g.mode === mode && g.level === level).reduce((m, g) => Math.max(m, g.points), 0);
-const clearedFor = (mode, level) => state.games.some(g => g.mode === mode && g.level === level && g.passed);
-function renderTotal() { $("#total-points").textContent = fmt(totalPoints()); }
+const me = () => state.accounts.find(a => a.id === state.active) || null;
+const gamesOf = id => state.games.filter(g => g.acct === id);
+const myGames = () => gamesOf(state.active);
+const pointsOf = id => gamesOf(id).reduce((s, g) => s + g.points, 0);
+const clearedCountOf = id => { const s = new Set(gamesOf(id).filter(g => g.passed).map(g => g.mode + g.level)); return s.size; };
+const bestFor = (mode, level) => myGames().filter(g => g.mode === mode && g.level === level).reduce((m, g) => Math.max(m, g.points), 0);
+const clearedFor = (mode, level) => myGames().some(g => g.mode === mode && g.level === level && g.passed);
+const unlockedOf = mode => { const a = me(); return a ? (a.unlocked[mode] || 1) : 1; };
 
 /* ------------------------------------------------------------------ screens */
 const view = $("#view");
-let screen = { name: "home" };
+let screen = { name: "players" };
 let game = null;
 let tick = null;
+const attempts = {}; // per player: { n, until }
 
-function setTab(which) {
-  $("#tab-play").setAttribute("aria-selected", String(which === "play"));
-  $("#tab-records").setAttribute("aria-selected", String(which === "records"));
-}
 $("#tab-play").addEventListener("click", () => { if (game) quitGame(); go({ name: "home" }); });
 $("#tab-records").addEventListener("click", () => { if (game) quitGame(); go({ name: "records" }); });
+$("#tab-account").addEventListener("click", () => { if (game) quitGame(); go({ name: "account" }); });
 
 function go(s) { screen = s; render(); window.scrollTo({ top: 0 }); }
 
+function renderHeader() {
+  const a = me();
+  const right = $("#head-right");
+  $("#tabs").hidden = !a;
+  if (a) {
+    right.innerHTML = `<div class="total" title="Points earned across every game ${esc(a.name)} has played">
+        <span class="label">Points</span><span class="num">${fmt(pointsOf(a.id))}</span></div>
+      <button class="who" id="who" style="--ac:var(${a.color})" title="Account settings">${avatar(a)}<span>${esc(a.name)}</span></button>
+      <button class="btn ghost sm" id="switch">Switch player</button>`;
+    $("#who").addEventListener("click", () => { if (game) quitGame(); go({ name: "account" }); });
+    $("#switch").addEventListener("click", () => { if (game) quitGame(); signOut(); });
+  } else {
+    right.innerHTML = state.accounts.length ? `<span class="hint">${state.accounts.length} player${state.accounts.length === 1 ? "" : "s"}</span>` : "";
+  }
+  const tab = screen.name === "records" ? "records" : screen.name === "account" ? "account" : "play";
+  ["play", "records", "account"].forEach(t => $("#tab-" + t).setAttribute("aria-selected", String(t === tab)));
+}
+
 function render() {
-  renderTotal();
-  setTab(screen.name === "records" ? "records" : "play");
-  if (screen.name === "home") renderHome();
+  const needsPlayer = ["home", "levels", "result", "records", "account", "game"];
+  if (!me() && needsPlayer.includes(screen.name)) screen = { name: "players" };
+  renderHeader();
+  if (screen.name === "players") renderPlayers();
+  else if (screen.name === "pin") renderPin();
+  else if (screen.name === "create") renderCreate();
+  else if (screen.name === "home") renderHome();
   else if (screen.name === "levels") renderLevels(screen.mode);
   else if (screen.name === "result") renderResult(screen.rec, screen.recap, screen.newUnlock);
   else if (screen.name === "records") renderRecords();
+  else if (screen.name === "account") renderAccount();
 }
 
+function signOut() { setActive(null); state.recovery = false; go({ name: "players" }); }
+
+/* ------------------------------------------------------------ player list */
+function renderPlayers() {
+  const list = state.accounts.slice().sort((x, y) => (y.lastUsed || 0) - (x.lastUsed || 0));
+  const cards = list.map(a => `<button class="player" style="--ac:var(${a.color})" data-acct="${a.id}" aria-label="Open ${esc(a.name)}">
+      <div class="player-row">${avatar(a, "md")}<div style="min-width:0"><b>${esc(a.name)}</b><div class="fine">Last played ${ago(a.lastUsed)}</div></div></div>
+      <div class="player-stats"><span><span class="num">${fmt(pointsOf(a.id))}</span> pts</span><span><span class="num">${clearedCountOf(a.id)}</span>/${MODES.length * LEVELS} levels</span></div>
+    </button>`).join("");
+  const legacyNote = state.legacy.games.length
+    ? `<div class="banner">${state.legacy.games.length} game${state.legacy.games.length === 1 ? "" : "s"} from before accounts existed will be added to the first player you create.</div>` : "";
+  view.innerHTML = `<section style="display:grid;gap:16px">
+    <div class="section-head"><h2>Who's playing?</h2><p>Tap your name, then enter your 4-digit PIN.</p></div>
+    ${legacyNote}
+    <div class="players">${cards}
+      <button class="player new" id="new-player"><span class="plus">+</span><span>New player</span></button>
+    </div>
+    ${list.length ? "" : `<p class="hint" style="margin:0">No players yet. Create one to start playing; each player keeps their own levels, points and history.</p>`}
+  </section>`;
+  view.querySelectorAll("[data-acct]").forEach(b => b.addEventListener("click", () => go({ name: "pin", id: b.dataset.acct, mode: "pin", entry: "", msg: "" })));
+  $("#new-player").addEventListener("click", () => go({ name: "create" }));
+}
+
+/* ---------------------------------------------------------------- PIN pad */
+function lockLeft(id) { const t = attempts[id]; return t && t.until > Date.now() ? Math.ceil((t.until - Date.now()) / 1000) : 0; }
+
+function renderPin() {
+  const a = state.accounts.find(x => x.id === screen.id);
+  if (!a) return go({ name: "players" });
+  const backup = screen.mode === "backup";
+  const locked = lockLeft(a.id);
+  const dots = [0, 1, 2, 3].map(i => `<span class="${i < screen.entry.length ? "on" : ""}"></span>`).join("");
+  const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-k="${n}" ${locked ? "disabled" : ""}>${n}</button>`).join("");
+  view.innerHTML = `<section style="display:grid;gap:14px">
+    <button class="back" id="back">← All players</button>
+    <div class="pin-panel" style="--ac:var(${a.color})">
+      ${avatar(a, "lg")}
+      <h2>${esc(a.name)}</h2>
+      <p class="hint" style="margin:0">${backup ? "Enter your <b>backup PIN</b>" : "Enter your PIN"}</p>
+      <div class="pdots ${screen.shake ? "shake" : ""}" aria-label="${screen.entry.length} of 4 digits entered">${dots}</div>
+      <p class="msg ${screen.msgOk ? "ok" : "err"}" id="pin-msg" aria-live="polite">${locked ? `Too many tries. Wait ${locked} s.` : esc(screen.msg || "")}</p>
+      <div class="keypad">${keys}
+        <button class="soft" data-k="clear" ${locked ? "disabled" : ""}>Clear</button>
+        <button data-k="0" ${locked ? "disabled" : ""}>0</button>
+        <button class="soft" data-k="del" ${locked ? "disabled" : ""} aria-label="Delete last digit">⌫</button>
+      </div>
+      ${backup ? `<button class="link" id="swap">Use my regular PIN</button>` : `<button class="link" id="swap">Forgot your PIN? Use backup PIN</button>`}
+    </div>
+  </section>`;
+  screen.shake = false;
+  $("#back").addEventListener("click", () => go({ name: "players" }));
+  $("#swap").addEventListener("click", () => { screen.mode = backup ? "pin" : "backup"; screen.entry = ""; screen.msg = ""; renderPin(); });
+  view.querySelectorAll("[data-k]").forEach(b => b.addEventListener("click", () => pinKey(b.dataset.k)));
+  if (locked) setTimeout(() => { if (screen.name === "pin" && screen.id === a.id) renderPin(); }, 1000);
+}
+
+async function pinKey(k) {
+  if (screen.name !== "pin" || screen.busy) return;
+  const a = state.accounts.find(x => x.id === screen.id);
+  if (!a || lockLeft(a.id)) return;
+  if (k === "del") screen.entry = screen.entry.slice(0, -1);
+  else if (k === "clear") screen.entry = "";
+  else if (/^\d$/.test(k) && screen.entry.length < 4) screen.entry += k;
+  screen.msg = "";
+  if (screen.entry.length < 4) return renderPin();
+  renderPin();
+  screen.busy = true;
+  const which = screen.mode === "backup" ? "backup" : "pin";
+  const ok = (await hashPin(a.salt, screen.entry)) === a[which];
+  screen.busy = false;
+  if (ok) {
+    delete attempts[a.id];
+    setActive(a.id);
+    a.lastUsed = Date.now();
+    persistAccount(a);
+    state.recovery = which === "backup";
+    go(state.recovery ? { name: "account" } : { name: "home" });
+    return;
+  }
+  const t = attempts[a.id] || (attempts[a.id] = { n: 0, until: 0 });
+  t.n++;
+  if (t.n >= 5) { t.n = 0; t.until = Date.now() + 30000; }
+  screen.entry = "";
+  screen.shake = true;
+  screen.msg = which === "pin" ? "That PIN isn't right. Try again, or use your backup PIN below." : "That backup PIN isn't right. Try again.";
+  renderPin();
+}
+
+/* --------------------------------------------------------- create player */
+function swatches(name, selected) {
+  return `<div class="swatches" role="radiogroup" aria-label="Colour">${PLAYER_COLORS.map((c, i) =>
+    `<label class="swatch" style="--ac:var(${c})"><input type="radio" name="${name}" id="${name}-${i}" value="${c}" ${c === selected ? "checked" : ""}><span title="Colour ${i + 1}"></span></label>`).join("")}</div>`;
+}
+
+function renderCreate() {
+  const used = new Set(state.accounts.map(a => a.color));
+  const color = PLAYER_COLORS.find(c => !used.has(c)) || PLAYER_COLORS[0];
+  const legacy = !state.accounts.length && state.legacy.games.length;
+  view.innerHTML = `<section style="display:grid;gap:14px;max-width:560px">
+    <button class="back" id="back">← All players</button>
+    <form class="card" id="create-form" autocomplete="off" novalidate>
+      <h2 style="font-size:22px">New player</h2>
+      ${legacy ? `<div class="banner">Your ${state.legacy.games.length} earlier game${state.legacy.games.length === 1 ? "" : "s"} will be added to this player.</div>` : ""}
+      <div class="field"><label for="c-name">Name</label><input class="input" id="c-name" maxlength="20" placeholder="e.g. Maya"></div>
+      <div class="field"><label>Colour</label>${swatches("c-color", color)}</div>
+      <div class="row2">
+        <div class="field"><label for="c-pin">PIN (4 digits)</label><input class="input pin" id="c-pin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*"></div>
+        <div class="field"><label for="c-pin2">Repeat PIN</label><input class="input pin" id="c-pin2" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label for="c-bak">Backup PIN</label><input class="input pin" id="c-bak" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*"></div>
+        <div class="field"><label for="c-bak2">Repeat backup PIN</label><input class="input pin" id="c-bak2" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*"></div>
+      </div>
+      <p class="fine">The backup PIN lets you in if you forget your regular PIN. Pick something different from your PIN that you'll still remember, like a birthday.</p>
+      <p class="msg err" id="c-msg" aria-live="polite"></p>
+      <div class="actions" style="justify-content:flex-start"><button class="btn" type="submit">Create player</button></div>
+      <p class="fine">PINs keep players out of each other's scores. They are a friendly lock, not protection for anything secret.</p>
+    </form>
+  </section>`;
+  $("#back").addEventListener("click", () => go({ name: "players" }));
+  $("#c-name").focus();
+  $("#create-form").addEventListener("submit", async e => {
+    e.preventDefault();
+    const name = $("#c-name").value.trim().replace(/\s+/g, " ");
+    const pin = $("#c-pin").value, pin2 = $("#c-pin2").value, bak = $("#c-bak").value, bak2 = $("#c-bak2").value;
+    const col = (view.querySelector('input[name="c-color"]:checked') || {}).value || color;
+    const msg = $("#c-msg");
+    if (!name) return msg.textContent = "Enter a name for this player.";
+    if (state.accounts.some(a => a.name.toLowerCase() === name.toLowerCase())) return msg.textContent = `There's already a player called ${name}. Pick another name.`;
+    if (!isPin(pin)) return msg.textContent = "Your PIN must be exactly 4 digits.";
+    if (pin !== pin2) return msg.textContent = "The two PINs don't match.";
+    if (!isPin(bak)) return msg.textContent = "Your backup PIN must be exactly 4 digits.";
+    if (bak !== bak2) return msg.textContent = "The two backup PINs don't match.";
+    if (bak === pin) return msg.textContent = "Your backup PIN must be different from your PIN.";
+    const salt = randId(12);
+    const a = { id: "a" + randId(10), name, color: col, salt, pin: await hashPin(salt, pin), backup: await hashPin(salt, bak),
+                created: Date.now(), updated: Date.now(), lastUsed: Date.now(), unlocked: freshUnlocked() };
+    state.accounts.push(a);
+    claimLegacy(a);
+    persistAccount(a);
+    setActive(a.id);
+    go({ name: "home" });
+  });
+}
+
+/* --------------------------------------------------------- account page */
+function renderAccount() {
+  const a = me();
+  const pinField = (id, label) => `<div class="field"><label for="${id}">${label}</label><input class="input pin" id="${id}" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*"></div>`;
+  view.innerHTML = `<section style="display:grid;gap:16px;--ac:var(${a.color})">
+    <div class="player-row">${avatar(a, "md")}<div><h2 style="font-size:24px">${esc(a.name)}</h2>
+      <div class="fine">Player since ${new Date(a.created).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })} · ${fmt(pointsOf(a.id))} points · ${myGames().length} games</div></div></div>
+    ${state.recovery ? `<div class="banner"><b>You signed in with your backup PIN.</b> Set a new regular PIN below so you remember it next time.</div>` : ""}
+    <div class="settings">
+      <form class="card" id="f-pin" novalidate>
+        <h3>Change PIN</h3>
+        ${state.recovery ? "" : pinField("p-cur", "Current PIN or backup PIN")}
+        <div class="row2">${pinField("p-new", "New PIN")}${pinField("p-new2", "Repeat new PIN")}</div>
+        <p class="msg" id="p-msg" aria-live="polite"></p>
+        <div><button class="btn" type="submit">Save new PIN</button></div>
+      </form>
+      <form class="card" id="f-bak" novalidate>
+        <h3>Change backup PIN</h3>
+        ${pinField("b-cur", "Current PIN")}
+        <div class="row2">${pinField("b-new", "New backup PIN")}${pinField("b-new2", "Repeat backup PIN")}</div>
+        <p class="msg" id="b-msg" aria-live="polite"></p>
+        <div><button class="btn" type="submit">Save backup PIN</button></div>
+      </form>
+      <form class="card" id="f-name" novalidate>
+        <h3>Name and colour</h3>
+        <div class="field"><label for="n-name">Name</label><input class="input" id="n-name" maxlength="20" value="${esc(a.name)}"></div>
+        <div class="field"><label>Colour</label>${swatches("n-color", a.color)}</div>
+        <p class="msg" id="n-msg" aria-live="polite"></p>
+        <div><button class="btn" type="submit">Save</button></div>
+      </form>
+      <form class="card" id="f-del" novalidate>
+        <h3>Delete player</h3>
+        <p class="hint">Removes ${esc(a.name)} with all ${myGames().length} games and level progress. This can't be undone.</p>
+        ${pinField("d-pin", "Enter your PIN to confirm")}
+        <p class="msg" id="d-msg" aria-live="polite"></p>
+        <div class="actions" style="justify-content:flex-start" id="d-actions"><button class="btn ghost" type="submit">Delete player…</button></div>
+      </form>
+    </div>
+  </section>`;
+
+  const say = (id, text, ok) => { const el = $(id); el.textContent = text; el.className = "msg " + (ok ? "ok" : "err"); };
+  const clear = ids => ids.forEach(id => { const el = $(id); if (el) el.value = ""; });
+
+  $("#f-pin").addEventListener("submit", async e => {
+    e.preventDefault();
+    const cur = state.recovery ? null : $("#p-cur").value, n1 = $("#p-new").value, n2 = $("#p-new2").value;
+    if (!state.recovery) {
+      const h = await hashPin(a.salt, cur);
+      if (!isPin(cur) || (h !== a.pin && h !== a.backup)) return say("#p-msg", "Your current PIN or backup PIN isn't right.");
+    }
+    if (!isPin(n1)) return say("#p-msg", "The new PIN must be exactly 4 digits.");
+    if (n1 !== n2) return say("#p-msg", "The two new PINs don't match.");
+    const h1 = await hashPin(a.salt, n1);
+    if (h1 === a.backup) return say("#p-msg", "Your PIN must be different from your backup PIN.");
+    a.pin = h1; persistAccount(a);
+    const wasRecovery = state.recovery; state.recovery = false;
+    if (wasRecovery) { renderAccount(); say("#p-msg", "New PIN saved. Use it next time you sign in.", true); return; }
+    clear(["#p-cur", "#p-new", "#p-new2"]); say("#p-msg", "PIN changed.", true);
+  });
+
+  $("#f-bak").addEventListener("submit", async e => {
+    e.preventDefault();
+    const cur = $("#b-cur").value, n1 = $("#b-new").value, n2 = $("#b-new2").value;
+    if (!isPin(cur) || (await hashPin(a.salt, cur)) !== a.pin) return say("#b-msg", "Your current PIN isn't right.");
+    if (!isPin(n1)) return say("#b-msg", "The backup PIN must be exactly 4 digits.");
+    if (n1 !== n2) return say("#b-msg", "The two backup PINs don't match.");
+    if (n1 === cur) return say("#b-msg", "Your backup PIN must be different from your PIN.");
+    a.backup = await hashPin(a.salt, n1); persistAccount(a);
+    clear(["#b-cur", "#b-new", "#b-new2"]); say("#b-msg", "Backup PIN changed.", true);
+  });
+
+  $("#f-name").addEventListener("submit", e => {
+    e.preventDefault();
+    const name = $("#n-name").value.trim().replace(/\s+/g, " ");
+    const col = (view.querySelector('input[name="n-color"]:checked') || {}).value || a.color;
+    if (!name) return say("#n-msg", "Enter a name.");
+    if (state.accounts.some(x => x.id !== a.id && x.name.toLowerCase() === name.toLowerCase())) return say("#n-msg", `There's already a player called ${name}.`);
+    a.name = name; a.color = col; persistAccount(a);
+    renderHeader(); renderAccount(); say("#n-msg", "Saved.", true);
+  });
+
+  $("#f-del").addEventListener("submit", async e => {
+    e.preventDefault();
+    const pin = $("#d-pin").value;
+    if (!isPin(pin) || (await hashPin(a.salt, pin)) !== a.pin) return say("#d-msg", "That PIN isn't right.");
+    say("#d-msg", "");
+    const box = $("#d-actions");
+    box.innerHTML = `<button class="btn ghost" type="button" id="d-keep">Keep ${esc(a.name)}</button><button class="btn warn" type="button" id="d-go">Delete for good</button>`;
+    $("#d-keep").addEventListener("click", renderAccount);
+    $("#d-go").addEventListener("click", async () => {
+      $("#d-go").disabled = true;
+      const ids = myGames().map(g => g.id);
+      state.games = state.games.filter(g => g.acct !== a.id);
+      state.accounts = state.accounts.filter(x => x.id !== a.id);
+      writeLocal();
+      for (const id of ids) await cloudDel(id);
+      await cloudDel("acct-" + a.id);
+      signOut();
+    });
+  });
+}
+
+/* --------------------------------------------------------------- game list */
 function renderHome() {
+  const a = me();
   const cards = MODES.map(m => {
-    const u = state.unlocked[m.id];
+    const u = unlockedOf(m.id);
     const cleared = [1, 2, 3, 4, 5].filter(l => clearedFor(m.id, l)).length;
     const pips = Array.from({ length: LEVELS }, (_, k) => {
       const l = k + 1; const cls = clearedFor(m.id, l) ? "done" : (l <= u ? "open" : "");
       return `<span class="pip ${cls}"></span>`;
     }).join("");
-    const played = state.games.filter(g => g.mode === m.id).length;
+    const played = myGames().filter(g => g.mode === m.id).length;
     return `<button class="mode" style="--mc:var(${m.color})" data-mode="${m.id}">
+      ${m.fresh ? `<span class="chip accent new-tag">New</span>` : ""}
       <div class="mode-row"><span class="glyph" aria-hidden="true">${m.glyph}</span>
         <div><h3>${m.name}</h3><p>${m.blurb}</p></div></div>
       <div class="pips" aria-label="${cleared} of ${LEVELS} levels cleared">${pips}</div>
@@ -529,32 +987,37 @@ function renderHome() {
     </button>`;
   }).join("");
   view.innerHTML = `<section style="display:grid;gap:14px">
-    <div class="section-head"><h2>Choose a game</h2><p>Clear a level with ${PASS} of ${PER_ROUND} correct to unlock the next.</p></div>
+    <div class="section-head"><h2>Hi ${esc(a.name)}, choose a game</h2><p>Clear a level with ${PASS} of ${PER_ROUND} correct to unlock the next.</p></div>
     <div class="modes">${cards}</div>
-    <div class="rules"><b>Scoring.</b> Each correct answer earns 100 points plus up to 100 for speed, multiplied by the level (×1.0 at Level 1 up to ×2.0 at Level 5). Three or more correct in a row adds a streak bonus. Running out of time counts as a miss.</div>
+    <div class="rules"><b>Scoring.</b> Each correct answer earns 100 points plus up to 100 for speed, multiplied by the level (×1.0 at Level 1 up to ×2.0 at Level 5). Untimed levels give a flat 50 bonus instead of the speed bonus. Three or more correct in a row adds a streak bonus. Running out of time counts as a miss.</div>
   </section>`;
   view.querySelectorAll("[data-mode]").forEach(b => b.addEventListener("click", () => go({ name: "levels", mode: b.dataset.mode })));
 }
 
 function renderLevels(modeId) {
   const m = modeById(modeId);
-  const u = state.unlocked[modeId];
+  const u = unlockedOf(modeId);
   const cards = Array.from({ length: LEVELS }, (_, k) => {
-    const l = k + 1, locked = l > u, cleared = clearedFor(modeId, l), best = bestFor(modeId, l);
+    const l = k + 1, locked = l > u, cleared = clearedFor(modeId, l), best = bestFor(modeId, l), t = timeFor(modeId, l);
     const chip = locked ? `<span class="chip lock">Locked</span>` : cleared ? `<span class="chip good">Cleared</span>` : `<span class="chip open">Open</span>`;
     return `<button class="level" data-level="${l}" ${locked ? "disabled" : ""}>
       <span class="label">Level</span><span class="lv">${l}</span>
       <span class="lname">${LEVEL_NAMES[k]}</span>${chip}
-      <small>${timeFor(modeId, l)} s per question · ×${(1 + k * 0.25).toFixed(2)}</small>
+      <small>${t ? t + " s per question" : "No timer"} · ×${(1 + k * 0.25).toFixed(2)}</small>
       <small>Best: <span class="num">${best ? fmt(best) : "—"}</span></small>
     </button>`;
   }).join("");
+  const notes = {
+    olympiad: "Puzzle questions in the style of maths olympiads, kept friendly for the clock. Level 5 has no timer, so take your time and think it through.",
+    science: "Levels 1 to 4 cover everyday science. Level 5 is trick questions: read carefully, the answer is easier than it looks.",
+    math: "Math Sprint builds new sums every time you play, and each level uses harder operations.",
+  };
   view.innerHTML = `<section style="display:grid;gap:14px;--mc:var(${m.color})">
     <button class="back" id="back">← All games</button>
     <div class="mode-row"><span class="glyph" aria-hidden="true">${m.glyph}</span>
       <div><h2>${m.name}</h2><p class="hint" style="margin:0">${m.blurb}</p></div></div>
     <div class="levels">${cards}</div>
-    <div class="rules">${modeId === "math" ? "Math Sprint builds new sums every time you play, and each level uses harder operations." : "Each level has its own set of " + PER_ROUND + " questions, so moving up always means new material."} The timer gets shorter as you climb.</div>
+    <div class="rules">${notes[modeId] || "Each level has its own set of " + PER_ROUND + " questions, so moving up always means new material. The timer gets shorter as you climb."}</div>
   </section>`;
   $("#back").addEventListener("click", () => go({ name: "home" }));
   view.querySelectorAll("[data-level]").forEach(b => b.addEventListener("click", () => startGame(modeId, Number(b.dataset.level))));
@@ -565,7 +1028,7 @@ function startGame(mode, level) {
   game = { mode, level, qs: buildRound(mode, level), i: 0, points: 0, correct: 0, streak: 0, bestStreak: 0,
            limit: timeFor(mode, level), left: 0, locked: false, results: [] };
   screen = { name: "game" };
-  setTab("play");
+  renderHeader();
   renderQuestion();
 }
 
@@ -573,6 +1036,7 @@ function quitGame() { clearInterval(tick); tick = null; game = null; }
 
 function renderQuestion() {
   const m = modeById(game.mode), q = game.qs[game.i];
+  const timed = game.limit > 0;
   const prog = game.qs.map((_, k) => {
     const r = game.results[k];
     return `<span class="${r ? (r.ok ? "ok" : "no") : (k === game.i ? "now" : "")}"></span>`;
@@ -590,17 +1054,15 @@ function renderQuestion() {
   }
   view.innerHTML = `<section class="game" style="--mc:var(${m.color})">
     <div class="hud">
-      <div class="hud-group">
-        <div class="stat"><span class="label">${esc(m.name)}</span><span class="num">Level ${game.level}</span></div>
-        <div class="stat"><span class="label">Question</span><span class="num">${game.i + 1}/${game.qs.length}</span></div>
-        <div class="stat"><span class="label">Points</span><span class="num" id="pts">${fmt(game.points)}</span></div>
-        <div class="stat"><span class="label">Streak</span><span class="num">${game.streak}</span></div>
-      </div>
+      <div class="stat"><span class="label">${esc(m.name)}</span><span class="num">Level ${game.level}</span></div>
+      <div class="stat"><span class="label">Question</span><span class="num">${game.i + 1}/${game.qs.length}</span></div>
+      <div class="stat"><span class="label">Points</span><span class="num" id="pts">${fmt(game.points)}</span></div>
+      <div class="stat"><span class="label">Streak</span><span class="num">${game.streak}</span></div>
     </div>
     <div class="progress" aria-hidden="true">${prog}</div>
     <div class="timer">
-      <div class="timer-top"><span class="label">Time left</span><span class="num" id="t-num">${game.limit}s</span></div>
-      <div class="bar"><i id="t-bar"></i></div>
+      <div class="timer-top"><span class="label">${timed ? "Time left" : "No time limit"}</span><span class="num" id="t-num">${timed ? game.limit + "s" : "∞"}</span></div>
+      <div class="bar ${timed ? "" : "calm"}"><i id="t-bar"></i></div>
     </div>
     <div class="question">${m.kind === "type" ? "Unscramble this word" : esc(q.q)}</div>
     ${body}
@@ -624,12 +1086,11 @@ function renderQuestion() {
   game.started = performance.now();
   game.left = game.limit;
   clearInterval(tick);
-  tick = setInterval(updateTimer, 100);
-  updateTimer();
+  if (timed) { tick = setInterval(updateTimer, 100); updateTimer(); }
 }
 
 function updateTimer() {
-  if (!game || game.locked) return;
+  if (!game || game.locked || !game.limit) return;
   const elapsed = (performance.now() - game.started) / 1000;
   game.left = Math.max(0, game.limit - elapsed);
   const frac = game.left / game.limit, low = game.left <= 5;
@@ -649,7 +1110,7 @@ function answer(choice) {
   if (ok) {
     game.correct++; game.streak++; game.bestStreak = Math.max(game.bestStreak, game.streak);
     const mult = 1 + (game.level - 1) * 0.25;
-    const speed = Math.round((game.left / game.limit) * 100);
+    const speed = game.limit ? Math.round((game.left / game.limit) * 100) : 50;
     const streakBonus = game.streak >= 3 ? 25 * (game.streak - 2) : 0;
     gained = Math.round((100 + speed) * mult) + streakBonus;
     game.points += gained;
@@ -660,7 +1121,6 @@ function answer(choice) {
 
   if (m.kind === "type") {
     const inp = $("#type-input"); inp.disabled = true; inp.classList.add(ok ? "correct" : "wrong");
-    if (choice === null) inp.value = "";
     view.querySelector("#type-form .btn").disabled = true;
   } else {
     view.querySelectorAll(".ans").forEach(b => {
@@ -669,11 +1129,10 @@ function answer(choice) {
       else if (b.dataset.opt === choice) b.classList.add("wrong");
     });
   }
-  const fb = $("#feedback");
   const msg = ok ? `<span class="good gain">Correct! +${fmt(gained)}</span>`
     : choice === null ? `<span class="bad">Time's up. The answer was ${esc(q.answer)}.</span>`
     : `<span class="bad">Not quite. The answer was ${esc(q.answer)}.</span>`;
-  fb.innerHTML = msg + (q.note ? `<span class="note">${esc(q.note)}</span>` : "");
+  $("#feedback").innerHTML = msg + (q.note ? `<span class="note">${esc(q.note)}</span>` : "");
   $("#pts").textContent = fmt(game.points);
   const next = $("#next"); next.hidden = false; next.focus();
 }
@@ -688,19 +1147,23 @@ function advance() {
 function finishGame() {
   clearInterval(tick);
   const g = game; game = null;
+  const a = me();
   const passed = g.correct >= PASS;
   let newUnlock = false;
-  if (passed && g.level === state.unlocked[g.mode] && g.level < LEVELS) { state.unlocked[g.mode] = g.level + 1; newUnlock = true; }
-  const rec = { id: "g-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ts: Date.now(),
+  if (passed && g.level === (a.unlocked[g.mode] || 1) && g.level < LEVELS) { a.unlocked[g.mode] = g.level + 1; newUnlock = true; }
+  const rec = { id: "g-" + Date.now().toString(36) + randId(4), ts: Date.now(), acct: a.id,
     mode: g.mode, level: g.level, correct: g.correct, total: g.qs.length, points: g.points, passed, bestStreak: g.bestStreak };
-  saveGame(rec);
+  state.games.unshift(rec);
+  a.lastUsed = Date.now();
+  persistGame(rec);
+  persistAccount(a);
   go({ name: "result", rec, recap: g.results, newUnlock });
 }
 
 function renderResult(rec, recap, newUnlock) {
   const m = modeById(rec.mode);
-  const best = bestFor(rec.mode, rec.level);
-  const isBest = rec.points > 0 && rec.points === best && state.games.filter(g => g.mode === rec.mode && g.level === rec.level && g.points === best).length === 1;
+  const same = myGames().filter(g => g.mode === rec.mode && g.level === rec.level);
+  const isBest = rec.points > 0 && same.length > 1 && same.every(g => g.id === rec.id || g.points < rec.points);
   const headline = rec.passed ? (rec.correct === rec.total ? "Perfect round" : "Level cleared") : "Not this time";
   const sub = rec.passed
     ? (newUnlock ? `Level ${rec.level + 1} is now open, with a new set of questions.` : rec.level === LEVELS ? "You've cleared the top level of this game." : "Nice work. Keep pushing your best score.")
@@ -717,7 +1180,7 @@ function renderResult(rec, recap, newUnlock) {
     <div class="result-stats">
       <div><span class="label">Correct</span><span class="num">${rec.correct}/${rec.total}</span></div>
       <div><span class="label">Best streak</span><span class="num">${rec.bestStreak}</span></div>
-      <div><span class="label">Total points</span><span class="num">${fmt(totalPoints())}</span></div>
+      <div><span class="label">Your total</span><span class="num">${fmt(pointsOf(state.active))}</span></div>
     </div>
     <ul class="recap">${items}</ul>
     <div class="actions">
@@ -736,12 +1199,12 @@ function renderResult(rec, recap, newUnlock) {
 
 /* ----------------------------------------------------------------- records */
 function renderRecords() {
-  const games = state.games;
+  const a = me();
+  const games = myGames();
   const played = games.length;
   const answered = games.reduce((s, g) => s + g.total, 0);
   const right = games.reduce((s, g) => s + g.correct, 0);
   const acc = answered ? Math.round(right / answered * 100) : 0;
-  const clearedLevels = MODES.reduce((s, m) => s + [1, 2, 3, 4, 5].filter(l => clearedFor(m.id, l)).length, 0);
   const bests = MODES.map(m => {
     const mg = games.filter(g => g.mode === m.id);
     const top = mg.reduce((b, g) => (!b || g.points > b.points ? g : b), null);
@@ -754,38 +1217,59 @@ function renderRecords() {
   const rows = games.slice(0, 100).map(g => {
     const m = modeById(g.mode); const d = new Date(g.ts);
     return `<tr><td>${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })} <span class="hint">${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</span></td>
-      <td><span class="dot" style="--mc:var(${m.color})"></span>${m.name}</td>
+      <td><span class="mdot" style="--mc:var(${m.color})"></span>${m.name}</td>
       <td class="num">L${g.level}</td>
       <td class="num r">${g.correct}/${g.total}</td>
       <td class="num r">${fmt(g.points)}</td>
       <td><span class="chip ${g.passed ? "good" : "bad"}">${g.passed ? "Cleared" : "Missed"}</span></td></tr>`;
   }).join("");
+  const board = state.accounts.map(p => ({ p, pts: pointsOf(p.id), n: gamesOf(p.id).length, lv: clearedCountOf(p.id) }))
+    .sort((x, y) => y.pts - x.pts)
+    .map((r, i) => `<tr class="${r.p.id === a.id ? "me" : ""}"><td class="num">${i + 1}</td>
+      <td><span class="cell-player">${avatar(r.p)}${esc(r.p.name)}${r.p.id === a.id ? ' <span class="hint">(you)</span>' : ""}</span></td>
+      <td class="num r">${fmt(r.pts)}</td><td class="num r">${r.n}</td><td class="num r">${r.lv}/${MODES.length * LEVELS}</td></tr>`).join("");
   view.innerHTML = `<section style="display:grid;gap:16px">
-    <div class="section-head"><h2>Your records</h2><p>Every round you finish is logged here.</p></div>
+    <div class="section-head"><h2>${esc(a.name)}'s records</h2><p>Every round you finish is logged here.</p></div>
     <div class="tiles-row">
-      <div class="kpi"><span class="label">Total points</span><span class="num">${fmt(totalPoints())}</span><small>across all games</small></div>
+      <div class="kpi"><span class="label">Total points</span><span class="num">${fmt(pointsOf(a.id))}</span><small>across all games</small></div>
       <div class="kpi"><span class="label">Games played</span><span class="num">${played}</span><small>${right} correct answers</small></div>
       <div class="kpi"><span class="label">Accuracy</span><span class="num">${answered ? acc + "%" : "—"}</span><small>${answered} questions answered</small></div>
-      <div class="kpi"><span class="label">Levels cleared</span><span class="num">${clearedLevels}/${MODES.length * LEVELS}</span><small>in ${MODES.length} games</small></div>
+      <div class="kpi"><span class="label">Levels cleared</span><span class="num">${clearedCountOf(a.id)}/${MODES.length * LEVELS}</span><small>in ${MODES.length} games</small></div>
     </div>
     <h3>Best by game</h3>
     <div class="mode-bests">${bests}</div>
     <h3>Game history</h3>
     <div class="table-wrap">${played ? `<table><thead><tr><th>When</th><th>Game</th><th>Level</th><th class="r">Correct</th><th class="r">Points</th><th>Result</th></tr></thead><tbody>${rows}</tbody></table>`
       : `<div class="empty">No games yet. Finished rounds appear here with their score, level and result.<br><br><button class="btn" id="go-play">Play your first game</button></div>`}</div>
-    ${played ? `<div class="danger" id="danger"><span>Start over with all levels locked again?</span><button class="btn ghost" id="reset">Reset records</button></div>` : ""}
+    <h3>All players</h3>
+    <div class="table-wrap"><table><thead><tr><th>#</th><th>Player</th><th class="r">Points</th><th class="r">Games</th><th class="r">Levels cleared</th></tr></thead><tbody>${board}</tbody></table></div>
+    ${played ? `<div class="danger" id="danger"><span>Start over with all of your levels locked again?</span><button class="btn ghost" id="reset">Reset my records</button></div>` : ""}
   </section>`;
   if (!played) $("#go-play").addEventListener("click", () => go({ name: "home" }));
   else $("#reset").addEventListener("click", () => {
     const box = $("#danger");
-    box.innerHTML = `<span>This deletes all ${played} games and your level progress.</span><button class="btn ghost" id="cancel">Keep records</button><button class="btn warn" id="confirm">Delete everything</button>`;
+    box.innerHTML = `<span>This deletes your ${played} games and level progress.</span><button class="btn ghost" id="cancel">Keep records</button><button class="btn warn" id="confirm">Delete my records</button>`;
     $("#cancel").addEventListener("click", renderRecords);
-    $("#confirm").addEventListener("click", async () => { $("#confirm").disabled = true; await resetRecords(); renderRecords(); renderTotal(); });
+    $("#confirm").addEventListener("click", async () => {
+      $("#confirm").disabled = true;
+      const ids = games.map(g => g.id);
+      state.games = state.games.filter(g => g.acct !== a.id);
+      a.unlocked = freshUnlocked();
+      persistAccount(a);
+      for (const id of ids) await cloudDel(id);
+      renderRecords(); renderHeader();
+    });
   });
 }
 
 /* ---------------------------------------------------------------- keyboard */
 document.addEventListener("keydown", e => {
+  if (screen.name === "pin") {
+    if (/^\d$/.test(e.key)) { e.preventDefault(); pinKey(e.key); }
+    else if (e.key === "Backspace") { e.preventDefault(); pinKey("del"); }
+    else if (e.key === "Escape") go({ name: "players" });
+    return;
+  }
   if (screen.name !== "game" || !game) return;
   if (e.target && e.target.tagName === "INPUT") return;
   const m = modeById(game.mode);
@@ -799,6 +1283,7 @@ document.addEventListener("keydown", e => {
 
 /* -------------------------------------------------------------------- boot */
 readLocal();
+screen = me() ? { name: "home" } : { name: "players" };
 render();
 initCloud();
 })();
