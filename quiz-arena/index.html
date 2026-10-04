@@ -90,6 +90,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); ou
 .keypad button:hover:not(:disabled) { border-color: var(--accent); }
 .keypad button.soft { font-family: var(--f-body); font-size: 14px; font-weight: 600; color: var(--muted); }
 .keypad button:disabled { opacity: .4; cursor: default; }
+.keypad button.ok { grid-column: 1 / -1; background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-family: var(--f-body); font-size: 16px; }
 .msg { min-height: 22px; font-weight: 600; font-size: 14px; margin: 0; }
 .msg.err { color: var(--bad); }
 .msg.ok { color: var(--good); }
@@ -102,7 +103,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); ou
 .field { display: grid; gap: 4px; min-width: 0; }
 .field label { font-weight: 600; font-size: 13.5px; }
 .input { font: inherit; padding: 10px 12px; border-radius: 10px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); width: 100%; min-width: 0; }
-.input.pin { font-family: var(--f-mono); letter-spacing: .5em; font-size: 18px; max-width: 170px; }
+.input.pin { font-family: var(--f-mono); letter-spacing: .5em; font-size: 18px; max-width: 230px; }
 .row2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
 .swatches { display: flex; flex-wrap: wrap; gap: 10px; }
 .swatch { position: relative; }
@@ -491,7 +492,8 @@ const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
 const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const fmt = n => Number(n).toLocaleString("en-US");
 const modeById = id => MODES.find(m => m.id === id) || MODES[0];
-const isPin = v => /^\d{4}$/.test(v);
+const PIN_MIN = 4, PIN_MAX = 8;
+const isPin = v => /^\d{4,8}$/.test(v);
 const initial = name => (name.trim()[0] || "?").toUpperCase();
 const avatar = (a, size = "") => `<span class="avatar ${size}" style="--ac:var(${a.color})" aria-hidden="true">${esc(initial(a.name))}</span>`;
 function randId(n) {
@@ -732,7 +734,7 @@ function renderPlayers() {
   const legacyNote = state.legacy.games.length
     ? `<div class="banner">${state.legacy.games.length} game${state.legacy.games.length === 1 ? "" : "s"} from before accounts existed will be added to the first player you create.</div>` : "";
   view.innerHTML = `<section style="display:grid;gap:16px">
-    <div class="section-head"><h2>Who's playing?</h2><p>Tap your name, then enter your 4-digit PIN.</p></div>
+    <div class="section-head"><h2>Who's playing?</h2><p>Tap your name, then enter your PIN.</p></div>
     ${legacyNote}
     <div class="players">${cards}
       <button class="player new" id="new-player"><span class="plus">+</span><span>New player</span></button>
@@ -751,7 +753,8 @@ function renderPin() {
   if (!a) return go({ name: "players" });
   const backup = screen.mode === "backup";
   const locked = lockLeft(a.id);
-  const dots = [0, 1, 2, 3].map(i => `<span class="${i < screen.entry.length ? "on" : ""}"></span>`).join("");
+  const slots = Math.min(PIN_MAX, Math.max(PIN_MIN, screen.entry.length));
+  const dots = Array.from({ length: slots }, (_, i) => `<span class="${i < screen.entry.length ? "on" : ""}"></span>`).join("");
   const keys = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => `<button data-k="${n}" ${locked ? "disabled" : ""}>${n}</button>`).join("");
   view.innerHTML = `<section style="display:grid;gap:14px">
     <button class="back" id="back">← All players</button>
@@ -759,12 +762,13 @@ function renderPin() {
       ${avatar(a, "lg")}
       <h2>${esc(a.name)}</h2>
       <p class="hint" style="margin:0">${backup ? "Enter your <b>backup PIN</b>" : "Enter your PIN"}</p>
-      <div class="pdots ${screen.shake ? "shake" : ""}" aria-label="${screen.entry.length} of 4 digits entered">${dots}</div>
+      <div class="pdots ${screen.shake ? "shake" : ""}" aria-label="${screen.entry.length} digits entered">${dots}</div>
       <p class="msg ${screen.msgOk ? "ok" : "err"}" id="pin-msg" aria-live="polite">${locked ? `Too many tries. Wait ${locked} s.` : esc(screen.msg || "")}</p>
       <div class="keypad">${keys}
         <button class="soft" data-k="clear" ${locked ? "disabled" : ""}>Clear</button>
         <button data-k="0" ${locked ? "disabled" : ""}>0</button>
         <button class="soft" data-k="del" ${locked ? "disabled" : ""} aria-label="Delete last digit">⌫</button>
+        <button class="ok" data-k="ok" ${locked || screen.entry.length < PIN_MIN ? "disabled" : ""}>Enter</button>
       </div>
       ${backup ? `<button class="link" id="swap">Use my regular PIN</button>` : `<button class="link" id="swap">Forgot your PIN? Use backup PIN</button>`}
     </div>
@@ -782,10 +786,9 @@ async function pinKey(k) {
   if (!a || lockLeft(a.id)) return;
   if (k === "del") screen.entry = screen.entry.slice(0, -1);
   else if (k === "clear") screen.entry = "";
-  else if (/^\d$/.test(k) && screen.entry.length < 4) screen.entry += k;
+  else if (/^\d$/.test(k) && screen.entry.length < PIN_MAX) screen.entry += k;
   screen.msg = "";
-  if (screen.entry.length < 4) return renderPin();
-  renderPin();
+  if (k !== "ok" || screen.entry.length < PIN_MIN) return renderPin();
   screen.busy = true;
   const which = screen.mode === "backup" ? "backup" : "pin";
   const ok = (await hashPin(a.salt, screen.entry)) === a[which];
@@ -826,12 +829,12 @@ function renderCreate() {
       <div class="field"><label for="c-name">Name</label><input class="input" id="c-name" maxlength="20" placeholder="e.g. Maya"></div>
       <div class="field"><label>Colour</label>${swatches("c-color", color)}</div>
       <div class="row2">
-        <div class="field"><label for="c-pin">PIN (4 digits)</label><input class="input pin" id="c-pin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*"></div>
-        <div class="field"><label for="c-pin2">Repeat PIN</label><input class="input pin" id="c-pin2" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*"></div>
+        <div class="field"><label for="c-pin">PIN (4 to 8 digits)</label><input class="input pin" id="c-pin" type="password" inputmode="numeric" maxlength="8" pattern="[0-9]*"></div>
+        <div class="field"><label for="c-pin2">Repeat PIN</label><input class="input pin" id="c-pin2" type="password" inputmode="numeric" maxlength="8" pattern="[0-9]*"></div>
       </div>
       <div class="row2">
-        <div class="field"><label for="c-bak">Backup PIN</label><input class="input pin" id="c-bak" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*"></div>
-        <div class="field"><label for="c-bak2">Repeat backup PIN</label><input class="input pin" id="c-bak2" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*"></div>
+        <div class="field"><label for="c-bak">Backup PIN</label><input class="input pin" id="c-bak" type="password" inputmode="numeric" maxlength="8" pattern="[0-9]*"></div>
+        <div class="field"><label for="c-bak2">Repeat backup PIN</label><input class="input pin" id="c-bak2" type="password" inputmode="numeric" maxlength="8" pattern="[0-9]*"></div>
       </div>
       <p class="fine">The backup PIN lets you in if you forget your regular PIN. Pick something different from your PIN that you'll still remember, like a birthday.</p>
       <p class="msg err" id="c-msg" aria-live="polite"></p>
@@ -849,9 +852,9 @@ function renderCreate() {
     const msg = $("#c-msg");
     if (!name) return msg.textContent = "Enter a name for this player.";
     if (state.accounts.some(a => a.name.toLowerCase() === name.toLowerCase())) return msg.textContent = `There's already a player called ${name}. Pick another name.`;
-    if (!isPin(pin)) return msg.textContent = "Your PIN must be exactly 4 digits.";
+    if (!isPin(pin)) return msg.textContent = "Your PIN must be 4 to 8 digits.";
     if (pin !== pin2) return msg.textContent = "The two PINs don't match.";
-    if (!isPin(bak)) return msg.textContent = "Your backup PIN must be exactly 4 digits.";
+    if (!isPin(bak)) return msg.textContent = "Your backup PIN must be 4 to 8 digits.";
     if (bak !== bak2) return msg.textContent = "The two backup PINs don't match.";
     if (bak === pin) return msg.textContent = "Your backup PIN must be different from your PIN.";
     const salt = randId(12);
@@ -868,7 +871,7 @@ function renderCreate() {
 /* --------------------------------------------------------- account page */
 function renderAccount() {
   const a = me();
-  const pinField = (id, label) => `<div class="field"><label for="${id}">${label}</label><input class="input pin" id="${id}" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]*"></div>`;
+  const pinField = (id, label) => `<div class="field"><label for="${id}">${label}</label><input class="input pin" id="${id}" type="password" inputmode="numeric" maxlength="8" pattern="[0-9]*"></div>`;
   view.innerHTML = `<section style="display:grid;gap:16px;--ac:var(${a.color})">
     <div class="player-row">${avatar(a, "md")}<div><h2 style="font-size:24px">${esc(a.name)}</h2>
       <div class="fine">Player since ${new Date(a.created).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })} · ${fmt(pointsOf(a.id))} points · ${myGames().length} games</div></div></div>
@@ -915,7 +918,7 @@ function renderAccount() {
       const h = await hashPin(a.salt, cur);
       if (!isPin(cur) || (h !== a.pin && h !== a.backup)) return say("#p-msg", "Your current PIN or backup PIN isn't right.");
     }
-    if (!isPin(n1)) return say("#p-msg", "The new PIN must be exactly 4 digits.");
+    if (!isPin(n1)) return say("#p-msg", "The new PIN must be 4 to 8 digits.");
     if (n1 !== n2) return say("#p-msg", "The two new PINs don't match.");
     const h1 = await hashPin(a.salt, n1);
     if (h1 === a.backup) return say("#p-msg", "Your PIN must be different from your backup PIN.");
@@ -929,7 +932,7 @@ function renderAccount() {
     e.preventDefault();
     const cur = $("#b-cur").value, n1 = $("#b-new").value, n2 = $("#b-new2").value;
     if (!isPin(cur) || (await hashPin(a.salt, cur)) !== a.pin) return say("#b-msg", "Your current PIN isn't right.");
-    if (!isPin(n1)) return say("#b-msg", "The backup PIN must be exactly 4 digits.");
+    if (!isPin(n1)) return say("#b-msg", "The backup PIN must be 4 to 8 digits.");
     if (n1 !== n2) return say("#b-msg", "The two backup PINs don't match.");
     if (n1 === cur) return say("#b-msg", "Your backup PIN must be different from your PIN.");
     a.backup = await hashPin(a.salt, n1); persistAccount(a);
@@ -1267,6 +1270,7 @@ document.addEventListener("keydown", e => {
   if (screen.name === "pin") {
     if (/^\d$/.test(e.key)) { e.preventDefault(); pinKey(e.key); }
     else if (e.key === "Backspace") { e.preventDefault(); pinKey("del"); }
+    else if (e.key === "Enter") { e.preventDefault(); pinKey("ok"); }
     else if (e.key === "Escape") go({ name: "players" });
     return;
   }
