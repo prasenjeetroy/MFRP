@@ -1,0 +1,805 @@
+<title>Brainstack Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one centred column (max 960px) — header with running total, tabs for Play / Records, then a single active screen. */
+:root {
+  --bg: #F2F3EC; --surface: #FFFFFF; --surface-2: #E9EBE2; --ink: #16213A; --muted: #586179; --line: #D8DBCF;
+  --accent: #2F4BD8; --accent-ink: #FFFFFF; --gold: #D9940A;
+  --good: #1B7F50; --good-bg: #DDF1E5; --bad: #BF3328; --bad-bg: #FAE3DF;
+  --m1: #2F4BD8; --m2: #0B7F82; --m3: #C27C00; --m4: #8239A0; --m5: #C9412C;
+  --shadow: 0 1px 0 rgba(22,33,58,.06), 0 8px 24px -12px rgba(22,33,58,.25);
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10141E; --surface: #192030; --surface-2: #222A3D; --ink: #E8EBF4; --muted: #9AA3B9; --line: #2C3549;
+    --accent: #8197FF; --accent-ink: #0D1230; --gold: #F2BC52;
+    --good: #52C98D; --good-bg: #173527; --bad: #F2806F; --bad-bg: #3B1E1C;
+    --m1: #8197FF; --m2: #3CC3C2; --m3: #F2BC52; --m4: #C98BE6; --m5: #F2806F;
+    --shadow: 0 1px 0 rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.7);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10141E; --surface: #192030; --surface-2: #222A3D; --ink: #E8EBF4; --muted: #9AA3B9; --line: #2C3549;
+  --accent: #8197FF; --accent-ink: #0D1230; --gold: #F2BC52;
+  --good: #52C98D; --good-bg: #173527; --bad: #F2806F; --bad-bg: #3B1E1C;
+  --m1: #8197FF; --m2: #3CC3C2; --m3: #F2BC52; --m4: #C98BE6; --m5: #F2806F;
+  --shadow: 0 1px 0 rgba(0,0,0,.3), 0 10px 28px -14px rgba(0,0,0,.7);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 960px; margin: 0 auto; padding: 20px 16px 48px; display: grid; gap: 20px; }
+h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.label { font-size: 11.5px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted); font-weight: 600; }
+
+/* header */
+.top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.logo { width: 42px; height: 42px; display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
+.logo span { border-radius: 3px; }
+.logo span:nth-child(1){background:var(--m1)} .logo span:nth-child(2){background:var(--m3)}
+.logo span:nth-child(3){background:var(--m2)} .logo span:nth-child(4){background:var(--m5)}
+.brand h1 { font-size: 26px; font-weight: 800; }
+.brand p { margin: 0; color: var(--muted); font-size: 13px; }
+.total { display: flex; align-items: baseline; gap: 8px; background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 10px; }
+.total .num { font-size: 20px; font-weight: 700; }
+.total .label { color: inherit; opacity: .75; }
+.tabs { display: flex; gap: 4px; background: var(--surface-2); padding: 4px; border-radius: 12px; width: fit-content; }
+.tab { border: 0; background: transparent; padding: 8px 18px; border-radius: 9px; font-weight: 600; color: var(--muted); }
+.tab[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: var(--shadow); }
+.sync { font-size: 12px; color: var(--muted); }
+
+/* mode grid */
+.section-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; }
+.section-head h2 { font-size: 22px; }
+.section-head p { margin: 0; color: var(--muted); }
+.modes { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.mode { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 14px; padding: 16px; display: grid; gap: 12px; position: relative; transition: transform .15s ease, border-color .15s ease; }
+.mode:hover { transform: translateY(-2px); border-color: var(--mc); }
+.mode-row { display: flex; gap: 12px; align-items: center; }
+.glyph { width: 46px; height: 46px; flex: none; border-radius: 12px; display: grid; place-items: center; font-family: var(--f-display); font-weight: 800; font-size: 20px; color: var(--surface); background: var(--mc); }
+.mode h3 { font-size: 18px; }
+.mode p { margin: 0; color: var(--muted); font-size: 13.5px; }
+.pips { display: flex; gap: 5px; align-items: center; }
+.pip { width: 100%; height: 6px; border-radius: 3px; background: var(--surface-2); }
+.pip.done { background: var(--mc); }
+.pip.open { background: color-mix(in srgb, var(--mc) 35%, var(--surface-2)); }
+.mode-meta { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted); }
+
+/* level picker */
+.back { border: 0; background: none; color: var(--muted); font-weight: 600; padding: 4px 0; }
+.back:hover { color: var(--ink); }
+.levels { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
+.level { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 14px; text-align: left; display: grid; gap: 6px; }
+.level:not(:disabled):hover { border-color: var(--mc); }
+.level:disabled { opacity: .55; cursor: not-allowed; }
+.level .lv { font-family: var(--f-display); font-size: 28px; font-weight: 800; line-height: 1; color: var(--mc); }
+.level .lname { font-weight: 700; }
+.level small { color: var(--muted); font-size: 12.5px; }
+.chip { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; width: fit-content; }
+.chip.good { background: var(--good-bg); color: var(--good); }
+.chip.bad { background: var(--bad-bg); color: var(--bad); }
+.chip.open { background: var(--surface-2); color: var(--ink); }
+.chip.lock { background: var(--surface-2); color: var(--muted); }
+.rules { background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; padding: 12px 16px; color: var(--muted); font-size: 13.5px; }
+.rules b { color: var(--ink); }
+
+/* game */
+.game { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; display: grid; gap: 18px; box-shadow: var(--shadow); }
+.hud { display: flex; flex-wrap: wrap; gap: 10px 22px; align-items: center; justify-content: space-between; }
+.hud-group { display: flex; gap: 22px; flex-wrap: wrap; }
+.hud .stat { display: grid; }
+.hud .stat .num { font-size: 18px; font-weight: 700; }
+.timer { display: grid; gap: 6px; }
+.timer-top { display: flex; justify-content: space-between; align-items: baseline; }
+.timer-top .num { font-size: 22px; font-weight: 700; }
+.timer-top .num.low { color: var(--bad); }
+.bar { height: 8px; background: var(--surface-2); border-radius: 4px; overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 100%; background: var(--mc); transform-origin: left; }
+.bar > i.low { background: var(--bad); }
+.progress { display: flex; gap: 4px; }
+.progress span { flex: 1; height: 4px; border-radius: 2px; background: var(--surface-2); }
+.progress span.ok { background: var(--good); }
+.progress span.no { background: var(--bad); }
+.progress span.now { background: var(--ink); }
+.question { font-family: var(--f-display); font-size: clamp(20px, 3.4vw, 28px); font-weight: 700; line-height: 1.25; text-wrap: balance; min-height: 2.5em; }
+.answers { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+.ans { display: flex; gap: 12px; align-items: center; text-align: left; border: 1.5px solid var(--line); background: var(--bg); padding: 13px 14px; border-radius: 12px; font-weight: 600; font-size: 15.5px; transition: border-color .12s, background .12s; }
+.ans:not(:disabled):hover { border-color: var(--mc); }
+.ans .key { font-family: var(--f-mono); font-size: 12px; width: 24px; height: 24px; flex: none; border-radius: 6px; display: grid; place-items: center; background: var(--surface-2); color: var(--muted); }
+.ans.correct { border-color: var(--good); background: var(--good-bg); color: var(--good); }
+.ans.wrong { border-color: var(--bad); background: var(--bad-bg); color: var(--bad); }
+.ans:disabled { cursor: default; }
+.tiles { display: flex; flex-wrap: wrap; gap: 6px; }
+.tile { width: 40px; height: 46px; display: grid; place-items: center; border-radius: 8px; background: var(--surface-2); border-bottom: 3px solid var(--line); font-family: var(--f-display); font-weight: 800; font-size: 22px; }
+.hint { color: var(--muted); }
+.typed { display: flex; gap: 10px; flex-wrap: wrap; }
+.typed input { flex: 1 1 200px; min-width: 0; font: inherit; font-size: 18px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; padding: 12px 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--bg); color: var(--ink); }
+.typed input.correct { border-color: var(--good); background: var(--good-bg); }
+.typed input.wrong { border-color: var(--bad); background: var(--bad-bg); }
+.btn { border: 0; border-radius: 11px; padding: 12px 18px; font-weight: 700; background: var(--accent); color: var(--accent-ink); }
+.btn.ghost { background: var(--surface-2); color: var(--ink); }
+.btn:disabled { opacity: .5; cursor: default; }
+.feedback { min-height: 24px; font-weight: 600; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: baseline; }
+.feedback .good { color: var(--good); }
+.feedback .bad { color: var(--bad); }
+.feedback .note { color: var(--muted); font-weight: 500; }
+.gain { animation: pop .5s ease; display: inline-block; }
+@keyframes pop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
+.game-foot { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+
+/* results */
+.result { text-align: center; justify-items: center; }
+.result .big { font-family: var(--f-display); font-size: 56px; font-weight: 800; line-height: 1; }
+.result-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; width: 100%; max-width: 480px; }
+.result-stats div { background: var(--bg); border-radius: 10px; padding: 10px; display: grid; }
+.result-stats .num { font-size: 20px; font-weight: 700; }
+.recap { width: 100%; max-width: 620px; text-align: left; display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.recap li { display: flex; gap: 10px; align-items: baseline; padding: 8px 10px; border-radius: 8px; background: var(--bg); font-size: 14px; }
+.recap li b { margin-left: auto; white-space: nowrap; }
+.recap .mark { font-weight: 800; width: 14px; flex: none; }
+.recap .mark.ok { color: var(--good); } .recap .mark.no { color: var(--bad); }
+.recap .q { min-width: 0; }
+.recap .q small { display: block; color: var(--muted); }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+/* records */
+.tiles-row { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px; display: grid; gap: 2px; }
+.kpi .num { font-size: 26px; font-weight: 700; }
+.kpi small { color: var(--muted); }
+.mode-bests { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.mb { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--mc); border-radius: 10px; padding: 12px; display: grid; gap: 4px; }
+.mb b { font-size: 14px; }
+.mb .num { font-size: 18px; font-weight: 700; }
+.mb small { color: var(--muted); font-size: 12.5px; }
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+table { width: 100%; border-collapse: collapse; min-width: 560px; font-size: 14px; }
+th, td { padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--line); }
+th { font-size: 11.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); font-weight: 600; }
+td.r, th.r { text-align: right; }
+tr:last-child td { border-bottom: 0; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: var(--mc); margin-right: 8px; }
+.empty { padding: 28px; text-align: center; color: var(--muted); }
+.danger { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; justify-content: flex-end; font-size: 13.5px; color: var(--muted); }
+.btn.warn { background: var(--bad); color: var(--surface); }
+
+@media (max-width: 640px) {
+  .tiles-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .result .big { font-size: 44px; }
+  .tile { width: 34px; height: 40px; font-size: 19px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      <div>
+        <h1>Brainstack</h1>
+        <p>Five quiz games, five levels each, every level a fresh set of questions.</p>
+      </div>
+    </div>
+    <div class="total" title="Points earned across every game you have played">
+      <span class="label">Total points</span><span class="num" id="total-points">0</span>
+    </div>
+  </header>
+
+  <div class="top">
+    <nav class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tab-play" aria-selected="true">Play</button>
+      <button class="tab" role="tab" id="tab-records" aria-selected="false">Records</button>
+    </nav>
+    <span class="sync" id="sync">Saving records in this browser</span>
+  </div>
+
+  <main id="view"></main>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ------------------------------------------------------------------ content */
+const LEVELS = 5, PER_ROUND = 6, PASS = 4;
+const LEVEL_NAMES = ["Warm-up", "Rookie", "Skilled", "Expert", "Master"];
+
+const MODES = [
+  { id: "trivia",    name: "General Trivia", glyph: "?",  color: "--m1", kind: "mc",
+    blurb: "Science, history, art and the natural world." },
+  { id: "capitals",  name: "Capital Cities", glyph: "◎",  color: "--m2", kind: "mc",
+    blurb: "Name the capital. Gets trickier as the map widens." },
+  { id: "math",      name: "Math Sprint",    glyph: "÷",  color: "--m3", kind: "mc",
+    blurb: "Mental arithmetic, freshly generated every round." },
+  { id: "truefalse", name: "True or False",  glyph: "T/F", color: "--m4", kind: "tf",
+    blurb: "Facts and famous myths. Spot which is which." },
+  { id: "scramble",  name: "Word Scramble",  glyph: "Aa", color: "--m5", kind: "type",
+    blurb: "Unscramble the letters and type the word." },
+];
+
+// Each level has its own, non-overlapping set of questions.
+const TRIVIA = [
+  [ ["How many continents are there on Earth?", "7", "5", "6", "8"],
+    ["Which planet is known as the Red Planet?", "Mars", "Venus", "Jupiter", "Mercury"],
+    ["What is the largest ocean on Earth?", "Pacific", "Atlantic", "Indian", "Arctic"],
+    ["How many legs does a spider have?", "8", "6", "10", "12"],
+    ["Which gas do plants absorb from the air for photosynthesis?", "Carbon dioxide", "Oxygen", "Nitrogen", "Helium"],
+    ["Which big cat is often called the King of the Jungle?", "Lion", "Tiger", "Leopard", "Jaguar"] ],
+  [ ["Who painted the Mona Lisa?", "Leonardo da Vinci", "Michelangelo", "Raphael", "Vincent van Gogh"],
+    ["What is the hardest natural substance?", "Diamond", "Quartz", "Granite", "Iron"],
+    ["What is the chemical symbol for gold?", "Au", "Ag", "Gd", "Go"],
+    ["How many bones are in the adult human body?", "206", "186", "212", "256"],
+    ["In which year did humans first land on the Moon?", "1969", "1965", "1972", "1959"],
+    ["Which is the largest planet in our solar system?", "Jupiter", "Saturn", "Neptune", "Earth"] ],
+  [ ["What is the smallest prime number?", "2", "1", "3", "0"],
+    ["Which language has the most native speakers?", "Mandarin Chinese", "English", "Spanish", "Hindi"],
+    ["Which part of the cell is called its powerhouse?", "Mitochondria", "Nucleus", "Ribosome", "Golgi apparatus"],
+    ["Who wrote “Pride and Prejudice”?", "Jane Austen", "Charlotte Brontë", "Mary Shelley", "George Eliot"],
+    ["Roughly how fast does light travel in a vacuum?", "300,000 km/s", "30,000 km/s", "150,000 km/s", "3,000,000 km/s"],
+    ["Which element has atomic number 1?", "Hydrogen", "Helium", "Oxygen", "Lithium"] ],
+  [ ["Who formulated the three laws of motion?", "Isaac Newton", "Galileo Galilei", "Albert Einstein", "Johannes Kepler"],
+    ["What is the largest organ of the human body?", "Skin", "Liver", "Brain", "Lungs"],
+    ["Which blood type is known as the universal donor?", "O negative", "AB positive", "A negative", "B positive"],
+    ["Who composed the “Moonlight Sonata”?", "Ludwig van Beethoven", "Wolfgang Amadeus Mozart", "Johann Sebastian Bach", "Frédéric Chopin"],
+    ["What does DNA stand for?", "Deoxyribonucleic acid", "Dinitrogen acid", "Deoxyribose nitrate", "Dual nucleic acid"],
+    ["Which country spans the most time zones, counting overseas territories?", "France", "Russia", "United States", "China"] ],
+  [ ["Which metal is liquid at standard room temperature?", "Mercury", "Gallium", "Cesium", "Lead"],
+    ["In which year did the Berlin Wall fall?", "1989", "1991", "1987", "1985"],
+    ["What is the SI unit of electrical resistance?", "Ohm", "Volt", "Ampere", "Watt"],
+    ["Which ancient wonder stood at Alexandria?", "The Lighthouse (Pharos)", "The Hanging Gardens", "The Colossus", "The Temple of Artemis"],
+    ["Which planet has the most confirmed moons?", "Saturn", "Jupiter", "Uranus", "Neptune"],
+    ["Who developed the general theory of relativity?", "Albert Einstein", "Niels Bohr", "Max Planck", "Stephen Hawking"] ],
+];
+
+const CAPITALS = [
+  [ ["France", "Paris", "Lyon", "Marseille", "Nice"],
+    ["Japan", "Tokyo", "Osaka", "Kyoto", "Yokohama"],
+    ["Italy", "Rome", "Milan", "Venice", "Naples"],
+    ["Egypt", "Cairo", "Alexandria", "Luxor", "Giza"],
+    ["the United Kingdom", "London", "Manchester", "Edinburgh", "Birmingham"],
+    ["Russia", "Moscow", "Saint Petersburg", "Kazan", "Novosibirsk"] ],
+  [ ["Spain", "Madrid", "Barcelona", "Seville", "Valencia"],
+    ["Germany", "Berlin", "Munich", "Hamburg", "Frankfurt"],
+    ["India", "New Delhi", "Mumbai", "Kolkata", "Bengaluru"],
+    ["China", "Beijing", "Shanghai", "Hong Kong", "Guangzhou"],
+    ["Greece", "Athens", "Thessaloniki", "Sparta", "Patras"],
+    ["Mexico", "Mexico City", "Guadalajara", "Cancún", "Monterrey"] ],
+  [ ["Australia", "Canberra", "Sydney", "Melbourne", "Perth"],
+    ["Canada", "Ottawa", "Toronto", "Vancouver", "Montreal"],
+    ["Brazil", "Brasília", "Rio de Janeiro", "São Paulo", "Salvador"],
+    ["Turkey", "Ankara", "Istanbul", "Izmir", "Antalya"],
+    ["Switzerland", "Bern", "Zurich", "Geneva", "Basel"],
+    ["New Zealand", "Wellington", "Auckland", "Christchurch", "Hamilton"] ],
+  [ ["Nigeria", "Abuja", "Lagos", "Kano", "Ibadan"],
+    ["Pakistan", "Islamabad", "Karachi", "Lahore", "Peshawar"],
+    ["Vietnam", "Hanoi", "Ho Chi Minh City", "Da Nang", "Huế"],
+    ["Morocco", "Rabat", "Casablanca", "Marrakesh", "Fez"],
+    ["Kenya", "Nairobi", "Mombasa", "Kisumu", "Nakuru"],
+    ["Peru", "Lima", "Cusco", "Arequipa", "Trujillo"] ],
+  [ ["Kazakhstan", "Astana", "Almaty", "Shymkent", "Karaganda"],
+    ["Myanmar", "Naypyidaw", "Yangon", "Mandalay", "Bago"],
+    ["Mongolia", "Ulaanbaatar", "Erdenet", "Darkhan", "Khovd"],
+    ["Bhutan", "Thimphu", "Paro", "Punakha", "Phuntsholing"],
+    ["Iceland", "Reykjavík", "Akureyri", "Kópavogur", "Húsavík"],
+    ["Tanzania", "Dodoma", "Dar es Salaam", "Arusha", "Zanzibar City"] ],
+];
+
+const TRUEFALSE = [
+  [ ["The Sun is a star.", true, "It is a G-type main-sequence star."],
+    ["Bats are blind.", false, "All bats can see; many also use echolocation."],
+    ["Water boils at 100 °C at sea level.", true, "At standard atmospheric pressure."],
+    ["Penguins can fly.", false, "Their wings are flippers built for swimming."],
+    ["A hexagon has six sides.", true, "Hex comes from the Greek for six."],
+    ["The Great Wall of China is visible from the Moon with the naked eye.", false, "It is far too narrow to see from that distance."] ],
+  [ ["Lightning never strikes the same place twice.", false, "Tall buildings are struck many times a year."],
+    ["Sound travels faster in water than in air.", true, "About four times faster."],
+    ["An octopus has three hearts.", true, "Two pump blood to the gills, one to the body."],
+    ["Goldfish only have a three-second memory.", false, "They can remember things for months."],
+    ["Venus is the hottest planet in the solar system.", true, "Its thick CO₂ atmosphere traps heat."],
+    ["Humans only use 10% of their brains.", false, "Brain scans show activity across nearly all regions."] ],
+  [ ["Botanically, bananas are berries but strawberries are not.", true, "Strawberries are aggregate accessory fruits."],
+    ["Mount Everest is the tallest mountain measured from base to peak.", false, "Mauna Kea is taller from its base on the sea floor."],
+    ["Glass is a slow-flowing liquid at room temperature.", false, "It is an amorphous solid; old windows were simply made uneven."],
+    ["Honey found in ancient Egyptian tombs was still edible.", true, "Its low moisture and acidity stop bacteria growing."],
+    ["Sharks are mammals.", false, "Sharks are fish; dolphins and whales are the mammals."],
+    ["A day on Venus is longer than a year on Venus.", true, "It rotates once every 243 Earth days but orbits in 225."] ],
+  [ ["Napoleon was unusually short for his time.", false, "He was about 1.69 m, average for a Frenchman then."],
+    ["Oxford University is older than the Aztec Empire.", true, "Teaching at Oxford began by 1096; Tenochtitlan was founded in 1325."],
+    ["Diamonds are made of carbon.", true, "Carbon atoms in a tightly bonded crystal lattice."],
+    ["Chameleons change colour mainly to camouflage.", false, "They mostly change colour to signal mood and regulate temperature."],
+    ["Sunlight takes about 8 minutes to reach Earth.", true, "Roughly 8 minutes 20 seconds."],
+    ["Viking warriors wore horned helmets in battle.", false, "That image comes from 19th-century opera costumes."] ],
+  [ ["There are more possible chess games than atoms in the observable universe.", true, "The Shannon number is around 10¹²⁰; atoms are around 10⁸⁰."],
+    ["Cleopatra lived closer in time to the Moon landing than to the building of the Great Pyramid.", true, "The pyramid was about 2,500 years before her; Apollo 11 about 2,000 after."],
+    ["The Eiffel Tower is taller in summer than in winter.", true, "Thermal expansion adds up to about 15 cm."],
+    ["Hot water always freezes faster than cold water.", false, "The Mpemba effect is rare and disputed, not a rule."],
+    ["Wombats produce cube-shaped droppings.", true, "Their intestines have varying elasticity that shapes them."],
+    ["Antarctica is the largest desert on Earth.", true, "A desert is defined by low precipitation, not heat."] ],
+];
+
+const SCRAMBLE = [
+  [ ["APPLE", "A fruit that keeps the doctor away"], ["HOUSE", "A place to live"], ["TIGER", "A striped big cat"],
+    ["WATER", "You drink it every day"], ["CHAIR", "You sit on it"], ["GREEN", "The colour of grass"] ],
+  [ ["PLANET", "It orbits a star"], ["GUITAR", "A six-string instrument"], ["CASTLE", "A royal fortress"],
+    ["BRIDGE", "It crosses a river"], ["PENCIL", "A writing tool with an eraser"], ["ORANGE", "A fruit and a colour"] ],
+  [ ["JOURNEY", "A long trip"], ["VOLCANO", "A mountain that erupts"], ["DIAMOND", "The hardest gemstone"],
+    ["LIBRARY", "A building full of books"], ["BLANKET", "Keeps you warm in bed"], ["DOLPHIN", "A clever marine mammal"] ],
+  [ ["ELEPHANT", "The largest land animal"], ["TREASURE", "Pirates bury it"], ["MOUNTAIN", "Everest is one"],
+    ["HOSPITAL", "Where doctors and nurses work"], ["KEYBOARD", "You type on it"], ["UMBRELLA", "Keeps the rain off"] ],
+  [ ["ADVENTURE", "An exciting experience"], ["CHOCOLATE", "Made from cocoa beans"], ["TELESCOPE", "Used to look at stars"],
+    ["BUTTERFLY", "It starts life as a caterpillar"], ["CROCODILE", "A large reptile with powerful jaws"], ["NEWSPAPER", "Daily printed news"] ],
+];
+
+const LEVEL_TIME = [20, 18, 16, 14, 12];      // seconds per question
+const SCRAMBLE_EXTRA = 10;
+
+/* ------------------------------------------------------------------ helpers */
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const shuffle = arr => { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const fmt = n => Number(n).toLocaleString("en-US");
+const modeById = id => MODES.find(m => m.id === id);
+const timeFor = (mode, level) => LEVEL_TIME[level - 1] + (mode === "scramble" ? SCRAMBLE_EXTRA : 0);
+
+/* ------------------------------------------------------------- math engine */
+function mathQuestion(level) {
+  let q, a;
+  const pick = rnd(0, 2);
+  if (level === 1) {
+    if (pick < 2) { const x = rnd(2, 15), y = rnd(2, 15); q = `${x} + ${y}`; a = x + y; }
+    else { const x = rnd(8, 20), y = rnd(1, x - 1); q = `${x} − ${y}`; a = x - y; }
+  } else if (level === 2) {
+    if (pick === 0) { const x = rnd(15, 75), y = rnd(12, 60); q = `${x} + ${y}`; a = x + y; }
+    else if (pick === 1) { const x = rnd(40, 99), y = rnd(11, 39); q = `${x} − ${y}`; a = x - y; }
+    else { const x = rnd(3, 10), y = rnd(3, 10); q = `${x} × ${y}`; a = x * y; }
+  } else if (level === 3) {
+    if (pick === 0) { const x = rnd(12, 49), y = rnd(3, 9); q = `${x} × ${y}`; a = x * y; }
+    else if (pick === 1) { const y = rnd(3, 12), a0 = rnd(6, 25); q = `${a0 * y} ÷ ${y}`; a = a0; }
+    else { const x = rnd(120, 480), y = rnd(110, 390); q = `${x} + ${y}`; a = x + y; }
+  } else if (level === 4) {
+    if (pick === 0) { const x = rnd(11, 39), y = rnd(11, 29); q = `${x} × ${y}`; a = x * y; }
+    else if (pick === 1) { const x = rnd(5, 40), y = rnd(3, 12), z = rnd(3, 12); q = `${x} + ${y} × ${z}`; a = x + y * z; }
+    else { const y = rnd(12, 25), a0 = rnd(12, 40); q = `${a0 * y} ÷ ${y}`; a = a0; }
+  } else {
+    if (pick === 0) { const x = rnd(13, 35); q = `${x}²`; a = x * x; }
+    else if (pick === 1) { const p = [5, 15, 25, 35, 45, 60, 75][rnd(0, 6)], y = rnd(2, 16) * 20; q = `${p}% of ${y}`; a = p * y / 100; }
+    else { const x = rnd(12, 30), y = rnd(12, 30), z = rnd(20, 150); q = `(${x} × ${y}) − ${z}`; a = x * y - z; }
+  }
+  const spread = Math.max(2, Math.round(Math.abs(a) * 0.12));
+  const wrong = new Set();
+  let guard = 0;
+  while (wrong.size < 3 && guard++ < 100) {
+    const off = [1, -1, 10, -10, 2, -2][rnd(0, 5)] * (rnd(0, 1) ? 1 : rnd(1, spread));
+    const w = a + off;
+    if (w !== a && w >= 0) wrong.add(w);
+  }
+  return { q: `${q} = ?`, answer: String(a), options: shuffle([a, ...wrong].map(String)) };
+}
+
+function scrambleWord(w) {
+  let s = w, guard = 0;
+  while (s === w && guard++ < 20) s = shuffle(w.split("")).join("");
+  return s;
+}
+
+function buildRound(mode, level) {
+  const i = level - 1;
+  let qs;
+  if (mode === "trivia") qs = TRIVIA[i].map(([q, a, ...w]) => ({ q, answer: a, options: shuffle([a, ...w]) }));
+  else if (mode === "capitals") qs = CAPITALS[i].map(([c, a, ...w]) => ({ q: `What is the capital of ${c}?`, answer: a, options: shuffle([a, ...w]) }));
+  else if (mode === "truefalse") qs = TRUEFALSE[i].map(([q, t, note]) => ({ q, answer: t ? "True" : "False", options: ["True", "False"], note }));
+  else if (mode === "scramble") qs = SCRAMBLE[i].map(([w, hint]) => ({ q: "Unscramble this word", answer: w, letters: scrambleWord(w), hint }));
+  else {
+    const seen = new Set(); qs = [];
+    while (qs.length < PER_ROUND) { const m = mathQuestion(level); if (!seen.has(m.q)) { seen.add(m.q); qs.push(m); } }
+  }
+  return shuffle(qs).slice(0, PER_ROUND);
+}
+
+/* ------------------------------------------------------------------ storage */
+// Records live in this viewer's private store when signed in, with a browser copy as fallback.
+const LS_KEY = "brainstack.v1";
+const state = { games: [], unlocked: {}, cloud: null };
+MODES.forEach(m => state.unlocked[m.id] = 1);
+
+function readLocal() {
+  try { const raw = localStorage.getItem(LS_KEY); if (!raw) return; const d = JSON.parse(raw);
+    if (Array.isArray(d.games)) state.games = d.games;
+    if (d.unlocked) Object.assign(state.unlocked, d.unlocked);
+  } catch (e) { /* storage unavailable */ }
+}
+function writeLocal() {
+  try { localStorage.setItem(LS_KEY, JSON.stringify({ games: state.games, unlocked: state.unlocked })); } catch (e) { /* ignore */ }
+}
+
+async function initCloud() {
+  try {
+    if (!window.claude || !window.claude.use) return;
+    const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    if (!db || !user) return;
+    const uid = await user.id();
+    if (!uid) return;
+    const col = db.collection("data/users/" + uid);
+    const snap = await col.get();
+    const games = [], unlocked = {};
+    snap.docs.forEach(d => {
+      if (!d.exists) return;
+      const v = d.data();
+      if (d.id === "progress") Object.assign(unlocked, v.unlocked || {});
+      else if (d.id.startsWith("g-")) games.push(v);
+    });
+    state.cloud = { col };
+    if (games.length || Object.keys(unlocked).length) {
+      // Merge cloud with anything played locally before sign-in.
+      const ids = new Set(games.map(g => g.id));
+      const localOnly = state.games.filter(g => !ids.has(g.id));
+      state.games = games.concat(localOnly).sort((a, b) => b.ts - a.ts);
+      MODES.forEach(m => state.unlocked[m.id] = Math.max(state.unlocked[m.id] || 1, unlocked[m.id] || 1));
+      localOnly.forEach(g => col.doc(g.id).set(g).catch(() => {}));
+    } else if (state.games.length) {
+      state.games.forEach(g => col.doc(g.id).set(g).catch(() => {}));
+      col.doc("progress").set({ unlocked: state.unlocked }).catch(() => {});
+    }
+    writeLocal();
+    $("#sync").textContent = "Records saved to your account";
+    if (screen.name !== "game") render();
+    else renderTotal();
+  } catch (e) {
+    $("#sync").textContent = "Saving records in this browser";
+  }
+}
+
+function saveGame(rec) {
+  state.games.unshift(rec);
+  writeLocal();
+  if (state.cloud) {
+    state.cloud.col.doc(rec.id).set(rec).catch(() => { $("#sync").textContent = "Couldn't reach your account; saved in this browser"; });
+    state.cloud.col.doc("progress").set({ unlocked: state.unlocked }).catch(() => {});
+  }
+}
+
+async function resetRecords() {
+  const ids = state.games.map(g => g.id);
+  state.games = [];
+  MODES.forEach(m => state.unlocked[m.id] = 1);
+  writeLocal();
+  if (state.cloud) {
+    for (const id of ids) { try { await state.cloud.col.doc(id).delete(); } catch (e) { /* ignore */ } }
+    try { await state.cloud.col.doc("progress").delete(); } catch (e) { /* ignore */ }
+  }
+}
+
+/* ------------------------------------------------------------------- stats */
+const totalPoints = () => state.games.reduce((s, g) => s + g.points, 0);
+const bestFor = (mode, level) => state.games.filter(g => g.mode === mode && g.level === level).reduce((m, g) => Math.max(m, g.points), 0);
+const clearedFor = (mode, level) => state.games.some(g => g.mode === mode && g.level === level && g.passed);
+function renderTotal() { $("#total-points").textContent = fmt(totalPoints()); }
+
+/* ------------------------------------------------------------------ screens */
+const view = $("#view");
+let screen = { name: "home" };
+let game = null;
+let tick = null;
+
+function setTab(which) {
+  $("#tab-play").setAttribute("aria-selected", String(which === "play"));
+  $("#tab-records").setAttribute("aria-selected", String(which === "records"));
+}
+$("#tab-play").addEventListener("click", () => { if (game) quitGame(); go({ name: "home" }); });
+$("#tab-records").addEventListener("click", () => { if (game) quitGame(); go({ name: "records" }); });
+
+function go(s) { screen = s; render(); window.scrollTo({ top: 0 }); }
+
+function render() {
+  renderTotal();
+  setTab(screen.name === "records" ? "records" : "play");
+  if (screen.name === "home") renderHome();
+  else if (screen.name === "levels") renderLevels(screen.mode);
+  else if (screen.name === "result") renderResult(screen.rec, screen.recap, screen.newUnlock);
+  else if (screen.name === "records") renderRecords();
+}
+
+function renderHome() {
+  const cards = MODES.map(m => {
+    const u = state.unlocked[m.id];
+    const cleared = [1, 2, 3, 4, 5].filter(l => clearedFor(m.id, l)).length;
+    const pips = Array.from({ length: LEVELS }, (_, k) => {
+      const l = k + 1; const cls = clearedFor(m.id, l) ? "done" : (l <= u ? "open" : "");
+      return `<span class="pip ${cls}"></span>`;
+    }).join("");
+    const played = state.games.filter(g => g.mode === m.id).length;
+    return `<button class="mode" style="--mc:var(${m.color})" data-mode="${m.id}">
+      <div class="mode-row"><span class="glyph" aria-hidden="true">${m.glyph}</span>
+        <div><h3>${m.name}</h3><p>${m.blurb}</p></div></div>
+      <div class="pips" aria-label="${cleared} of ${LEVELS} levels cleared">${pips}</div>
+      <div class="mode-meta"><span>${cleared}/${LEVELS} levels cleared</span><span>${played} game${played === 1 ? "" : "s"} played</span></div>
+    </button>`;
+  }).join("");
+  view.innerHTML = `<section style="display:grid;gap:14px">
+    <div class="section-head"><h2>Choose a game</h2><p>Clear a level with ${PASS} of ${PER_ROUND} correct to unlock the next.</p></div>
+    <div class="modes">${cards}</div>
+    <div class="rules"><b>Scoring.</b> Each correct answer earns 100 points plus up to 100 for speed, multiplied by the level (×1.0 at Level 1 up to ×2.0 at Level 5). Three or more correct in a row adds a streak bonus. Running out of time counts as a miss.</div>
+  </section>`;
+  view.querySelectorAll("[data-mode]").forEach(b => b.addEventListener("click", () => go({ name: "levels", mode: b.dataset.mode })));
+}
+
+function renderLevels(modeId) {
+  const m = modeById(modeId);
+  const u = state.unlocked[modeId];
+  const cards = Array.from({ length: LEVELS }, (_, k) => {
+    const l = k + 1, locked = l > u, cleared = clearedFor(modeId, l), best = bestFor(modeId, l);
+    const chip = locked ? `<span class="chip lock">Locked</span>` : cleared ? `<span class="chip good">Cleared</span>` : `<span class="chip open">Open</span>`;
+    return `<button class="level" data-level="${l}" ${locked ? "disabled" : ""}>
+      <span class="label">Level</span><span class="lv">${l}</span>
+      <span class="lname">${LEVEL_NAMES[k]}</span>${chip}
+      <small>${timeFor(modeId, l)} s per question · ×${(1 + k * 0.25).toFixed(2)}</small>
+      <small>Best: <span class="num">${best ? fmt(best) : "—"}</span></small>
+    </button>`;
+  }).join("");
+  view.innerHTML = `<section style="display:grid;gap:14px;--mc:var(${m.color})">
+    <button class="back" id="back">← All games</button>
+    <div class="mode-row"><span class="glyph" aria-hidden="true">${m.glyph}</span>
+      <div><h2>${m.name}</h2><p class="hint" style="margin:0">${m.blurb}</p></div></div>
+    <div class="levels">${cards}</div>
+    <div class="rules">${modeId === "math" ? "Math Sprint builds new sums every time you play, and each level uses harder operations." : "Each level has its own set of " + PER_ROUND + " questions, so moving up always means new material."} The timer gets shorter as you climb.</div>
+  </section>`;
+  $("#back").addEventListener("click", () => go({ name: "home" }));
+  view.querySelectorAll("[data-level]").forEach(b => b.addEventListener("click", () => startGame(modeId, Number(b.dataset.level))));
+}
+
+/* -------------------------------------------------------------------- game */
+function startGame(mode, level) {
+  game = { mode, level, qs: buildRound(mode, level), i: 0, points: 0, correct: 0, streak: 0, bestStreak: 0,
+           limit: timeFor(mode, level), left: 0, locked: false, results: [] };
+  screen = { name: "game" };
+  setTab("play");
+  renderQuestion();
+}
+
+function quitGame() { clearInterval(tick); tick = null; game = null; }
+
+function renderQuestion() {
+  const m = modeById(game.mode), q = game.qs[game.i];
+  const prog = game.qs.map((_, k) => {
+    const r = game.results[k];
+    return `<span class="${r ? (r.ok ? "ok" : "no") : (k === game.i ? "now" : "")}"></span>`;
+  }).join("");
+  let body;
+  if (m.kind === "type") {
+    body = `<div class="tiles" aria-label="Scrambled letters">${q.letters.split("").map(c => `<span class="tile">${c}</span>`).join("")}</div>
+      <div class="hint">Hint: ${esc(q.hint)} · ${q.answer.length} letters</div>
+      <form class="typed" id="type-form" autocomplete="off">
+        <input id="type-input" aria-label="Your answer" maxlength="${q.answer.length + 4}" autocapitalize="characters" spellcheck="false">
+        <button class="btn" type="submit">Submit</button>
+      </form>`;
+  } else {
+    body = `<div class="answers">${q.options.map((o, k) => `<button class="ans" data-opt="${esc(o)}"><span class="key">${m.kind === "tf" ? o[0] : k + 1}</span><span>${esc(o)}</span></button>`).join("")}</div>`;
+  }
+  view.innerHTML = `<section class="game" style="--mc:var(${m.color})">
+    <div class="hud">
+      <div class="hud-group">
+        <div class="stat"><span class="label">${esc(m.name)}</span><span class="num">Level ${game.level}</span></div>
+        <div class="stat"><span class="label">Question</span><span class="num">${game.i + 1}/${game.qs.length}</span></div>
+        <div class="stat"><span class="label">Points</span><span class="num" id="pts">${fmt(game.points)}</span></div>
+        <div class="stat"><span class="label">Streak</span><span class="num">${game.streak}</span></div>
+      </div>
+    </div>
+    <div class="progress" aria-hidden="true">${prog}</div>
+    <div class="timer">
+      <div class="timer-top"><span class="label">Time left</span><span class="num" id="t-num">${game.limit}s</span></div>
+      <div class="bar"><i id="t-bar"></i></div>
+    </div>
+    <div class="question">${m.kind === "type" ? "Unscramble this word" : esc(q.q)}</div>
+    ${body}
+    <div class="feedback" id="feedback" aria-live="polite"></div>
+    <div class="game-foot">
+      <button class="btn ghost" id="quit">Quit round</button>
+      <button class="btn" id="next" hidden>${game.i + 1 < game.qs.length ? "Next question →" : "See results →"}</button>
+    </div>
+  </section>`;
+
+  $("#quit").addEventListener("click", () => { const mode = game.mode; quitGame(); go({ name: "levels", mode }); });
+  $("#next").addEventListener("click", advance);
+  if (m.kind === "type") {
+    $("#type-form").addEventListener("submit", e => { e.preventDefault(); const v = $("#type-input").value.trim().toUpperCase(); if (v) answer(v); });
+    $("#type-input").focus();
+  } else {
+    view.querySelectorAll(".ans").forEach(b => b.addEventListener("click", () => answer(b.dataset.opt)));
+  }
+
+  game.locked = false;
+  game.started = performance.now();
+  game.left = game.limit;
+  clearInterval(tick);
+  tick = setInterval(updateTimer, 100);
+  updateTimer();
+}
+
+function updateTimer() {
+  if (!game || game.locked) return;
+  const elapsed = (performance.now() - game.started) / 1000;
+  game.left = Math.max(0, game.limit - elapsed);
+  const frac = game.left / game.limit, low = game.left <= 5;
+  const n = $("#t-num"), bar = $("#t-bar");
+  if (n) { n.textContent = Math.ceil(game.left) + "s"; n.classList.toggle("low", low); }
+  if (bar) { bar.style.transform = `scaleX(${frac})`; bar.classList.toggle("low", low); }
+  if (game.left <= 0) answer(null);
+}
+
+function answer(choice) {
+  if (!game || game.locked) return;
+  game.locked = true;
+  clearInterval(tick);
+  const m = modeById(game.mode), q = game.qs[game.i];
+  const ok = choice !== null && choice === q.answer;
+  let gained = 0;
+  if (ok) {
+    game.correct++; game.streak++; game.bestStreak = Math.max(game.bestStreak, game.streak);
+    const mult = 1 + (game.level - 1) * 0.25;
+    const speed = Math.round((game.left / game.limit) * 100);
+    const streakBonus = game.streak >= 3 ? 25 * (game.streak - 2) : 0;
+    gained = Math.round((100 + speed) * mult) + streakBonus;
+    game.points += gained;
+  } else {
+    game.streak = 0;
+  }
+  game.results[game.i] = { ok, q: m.kind === "type" ? `${q.letters} → ${q.answer}` : q.q, answer: q.answer, choice, gained, timeout: choice === null };
+
+  if (m.kind === "type") {
+    const inp = $("#type-input"); inp.disabled = true; inp.classList.add(ok ? "correct" : "wrong");
+    if (choice === null) inp.value = "";
+    view.querySelector("#type-form .btn").disabled = true;
+  } else {
+    view.querySelectorAll(".ans").forEach(b => {
+      b.disabled = true;
+      if (b.dataset.opt === q.answer) b.classList.add("correct");
+      else if (b.dataset.opt === choice) b.classList.add("wrong");
+    });
+  }
+  const fb = $("#feedback");
+  const msg = ok ? `<span class="good gain">Correct! +${fmt(gained)}</span>`
+    : choice === null ? `<span class="bad">Time's up. The answer was ${esc(q.answer)}.</span>`
+    : `<span class="bad">Not quite. The answer was ${esc(q.answer)}.</span>`;
+  fb.innerHTML = msg + (q.note ? `<span class="note">${esc(q.note)}</span>` : "");
+  $("#pts").textContent = fmt(game.points);
+  const next = $("#next"); next.hidden = false; next.focus();
+}
+
+function advance() {
+  if (!game) return;
+  game.i++;
+  if (game.i < game.qs.length) renderQuestion();
+  else finishGame();
+}
+
+function finishGame() {
+  clearInterval(tick);
+  const g = game; game = null;
+  const passed = g.correct >= PASS;
+  let newUnlock = false;
+  if (passed && g.level === state.unlocked[g.mode] && g.level < LEVELS) { state.unlocked[g.mode] = g.level + 1; newUnlock = true; }
+  const rec = { id: "g-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ts: Date.now(),
+    mode: g.mode, level: g.level, correct: g.correct, total: g.qs.length, points: g.points, passed, bestStreak: g.bestStreak };
+  saveGame(rec);
+  go({ name: "result", rec, recap: g.results, newUnlock });
+}
+
+function renderResult(rec, recap, newUnlock) {
+  const m = modeById(rec.mode);
+  const best = bestFor(rec.mode, rec.level);
+  const isBest = rec.points > 0 && rec.points === best && state.games.filter(g => g.mode === rec.mode && g.level === rec.level && g.points === best).length === 1;
+  const headline = rec.passed ? (rec.correct === rec.total ? "Perfect round" : "Level cleared") : "Not this time";
+  const sub = rec.passed
+    ? (newUnlock ? `Level ${rec.level + 1} is now open, with a new set of questions.` : rec.level === LEVELS ? "You've cleared the top level of this game." : "Nice work. Keep pushing your best score.")
+    : `You need ${PASS} correct to clear this level. You got ${rec.correct}.`;
+  const items = recap.map(r => `<li><span class="mark ${r.ok ? "ok" : "no"}">${r.ok ? "✓" : "✗"}</span>
+      <span class="q">${esc(r.q)}<small>${r.ok ? "Answered " + esc(r.answer) : (r.timeout ? "Timed out" : "You said " + esc(r.choice)) + " · answer: " + esc(r.answer)}</small></span>
+      <b class="num">${r.ok ? "+" + fmt(r.gained) : "0"}</b></li>`).join("");
+  const canNext = rec.passed && rec.level < LEVELS;
+  view.innerHTML = `<section class="game result" style="--mc:var(${m.color})">
+    <span class="chip ${rec.passed ? "good" : "bad"}">${esc(m.name)} · Level ${rec.level}</span>
+    <h2 style="font-size:30px">${headline}</h2>
+    <p class="hint" style="margin:0">${sub}</p>
+    <div><span class="big num" style="color:var(--mc)">${fmt(rec.points)}</span><div class="label" style="margin-top:6px">points${isBest ? " · new best for this level" : ""}</div></div>
+    <div class="result-stats">
+      <div><span class="label">Correct</span><span class="num">${rec.correct}/${rec.total}</span></div>
+      <div><span class="label">Best streak</span><span class="num">${rec.bestStreak}</span></div>
+      <div><span class="label">Total points</span><span class="num">${fmt(totalPoints())}</span></div>
+    </div>
+    <ul class="recap">${items}</ul>
+    <div class="actions">
+      ${canNext ? `<button class="btn" id="r-next">Play Level ${rec.level + 1} →</button>` : ""}
+      <button class="btn ${canNext ? "ghost" : ""}" id="r-retry">${rec.mode === "math" ? "Play again (new sums)" : "Retry level"}</button>
+      <button class="btn ghost" id="r-levels">Choose level</button>
+      <button class="btn ghost" id="r-records">View records</button>
+    </div>
+  </section>`;
+  if (canNext) $("#r-next").addEventListener("click", () => startGame(rec.mode, rec.level + 1));
+  $("#r-retry").addEventListener("click", () => startGame(rec.mode, rec.level));
+  $("#r-levels").addEventListener("click", () => go({ name: "levels", mode: rec.mode }));
+  $("#r-records").addEventListener("click", () => go({ name: "records" }));
+  (canNext ? $("#r-next") : $("#r-retry")).focus();
+}
+
+/* ----------------------------------------------------------------- records */
+function renderRecords() {
+  const games = state.games;
+  const played = games.length;
+  const answered = games.reduce((s, g) => s + g.total, 0);
+  const right = games.reduce((s, g) => s + g.correct, 0);
+  const acc = answered ? Math.round(right / answered * 100) : 0;
+  const clearedLevels = MODES.reduce((s, m) => s + [1, 2, 3, 4, 5].filter(l => clearedFor(m.id, l)).length, 0);
+  const bests = MODES.map(m => {
+    const mg = games.filter(g => g.mode === m.id);
+    const top = mg.reduce((b, g) => (!b || g.points > b.points ? g : b), null);
+    const pts = mg.reduce((s, g) => s + g.points, 0);
+    return `<div class="mb" style="--mc:var(${m.color})"><b>${m.name}</b>
+      <span class="num">${top ? fmt(top.points) : "—"}</span>
+      <small>${top ? "Best round, Level " + top.level : "Not played yet"}</small>
+      <small>${mg.length} game${mg.length === 1 ? "" : "s"} · ${fmt(pts)} pts total</small></div>`;
+  }).join("");
+  const rows = games.slice(0, 100).map(g => {
+    const m = modeById(g.mode); const d = new Date(g.ts);
+    return `<tr><td>${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })} <span class="hint">${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</span></td>
+      <td><span class="dot" style="--mc:var(${m.color})"></span>${m.name}</td>
+      <td class="num">L${g.level}</td>
+      <td class="num r">${g.correct}/${g.total}</td>
+      <td class="num r">${fmt(g.points)}</td>
+      <td><span class="chip ${g.passed ? "good" : "bad"}">${g.passed ? "Cleared" : "Missed"}</span></td></tr>`;
+  }).join("");
+  view.innerHTML = `<section style="display:grid;gap:16px">
+    <div class="section-head"><h2>Your records</h2><p>Every round you finish is logged here.</p></div>
+    <div class="tiles-row">
+      <div class="kpi"><span class="label">Total points</span><span class="num">${fmt(totalPoints())}</span><small>across all games</small></div>
+      <div class="kpi"><span class="label">Games played</span><span class="num">${played}</span><small>${right} correct answers</small></div>
+      <div class="kpi"><span class="label">Accuracy</span><span class="num">${answered ? acc + "%" : "—"}</span><small>${answered} questions answered</small></div>
+      <div class="kpi"><span class="label">Levels cleared</span><span class="num">${clearedLevels}/${MODES.length * LEVELS}</span><small>in ${MODES.length} games</small></div>
+    </div>
+    <h3>Best by game</h3>
+    <div class="mode-bests">${bests}</div>
+    <h3>Game history</h3>
+    <div class="table-wrap">${played ? `<table><thead><tr><th>When</th><th>Game</th><th>Level</th><th class="r">Correct</th><th class="r">Points</th><th>Result</th></tr></thead><tbody>${rows}</tbody></table>`
+      : `<div class="empty">No games yet. Finished rounds appear here with their score, level and result.<br><br><button class="btn" id="go-play">Play your first game</button></div>`}</div>
+    ${played ? `<div class="danger" id="danger"><span>Start over with all levels locked again?</span><button class="btn ghost" id="reset">Reset records</button></div>` : ""}
+  </section>`;
+  if (!played) $("#go-play").addEventListener("click", () => go({ name: "home" }));
+  else $("#reset").addEventListener("click", () => {
+    const box = $("#danger");
+    box.innerHTML = `<span>This deletes all ${played} games and your level progress.</span><button class="btn ghost" id="cancel">Keep records</button><button class="btn warn" id="confirm">Delete everything</button>`;
+    $("#cancel").addEventListener("click", renderRecords);
+    $("#confirm").addEventListener("click", async () => { $("#confirm").disabled = true; await resetRecords(); renderRecords(); renderTotal(); });
+  });
+}
+
+/* ---------------------------------------------------------------- keyboard */
+document.addEventListener("keydown", e => {
+  if (screen.name !== "game" || !game) return;
+  if (e.target && e.target.tagName === "INPUT") return;
+  const m = modeById(game.mode);
+  if (game.locked) { if (e.key === "Enter" && document.activeElement !== $("#next")) { e.preventDefault(); advance(); } return; }
+  const btns = [...view.querySelectorAll(".ans")];
+  let idx = -1;
+  if (m.kind === "tf") { const k = e.key.toLowerCase(); if (k === "t" || k === "1") idx = 0; if (k === "f" || k === "2") idx = 1; }
+  else if (/^[1-4]$/.test(e.key)) idx = Number(e.key) - 1;
+  if (idx >= 0 && btns[idx]) { e.preventDefault(); btns[idx].click(); }
+});
+
+/* -------------------------------------------------------------------- boot */
+readLocal();
+render();
+initCloud();
+})();
+</script>
