@@ -143,12 +143,28 @@ button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); ou
 .level .lv { font-family: var(--f-display); font-size: 28px; font-weight: 800; line-height: 1; color: var(--mc); }
 .level .lname { font-weight: 700; }
 .level small { color: var(--muted); font-size: 12.5px; }
-.chip { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; width: fit-content; }
+.chip { white-space: nowrap; flex: none; display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 8px; border-radius: 99px; width: fit-content; }
 .chip.good { background: var(--good-bg); color: var(--good); }
 .chip.bad { background: var(--bad-bg); color: var(--bad); }
 .chip.open { background: var(--surface-2); color: var(--ink); }
 .chip.lock { background: var(--surface-2); color: var(--muted); }
 .chip.accent { background: var(--mc, var(--accent)); color: var(--surface); }
+.stages { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 12px; }
+.stage { text-align: left; border: 1.5px solid var(--line); background: var(--surface); border-radius: 14px; padding: 14px 16px; display: grid; gap: 6px; }
+.stage:not(:disabled):hover { border-color: var(--accent); }
+.stage[aria-pressed="true"] { border: 2px solid var(--ink); background: color-mix(in srgb, var(--accent) 9%, var(--surface)); }
+.stage:disabled { cursor: not-allowed; }
+.stage-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.stage-n { font-family: var(--f-display); font-size: clamp(18px, 4.6vw, 22px); font-weight: 800; line-height: 1.1; }
+.stage small { color: var(--muted); font-size: 12.5px; }
+.meter { display: grid; gap: 3px; font-size: 12.5px; color: var(--muted); }
+.meter-row { display: flex; justify-content: space-between; }
+.meter .bar { height: 6px; }
+.meter .bar > i { background: var(--accent); transform-origin: left; }
+.unlock { background: var(--accent); color: var(--accent-ink); border-radius: 16px; padding: 18px 20px; display: grid; gap: 8px; }
+.unlock h2 { font-size: 24px; }
+.unlock p { margin: 0; opacity: .92; }
+.unlock .btn { background: var(--accent-ink); color: var(--accent); width: fit-content; }
 .rules { background: var(--surface); border: 1px dashed var(--line); border-radius: 12px; padding: 12px 16px; color: var(--muted); font-size: 13.5px; }
 .rules b { color: var(--ink); }
 
@@ -294,14 +310,18 @@ const MODES = [
     blurb: "Unscramble the letters and type the word." },
 ];
 
+// Brainstack Level 2 opens once a player has cleared every Level 1 game level and played this many games.
+const STAGE2_GAMES = 35;
+const STAGE_MULT = { 1: 1, 2: 1.5 };
+const STAGE_NAME = { 1: "Brainstack Level 1", 2: "Brainstack Level 2" };
+
 // Seconds per question for each level. 0 means no timer.
 const DEFAULT_TIMES = [20, 18, 16, 14, 12];
 const TIMES = {
-  olympiad: [45, 40, 35, 30, 0],
-  science:  [20, 20, 18, 18, 25],
-  scramble: [30, 28, 26, 24, 22],
+  1: { olympiad: [45, 40, 35, 30, 0], science: [20, 20, 18, 18, 25], scramble: [30, 28, 26, 24, 22] },
+  2: { olympiad: [50, 45, 40, 35, 0], science: [20, 20, 18, 18, 30], scramble: [35, 35, 35, 40, 45], math: [25, 22, 20, 20, 18] },
 };
-const timeFor = (mode, level) => (TIMES[mode] || DEFAULT_TIMES)[level - 1];
+const timeFor = (mode, level, stage = 1) => (TIMES[stage][mode] || DEFAULT_TIMES)[level - 1];
 
 // Each level has its own, non-overlapping set of questions.
 // Multiple choice rows: [question, correct, wrong, wrong, wrong, optional note]
@@ -483,6 +503,190 @@ const SCRAMBLE = [
     ["BUTTERFLY", "It starts life as a caterpillar"], ["CROCODILE", "A large reptile with powerful jaws"], ["NEWSPAPER", "Daily printed news"] ],
 ];
 
+/* ---------------------------------------------- Brainstack Level 2 content */
+const OLYMPIAD2 = [
+  [ ["What comes next: 1, 4, 9, 16, 25, …?", "36", "30", "35", "49", "These are the square numbers."],
+    ["What comes next: 1, 1, 2, 3, 5, 8, …?", "13", "11", "12", "16", "Each number is the sum of the two before it."],
+    ["How many minutes are there in 2½ hours?", "150", "120", "130", "250", "2 × 60 + 30."],
+    ["A book's pages are numbered 1 to 50. How many page numbers are odd?", "25", "24", "26", "50", "Every other number is odd."],
+    ["4 pencils cost ₹20. How much do 7 pencils cost?", "₹35", "₹28", "₹30", "₹40", "Each pencil costs ₹5."],
+    ["Sara has twice as many marbles as Leo. Together they have 24. How many does Sara have?", "16", "12", "8", "18", "Leo has 8, Sara has 16."] ],
+  [ ["What is the smallest 3-digit number divisible by 7?", "105", "100", "107", "112", "7 × 15 = 105."],
+    ["How many numbers from 1 to 100 are divisible by both 3 and 5?", "6", "5", "7", "33", "Multiples of 15: 15, 30, … 90."],
+    ["A train leaves at 9:45 and the journey takes 2 h 35 min. When does it arrive?", "12:20", "12:10", "12:30", "11:20", "9:45 + 2 h = 11:45, + 35 min = 12:20."],
+    ["What is the average of 12, 15, 18 and 23?", "17", "16", "18", "15.5", "68 ÷ 4."],
+    ["How many edges does a cube have?", "12", "8", "6", "24", "4 on top, 4 on the bottom, 4 upright."],
+    ["How many digits do you write when writing all the numbers from 1 to 30?", "51", "50", "60", "49", "9 one-digit + 21 two-digit numbers."] ],
+  [ ["What is the last digit of 7⁴?", "1", "7", "9", "3", "7⁴ = 2401."],
+    ["Three consecutive numbers multiply to 120. What is their sum?", "15", "12", "18", "14", "4 × 5 × 6 = 120."],
+    ["How many prime numbers are there between 1 and 30?", "10", "9", "11", "8", "2, 3, 5, 7, 11, 13, 17, 19, 23, 29."],
+    ["A square has the same perimeter as a 10 cm × 6 cm rectangle. What is the square's area?", "64 cm²", "60 cm²", "32 cm²", "81 cm²", "Perimeter 32 cm, so each side is 8 cm."],
+    ["In a class, 18 like tea, 15 like coffee and 6 like both. Everyone likes at least one. How many students are there?", "27", "33", "39", "21", "18 + 15 − 6."],
+    ["How many rectangles (squares included) can you find in a 2 × 2 grid?", "9", "4", "5", "8", "4 small, 4 made of two squares, 1 big."] ],
+  [ ["What is the sum of the first 20 odd numbers?", "400", "200", "210", "441", "The first n odd numbers add up to n²."],
+    ["How many 3-digit numbers have all three digits the same?", "9", "10", "27", "3", "111, 222, … 999."],
+    ["A car drives 60 km at 30 km/h, then returns at 60 km/h. What is its average speed?", "40 km/h", "45 km/h", "50 km/h", "35 km/h", "120 km in 3 hours."],
+    ["What is the remainder when 2¹⁰⁰ is divided by 3?", "1", "2", "0", "3", "Even powers of 2 always leave remainder 1."],
+    ["In how many different orders can 4 people stand in a line?", "24", "16", "12", "4", "4 × 3 × 2 × 1."],
+    ["A triangle's angles are in the ratio 1 : 2 : 3. What is the largest angle?", "90°", "60°", "120°", "100°", "180° split into 6 parts of 30°."] ],
+  [ ["How many zeros are at the end of 100!?", "24", "20", "25", "11", "100 ÷ 5 + 100 ÷ 25 = 20 + 4."],
+    ["What is the remainder when 1 + 2 + 3 + … + 100 is divided by 7?", "3", "0", "1", "5", "The sum is 5050 = 7 × 721 + 3."],
+    ["How many numbers from 1 to 1000 are perfect squares or perfect cubes?", "38", "41", "35", "31", "31 squares + 10 cubes − 3 that are both."],
+    ["A clock shows 2:30. What is the smaller angle between the hands?", "105°", "90°", "120°", "112.5°", "Hour hand at 75°, minute hand at 180°."],
+    ["How many diagonals does a 10-sided polygon have?", "35", "45", "40", "30", "10 × 7 ÷ 2."],
+    ["What is the smallest n for which n! ends in exactly 3 zeros?", "15", "10", "20", "25", "5, 10 and 15 each add one zero."] ],
+];
+
+const SCIENCE2 = [
+  [ ["Which gas makes up most of the air around us?", "Nitrogen", "Oxygen", "Carbon dioxide", "Argon"],
+    ["Where in the body is the smallest bone?", "In the ear", "In the nose", "In the toe", "In the finger"],
+    ["What do we call an animal that is active at night?", "Nocturnal", "Diurnal", "Herbivore", "Migratory"],
+    ["What is a baby frog called?", "Tadpole", "Cub", "Kid", "Calf"],
+    ["Which planet is closest to the Sun?", "Mercury", "Venus", "Mars", "Earth"],
+    ["At sea level, water boils at what temperature in Fahrenheit?", "212 °F", "100 °F", "180 °F", "32 °F"] ],
+  [ ["What is the hardest substance in the human body?", "Tooth enamel", "Thigh bone", "Skull", "Fingernails"],
+    ["What do red blood cells carry around the body?", "Oxygen", "Sugar", "Germs", "Water"],
+    ["Which simple machine is a seesaw?", "A lever", "A pulley", "A wheel and axle", "A screw"],
+    ["What kind of rock forms when lava cools?", "Igneous", "Sedimentary", "Metamorphic", "Limestone"],
+    ["About how long does Earth take to go once around the Sun?", "365 days", "30 days", "24 hours", "100 days"],
+    ["What is Earth's only natural satellite?", "The Moon", "The Sun", "Mars", "The ISS"] ],
+  [ ["What is the chemical symbol for iron?", "Fe", "Ir", "In", "I"],
+    ["Which blood vessels carry blood away from the heart?", "Arteries", "Veins", "Capillaries", "Nerves"],
+    ["What is the unit of force?", "Newton", "Joule", "Watt", "Pascal"],
+    ["Which part of a plant cell uses light to make food?", "Chloroplast", "Nucleus", "Cell wall", "Vacuole"],
+    ["What type of animal is a whale?", "Mammal", "Fish", "Reptile", "Amphibian"],
+    ["Which colour of light bends the most in a prism?", "Violet", "Red", "Yellow", "Green"] ],
+  [ ["What is the pH of pure water?", "7", "0", "14", "1"],
+    ["Which planet spins on its side?", "Uranus", "Neptune", "Saturn", "Jupiter"],
+    ["What is the most common element in the universe?", "Hydrogen", "Helium", "Oxygen", "Carbon"],
+    ["Sound cannot travel through which of these?", "A vacuum", "Water", "Steel", "Air"],
+    ["Which organ makes insulin?", "Pancreas", "Liver", "Stomach", "Kidney"],
+    ["What kind of energy is stored in a stretched rubber band?", "Elastic potential energy", "Kinetic energy", "Thermal energy", "Light energy"] ],
+  [ ["Where on Earth is north in every direction?", "The South Pole", "The North Pole", "The Equator", "Nowhere", "From the South Pole, every way you face is north."],
+    ["A doctor gives you 3 pills to take one every half hour. How long until they're all gone?", "1 hour", "1½ hours", "3 hours", "30 minutes", "Take one now, one at 30 minutes, one at 60."],
+    ["There are 6 apples in a bowl and you take away 4. How many apples do you have?", "4", "2", "6", "0", "You took 4, so you have 4."],
+    ["What gets wetter the more it dries?", "A towel", "The sea", "A cloud", "Sand", "It soaks up water as it dries you."],
+    ["How many times can you subtract 10 from 100?", "Once", "10 times", "9 times", "100 times", "After the first time, you're subtracting from 90."],
+    ["What has to be broken before you can use it?", "An egg", "A bottle", "A pencil", "A chair", "You crack it open to cook it."] ],
+];
+
+const TRIVIA2 = [
+  [ ["How many days are there in a leap year?", "366", "365", "364", "360"],
+    ["What is the tallest animal in the world?", "Giraffe", "Elephant", "Camel", "Ostrich"],
+    ["How many colours are in a rainbow?", "7", "5", "6", "8"],
+    ["What is the largest mammal on Earth?", "Blue whale", "Elephant", "Giraffe", "Hippopotamus"],
+    ["How many sides does an octagon have?", "8", "6", "7", "10"],
+    ["Which Indian festival is known as the festival of lights?", "Diwali", "Holi", "Eid", "Pongal"] ],
+  [ ["Who wrote “Romeo and Juliet”?", "William Shakespeare", "Charles Dickens", "Mark Twain", "Jane Austen"],
+    ["What is the national animal of India?", "Bengal tiger", "Lion", "Peacock", "Elephant"],
+    ["Which is the longest bone in the human body?", "Femur (thigh bone)", "Humerus", "Tibia", "Spine"],
+    ["How many players does a football (soccer) team have on the field?", "11", "10", "9", "12"],
+    ["Which country gave the Statue of Liberty to the USA?", "France", "Britain", "Spain", "Germany"],
+    ["Which planet is often called the Morning Star?", "Venus", "Mars", "Mercury", "Jupiter"] ],
+  [ ["Who was the first person to walk on the Moon?", "Neil Armstrong", "Buzz Aldrin", "Yuri Gagarin", "Michael Collins"],
+    ["Which is the largest country by area?", "Russia", "Canada", "China", "United States"],
+    ["Who received the first patent for the telephone?", "Alexander Graham Bell", "Thomas Edison", "Nikola Tesla", "Guglielmo Marconi"],
+    ["In which country were the ancient Olympic Games held?", "Greece", "Italy", "France", "Egypt"],
+    ["What is the currency of Japan?", "Yen", "Won", "Yuan", "Ringgit"],
+    ["How many strings does a standard violin have?", "4", "5", "6", "3"] ],
+  [ ["Who painted “The Starry Night”?", "Vincent van Gogh", "Claude Monet", "Pablo Picasso", "Salvador Dalí"],
+    ["Which is the smallest country in the world?", "Vatican City", "Monaco", "San Marino", "Malta"],
+    ["Who is known as the father of the computer?", "Charles Babbage", "Alan Turing", "Bill Gates", "Ada Lovelace"],
+    ["What is the longest river in India?", "Ganga", "Godavari", "Yamuna", "Brahmaputra"],
+    ["In which ocean is the Bermuda Triangle?", "Atlantic", "Pacific", "Indian", "Arctic"],
+    ["Which gas gives fizzy drinks their bubbles?", "Carbon dioxide", "Oxygen", "Nitrogen", "Helium"] ],
+  [ ["Which Indian mathematician is famous for the number 1729?", "Srinivasa Ramanujan", "Aryabhata", "C. V. Raman", "Brahmagupta"],
+    ["In which year did India become independent?", "1947", "1950", "1942", "1945"],
+    ["Which element has the chemical symbol K?", "Potassium", "Krypton", "Calcium", "Carbon"],
+    ["Who wrote “The Jungle Book”?", "Rudyard Kipling", "Roald Dahl", "Lewis Carroll", "J. M. Barrie"],
+    ["Who discovered penicillin?", "Alexander Fleming", "Louis Pasteur", "Marie Curie", "Edward Jenner"],
+    ["Which is the highest waterfall in the world?", "Angel Falls", "Niagara Falls", "Victoria Falls", "Iguazu Falls"] ],
+];
+
+const CAPITALS2 = [
+  [ ["Portugal", "Lisbon", "Porto", "Faro", "Braga"],
+    ["the Netherlands", "Amsterdam", "Rotterdam", "Utrecht", "Eindhoven"],
+    ["Ireland", "Dublin", "Cork", "Galway", "Limerick"],
+    ["Norway", "Oslo", "Bergen", "Trondheim", "Stavanger"],
+    ["Sweden", "Stockholm", "Gothenburg", "Malmö", "Uppsala"],
+    ["Thailand", "Bangkok", "Phuket", "Chiang Mai", "Pattaya"] ],
+  [ ["Argentina", "Buenos Aires", "Córdoba", "Rosario", "Mendoza"],
+    ["South Korea", "Seoul", "Busan", "Incheon", "Daegu"],
+    ["Austria", "Vienna", "Salzburg", "Graz", "Innsbruck"],
+    ["Poland", "Warsaw", "Kraków", "Gdańsk", "Wrocław"],
+    ["Saudi Arabia", "Riyadh", "Jeddah", "Mecca", "Dammam"],
+    ["Nepal", "Kathmandu", "Pokhara", "Lalitpur", "Biratnagar"] ],
+  [ ["Chile", "Santiago", "Valparaíso", "Concepción", "Antofagasta"],
+    ["Colombia", "Bogotá", "Medellín", "Cali", "Cartagena"],
+    ["the Philippines", "Manila", "Cebu City", "Davao City", "Iloilo City"],
+    ["Bangladesh", "Dhaka", "Chittagong", "Khulna", "Sylhet"],
+    ["Finland", "Helsinki", "Turku", "Tampere", "Espoo"],
+    ["the United Arab Emirates", "Abu Dhabi", "Dubai", "Sharjah", "Ajman"] ],
+  [ ["Ethiopia", "Addis Ababa", "Dire Dawa", "Gondar", "Mekelle"],
+    ["Ghana", "Accra", "Kumasi", "Tamale", "Cape Coast"],
+    ["Ecuador", "Quito", "Guayaquil", "Cuenca", "Manta"],
+    ["Jordan", "Amman", "Aqaba", "Irbid", "Zarqa"],
+    ["Uzbekistan", "Tashkent", "Samarkand", "Bukhara", "Namangan"],
+    ["Cuba", "Havana", "Santiago de Cuba", "Varadero", "Camagüey"] ],
+  [ ["Belize", "Belmopan", "Belize City", "San Ignacio", "Orange Walk"],
+    ["Côte d'Ivoire", "Yamoussoukro", "Abidjan", "Bouaké", "San-Pédro"],
+    ["Malawi", "Lilongwe", "Blantyre", "Mzuzu", "Zomba"],
+    ["Liechtenstein", "Vaduz", "Schaan", "Triesen", "Balzers"],
+    ["Burkina Faso", "Ouagadougou", "Bobo-Dioulasso", "Koudougou", "Banfora"],
+    ["Kyrgyzstan", "Bishkek", "Osh", "Jalal-Abad", "Karakol"] ],
+];
+
+const TRUEFALSE2 = [
+  [ ["The Moon makes its own light.", false, "It reflects light from the Sun."],
+    ["Spiders are insects.", false, "They are arachnids, with eight legs instead of six."],
+    ["A tomato is a fruit.", true, "Botanically it is a fruit because it holds seeds."],
+    ["The Pacific is the largest ocean.", true, "It covers about a third of Earth's surface."],
+    ["Snakes have eyelids.", false, "A clear scale covers and protects each eye."],
+    ["Plants need sunlight to make their food.", true, "They use it for photosynthesis."] ],
+  [ ["Ostriches bury their heads in the sand when scared.", false, "They lower their heads to turn their eggs, which looks like hiding."],
+    ["Your heart is on the far left side of your chest.", false, "It sits near the centre, tilted slightly left."],
+    ["Koalas are bears.", false, "They are marsupials, like kangaroos."],
+    ["Mercury is the closest planet to the Sun.", true, "It orbits in just 88 days."],
+    ["Some metals are light enough to float on water.", true, "Lithium, sodium and potassium all float."],
+    ["Bulls get angry when they see the colour red.", false, "They react to the cape's movement, not its colour."] ],
+  [ ["A group of crows is called a murder.", true, "It's an old English collective noun."],
+    ["Electric eels are a kind of eel.", false, "They are knifefish, more closely related to catfish."],
+    ["Water can boil and freeze at the same time.", true, "At its triple point, water is solid, liquid and gas at once."],
+    ["Mount Kilimanjaro is in Kenya.", false, "It is in Tanzania."],
+    ["The Great Pyramid was the tallest human-made structure for over 3,800 years.", true, "Until Lincoln Cathedral's spire around 1311."],
+    ["Cracking your knuckles causes arthritis.", false, "Studies have found no link."] ],
+  [ ["Pluto is classified as a planet.", false, "It has been a dwarf planet since 2006."],
+    ["Polar bears have black skin under their white fur.", true, "Black skin helps soak up heat."],
+    ["Lightning is hotter than the surface of the Sun.", true, "About 30,000 °C versus about 5,500 °C."],
+    ["Albert Einstein failed maths at school.", false, "He excelled at maths from a young age."],
+    ["Sloths can hold their breath longer than dolphins.", true, "Up to about 40 minutes, versus about 10."],
+    ["We have summer because Earth is closer to the Sun then.", false, "Seasons come from Earth's tilt; it's closest to the Sun in January."] ],
+  [ ["Octopuses can taste things with their arms.", true, "Their suckers are packed with taste receptors."],
+    ["There are more trees on Earth than stars in the Milky Way.", true, "About 3 trillion trees versus a few hundred billion stars."],
+    ["Mount Everest is still getting taller.", true, "Plate movement lifts it a few millimetres each year."],
+    ["Bananas are slightly radioactive.", true, "They contain a little potassium-40."],
+    ["Humans have only five senses.", false, "Balance, temperature and body position are senses too."],
+    ["Daddy longlegs are the most venomous spiders but their fangs are too short to bite.", false, "That's a myth; they are harmless to people."] ],
+];
+
+const SCRAMBLE2 = [
+  [ ["ROCKET", "It flies into space"], ["GARDEN", "Where flowers grow"], ["SCHOOL", "Where you learn"],
+    ["PIRATE", "Sails the seas looking for treasure"], ["WINTER", "The coldest season"], ["PUZZLE", "A game you solve"] ],
+  [ ["RAINBOW", "Seven colours after the rain"], ["PENGUIN", "A bird that swims but can't fly"], ["TEACHER", "Works in a classroom"],
+    ["KITCHEN", "Where food is cooked"], ["CAPTAIN", "Leader of a team or ship"], ["BALLOON", "Filled with air or helium"] ],
+  [ ["DINOSAUR", "Lived millions of years ago"], ["SANDWICH", "Filling between two slices of bread"], ["AIRPLANE", "Flies passengers around the world"],
+    ["CALENDAR", "Shows the days and months"], ["COMPUTER", "You might be using one right now"], ["FOOTBALL", "A game played with a round ball"] ],
+  [ ["ASTRONAUT", "Travels to space"], ["BLUEBERRY", "A small blue fruit"], ["LIGHTNING", "A flash in a storm"],
+    ["PINEAPPLE", "A spiky tropical fruit"], ["DETECTIVE", "Solves mysteries"], ["SNOWFLAKE", "No two are alike"] ],
+  [ ["MICROSCOPE", "Makes tiny things look big"], ["WATERMELON", "A big green fruit, red inside"], ["HELICOPTER", "Flies with spinning blades"],
+    ["STRAWBERRY", "A red fruit with seeds on the outside"], ["GRASSHOPPER", "An insect that jumps far"], ["THUNDERSTORM", "Rain, thunder and lightning"] ],
+];
+
+const BANKS = {
+  1: { olympiad: OLYMPIAD, science: SCIENCE, trivia: TRIVIA, capitals: CAPITALS, truefalse: TRUEFALSE, scramble: SCRAMBLE },
+  2: { olympiad: OLYMPIAD2, science: SCIENCE2, trivia: TRIVIA2, capitals: CAPITALS2, truefalse: TRUEFALSE2, scramble: SCRAMBLE2 },
+};
+
 const PLAYER_COLORS = ["--m1", "--m2", "--m3", "--m4", "--m5", "--m6", "--m7"];
 
 /* ------------------------------------------------------------------ helpers */
@@ -539,10 +743,31 @@ function mathQuestion(level) {
     if (pick === 0) { const x = rnd(11, 39), y = rnd(11, 29); q = `${x} × ${y}`; a = x * y; }
     else if (pick === 1) { const x = rnd(5, 40), y = rnd(3, 12), z = rnd(3, 12); q = `${x} + ${y} × ${z}`; a = x + y * z; }
     else { const y = rnd(12, 25), a0 = rnd(12, 40); q = `${a0 * y} ÷ ${y}`; a = a0; }
-  } else {
+  } else if (level === 5) {
     if (pick === 0) { const x = rnd(13, 35); q = `${x}²`; a = x * x; }
     else if (pick === 1) { const p = [5, 15, 25, 35, 45, 60, 75][rnd(0, 6)], y = rnd(2, 16) * 20; q = `${p}% of ${y}`; a = p * y / 100; }
     else { const x = rnd(12, 30), y = rnd(12, 30), z = rnd(20, 150); q = `(${x} × ${y}) − ${z}`; a = x * y - z; }
+  // Levels 6–10 are Brainstack Level 2's Math Sprint levels 1–5.
+  } else if (level === 6) {
+    if (pick === 0) { const x = rnd(21, 59), y = rnd(11, 29); q = `${x} × ${y}`; a = x * y; }
+    else if (pick === 1) { const x = rnd(400, 900), y = rnd(150, x - 50); q = `${x} − ${y}`; a = x - y; }
+    else { const x = rnd(11, 25); q = `${x}²`; a = x * x; }
+  } else if (level === 7) {
+    if (pick === 0) { const y = rnd(11, 25), a0 = rnd(11, 40); q = `${a0 * y} ÷ ${y}`; a = a0; }
+    else if (pick === 1) { const p = [10, 20, 25, 30, 40, 50, 75][rnd(0, 6)], y = rnd(4, 40) * 20; q = `${p}% of ${y}`; a = p * y / 100; }
+    else { const x = rnd(26, 50); q = `${x}²`; a = x * x; }
+  } else if (level === 8) {
+    if (pick === 0) { const w = rnd(6, 15), x = rnd(6, 15), y = rnd(6, 15), z = rnd(6, 15); q = `${w} × ${x} + ${y} × ${z}`; a = w * x + y * z; }
+    else if (pick === 1) { const d = [3, 4, 5, 8][rnd(0, 3)], n = rnd(1, d - 1), y = d * rnd(5, 30); q = `${n}/${d} of ${y}`; a = n * y / d; }
+    else { const x = rnd(101, 499), y = rnd(3, 9); q = `${x} × ${y}`; a = x * y; }
+  } else if (level === 9) {
+    if (pick === 0) { const x = rnd(2, 12); q = `${x}³`; a = x * x * x; }
+    else if (pick === 1) { const x = rnd(11, 30); q = `√${x * x}`; a = x; }
+    else { const x = rnd(20, 60), y = rnd(10, x - 1); q = `${x}² − ${y}²`; a = x * x - y * y; }
+  } else {
+    if (pick === 0) { const x = rnd(12, 40), y = rnd(12, 40), z = rnd(11, 19); q = `(${x} + ${y}) × ${z}`; a = (x + y) * z; }
+    else if (pick === 1) { const price = rnd(2, 40) * 50, p = [10, 20, 40][rnd(0, 2)]; q = `${price} increased by ${p}%`; a = price * (100 + p) / 100; }
+    else { const n = rnd(7, 12); q = `2^${n}`; a = 2 ** n; }
   }
   const spread = Math.max(2, Math.round(Math.abs(a) * 0.12));
   const wrong = new Set();
@@ -563,18 +788,16 @@ function scrambleWord(w) {
 
 const mcRow = ([q, a, w1, w2, w3, note]) => ({ q, answer: a, options: shuffle([a, w1, w2, w3]), note });
 
-function buildRound(mode, level) {
-  const i = level - 1;
+function buildRound(mode, level, stage = 1) {
+  const i = level - 1, bank = BANKS[stage][mode];
   let qs;
-  if (mode === "olympiad") qs = OLYMPIAD[i].map(mcRow);
-  else if (mode === "science") qs = SCIENCE[i].map(mcRow);
-  else if (mode === "trivia") qs = TRIVIA[i].map(mcRow);
-  else if (mode === "capitals") qs = CAPITALS[i].map(([c, a, ...w]) => ({ q: `What is the capital of ${c}?`, answer: a, options: shuffle([a, ...w]) }));
-  else if (mode === "truefalse") qs = TRUEFALSE[i].map(([q, t, note]) => ({ q, answer: t ? "True" : "False", options: ["True", "False"], note }));
-  else if (mode === "scramble") qs = SCRAMBLE[i].map(([w, hint]) => ({ q: "Unscramble this word", answer: w, letters: scrambleWord(w), hint }));
+  if (mode === "olympiad" || mode === "science" || mode === "trivia") qs = bank[i].map(mcRow);
+  else if (mode === "capitals") qs = bank[i].map(([c, a, ...w]) => ({ q: `What is the capital of ${c}?`, answer: a, options: shuffle([a, ...w]) }));
+  else if (mode === "truefalse") qs = bank[i].map(([q, t, note]) => ({ q, answer: t ? "True" : "False", options: ["True", "False"], note }));
+  else if (mode === "scramble") qs = bank[i].map(([w, hint]) => ({ q: "Unscramble this word", answer: w, letters: scrambleWord(w), hint }));
   else {
     const seen = new Set(); qs = [];
-    while (qs.length < PER_ROUND) { const m = mathQuestion(level); if (!seen.has(m.q)) { seen.add(m.q); qs.push(m); } }
+    while (qs.length < PER_ROUND) { const m = mathQuestion(level + (stage - 1) * LEVELS); if (!seen.has(m.q)) { seen.add(m.q); qs.push(m); } }
   }
   return shuffle(qs).slice(0, PER_ROUND);
 }
@@ -582,8 +805,8 @@ function buildRound(mode, level) {
 /* ------------------------------------------------------------------ storage */
 // Players and games live in the signed-in viewer's private store, mirrored in this browser as a fallback.
 // Docs: "acct-<id>" per player, "g-<id>" per finished game (with an `acct` field).
-const LS_KEY = "brainstack.v2", LS_LEGACY = "brainstack.v1", SS_ACTIVE = "brainstack.active";
-const state = { accounts: [], games: [], active: null, recovery: false, legacy: { games: [], unlocked: {} }, cloud: null };
+const LS_KEY = "brainstack.v2", LS_LEGACY = "brainstack.v1", SS_ACTIVE = "brainstack.active", SS_STAGE = "brainstack.stage";
+const state = { accounts: [], games: [], active: null, stage: 1, recovery: false, legacy: { games: [], unlocked: {} }, cloud: null };
 const freshUnlocked = () => Object.fromEntries(MODES.map(m => [m.id, 1]));
 
 function readLocal() {
@@ -594,6 +817,7 @@ function readLocal() {
     if (old) { const d = JSON.parse(old); state.legacy.games = (d.games || []).filter(g => !g.acct); state.legacy.unlocked = d.unlocked || {}; }
   } catch (e) { /* storage unavailable */ }
   try { const id = sessionStorage.getItem(SS_ACTIVE); if (id && state.accounts.some(a => a.id === id)) state.active = id; } catch (e) { /* ignore */ }
+  try { if (sessionStorage.getItem(SS_STAGE) === "2") state.stage = 2; } catch (e) { /* ignore */ }
 }
 function writeLocal() {
   try { localStorage.setItem(LS_KEY, JSON.stringify({ accounts: state.accounts, games: state.games })); } catch (e) { /* ignore */ }
@@ -672,10 +896,17 @@ const me = () => state.accounts.find(a => a.id === state.active) || null;
 const gamesOf = id => state.games.filter(g => g.acct === id);
 const myGames = () => gamesOf(state.active);
 const pointsOf = id => gamesOf(id).reduce((s, g) => s + g.points, 0);
-const clearedCountOf = id => { const s = new Set(gamesOf(id).filter(g => g.passed).map(g => g.mode + g.level)); return s.size; };
-const bestFor = (mode, level) => myGames().filter(g => g.mode === mode && g.level === level).reduce((m, g) => Math.max(m, g.points), 0);
-const clearedFor = (mode, level) => myGames().some(g => g.mode === mode && g.level === level && g.passed);
-const unlockedOf = mode => { const a = me(); return a ? (a.unlocked[mode] || 1) : 1; };
+const stageOf = g => g.stage || 1;
+const inStage = (g, mode, level, stage) => g.mode === mode && g.level === level && stageOf(g) === stage;
+const clearedCountOf = (id, stage = 1) => new Set(gamesOf(id).filter(g => g.passed && stageOf(g) === stage).map(g => g.mode + g.level)).size;
+const bestFor = (mode, level, stage = state.stage) => myGames().filter(g => inStage(g, mode, level, stage)).reduce((m, g) => Math.max(m, g.points), 0);
+const clearedFor = (mode, level, stage = state.stage) => myGames().some(g => inStage(g, mode, level, stage) && g.passed);
+const unlockKey = stage => stage === 2 ? "unlocked2" : "unlocked";
+const unlockedOf = (mode, stage = state.stage) => { const a = me(); return a ? ((a[unlockKey(stage)] || {})[mode] || 1) : 1; };
+const TOTAL_LEVELS = MODES.length * LEVELS;
+const stage2Progress = id => ({ levels: clearedCountOf(id, 1), games: gamesOf(id).length });
+const stage2Open = id => { const p = stage2Progress(id); return p.levels >= TOTAL_LEVELS && p.games >= STAGE2_GAMES; };
+function setStage(n) { state.stage = n; try { sessionStorage.setItem(SS_STAGE, String(n)); } catch (e) { /* ignore */ } }
 
 /* ------------------------------------------------------------------ screens */
 const view = $("#view");
@@ -717,7 +948,7 @@ function render() {
   else if (screen.name === "create") renderCreate();
   else if (screen.name === "home") renderHome();
   else if (screen.name === "levels") renderLevels(screen.mode);
-  else if (screen.name === "result") renderResult(screen.rec, screen.recap, screen.newUnlock);
+  else if (screen.name === "result") renderResult(screen.rec, screen.recap, screen.newUnlock, screen.stage2New);
   else if (screen.name === "records") renderRecords();
   else if (screen.name === "account") renderAccount();
 }
@@ -729,7 +960,7 @@ function renderPlayers() {
   const list = state.accounts.slice().sort((x, y) => (y.lastUsed || 0) - (x.lastUsed || 0));
   const cards = list.map(a => `<button class="player" style="--ac:var(${a.color})" data-acct="${a.id}" aria-label="Open ${esc(a.name)}">
       <div class="player-row">${avatar(a, "md")}<div style="min-width:0"><b>${esc(a.name)}</b><div class="fine">Last played ${ago(a.lastUsed)}</div></div></div>
-      <div class="player-stats"><span><span class="num">${fmt(pointsOf(a.id))}</span> pts</span><span><span class="num">${clearedCountOf(a.id)}</span>/${MODES.length * LEVELS} levels</span></div>
+      <div class="player-stats"><span><span class="num">${fmt(pointsOf(a.id))}</span> pts</span><span>${stage2Open(a.id) ? `<span class="chip accent" style="--mc:var(--accent)">BS2</span> <span class="num">${clearedCountOf(a.id, 2)}</span>/${TOTAL_LEVELS}` : `<span class="num">${clearedCountOf(a.id)}</span>/${TOTAL_LEVELS} levels`}</span></div>
     </button>`).join("");
   const legacyNote = state.legacy.games.length
     ? `<div class="banner">${state.legacy.games.length} game${state.legacy.games.length === 1 ? "" : "s"} from before accounts existed will be added to the first player you create.</div>` : "";
@@ -796,6 +1027,7 @@ async function pinKey(k) {
   if (ok) {
     delete attempts[a.id];
     setActive(a.id);
+    setStage(stage2Open(a.id) && a.seen2 ? 2 : 1);
     a.lastUsed = Date.now();
     persistAccount(a);
     state.recovery = which === "backup";
@@ -862,6 +1094,7 @@ function renderCreate() {
     claimLegacy(a);
     persistAccount(a);
     setActive(a.id);
+    setStage(1);
     go({ name: "home" });
   });
 }
@@ -969,8 +1202,29 @@ function renderAccount() {
 }
 
 /* --------------------------------------------------------------- game list */
+function stageCards(a) {
+  const p = stage2Progress(a.id), open = stage2Open(a.id);
+  const meter = (label, have, need) => `<div class="meter"><div class="meter-row"><span>${label}</span><span class="num">${Math.min(have, need)}/${need}</span></div>
+    <div class="bar"><i style="transform:scaleX(${Math.min(1, have / need)})"></i></div></div>`;
+  return `<div class="stages" role="group" aria-label="Brainstack level">
+    <button class="stage" data-stage="1" aria-pressed="${state.stage === 1}">
+      <div class="stage-top"><span class="stage-n">${STAGE_NAME[1]}</span>${p.levels >= TOTAL_LEVELS ? `<span class="chip good">Complete</span>` : ""}</div>
+      <small>${p.levels}/${TOTAL_LEVELS} levels cleared · normal points</small>
+    </button>
+    <button class="stage" data-stage="2" aria-pressed="${state.stage === 2}" ${open ? "" : "disabled"}>
+      <div class="stage-top"><span class="stage-n">${STAGE_NAME[2]}</span><span class="chip ${open ? "accent" : "lock"}" style="--mc:var(--accent)">${open ? "×1.5 points" : "Locked"}</span></div>
+      ${open ? `<small>${clearedCountOf(a.id, 2)}/${TOTAL_LEVELS} levels cleared · 35 new levels, harder questions</small>`
+        : `<small>Unlocks when you clear every level and play ${STAGE2_GAMES} games.</small>${meter("Levels cleared", p.levels, TOTAL_LEVELS)}${meter("Games played", p.games, STAGE2_GAMES)}`}
+    </button>
+  </div>`;
+}
+
 function renderHome() {
   const a = me();
+  if (state.stage === 2 && !stage2Open(a.id)) setStage(1);
+  const stage = state.stage;
+  if (stage === 2 && !a.seen2) { a.seen2 = true; persistAccount(a); }
+  const celebrate = stage === 1 && stage2Open(a.id) && !a.seen2;
   const cards = MODES.map(m => {
     const u = unlockedOf(m.id);
     const cleared = [1, 2, 3, 4, 5].filter(l => clearedFor(m.id, l)).length;
@@ -978,9 +1232,9 @@ function renderHome() {
       const l = k + 1; const cls = clearedFor(m.id, l) ? "done" : (l <= u ? "open" : "");
       return `<span class="pip ${cls}"></span>`;
     }).join("");
-    const played = myGames().filter(g => g.mode === m.id).length;
+    const played = myGames().filter(g => g.mode === m.id && stageOf(g) === stage).length;
     return `<button class="mode" style="--mc:var(${m.color})" data-mode="${m.id}">
-      ${m.fresh ? `<span class="chip accent new-tag">New</span>` : ""}
+      ${m.fresh && stage === 1 ? `<span class="chip accent new-tag">New</span>` : ""}
       <div class="mode-row"><span class="glyph" aria-hidden="true">${m.glyph}</span>
         <div><h3>${m.name}</h3><p>${m.blurb}</p></div></div>
       <div class="pips" aria-label="${cleared} of ${LEVELS} levels cleared">${pips}</div>
@@ -988,10 +1242,17 @@ function renderHome() {
     </button>`;
   }).join("");
   view.innerHTML = `<section style="display:grid;gap:14px">
-    <div class="section-head"><h2>Hi ${esc(a.name)}, choose a game</h2><p>Clear a level with ${PASS} of ${PER_ROUND} correct to unlock the next.</p></div>
+    ${celebrate ? `<div class="unlock"><span class="label" style="color:inherit;opacity:.8">Unlocked</span>
+      <h2>Brainstack Level 2 is open</h2>
+      <p>You cleared all ${TOTAL_LEVELS} levels and played ${gamesOf(a.id).length} games. Level 2 has the same seven games with 35 new levels of harder questions, and every answer is worth 1.5× the points.</p>
+      <button class="btn" id="go-stage2">Start Brainstack Level 2 →</button></div>` : ""}
+    ${stageCards(a)}
+    <div class="section-head"><h2>Hi ${esc(a.name)}, choose a game</h2><p>${STAGE_NAME[stage]} · clear a level with ${PASS} of ${PER_ROUND} correct to unlock the next.</p></div>
     <div class="modes">${cards}</div>
-    <div class="rules"><b>Scoring.</b> Each correct answer earns 100 points plus up to 100 for speed, multiplied by the level (×1.0 at Level 1 up to ×2.0 at Level 5). Untimed levels give a flat 50 bonus instead of the speed bonus. Three or more correct in a row adds a streak bonus. Running out of time counts as a miss.</div>
+    <div class="rules"><b>Scoring.</b> Each correct answer earns 100 points plus up to 100 for speed, multiplied by the level (×1.0 at Level 1 up to ×2.0 at Level 5)${stage === 2 ? ", then by 1.5 in Brainstack Level 2" : ""}. Untimed levels give a flat 50 bonus instead of the speed bonus. Three or more correct in a row adds a streak bonus. Running out of time counts as a miss.</div>
   </section>`;
+  view.querySelectorAll("[data-stage]").forEach(b => b.addEventListener("click", () => { setStage(Number(b.dataset.stage)); renderHome(); }));
+  if (celebrate) $("#go-stage2").addEventListener("click", () => { setStage(2); renderHome(); window.scrollTo({ top: 0 }); });
   view.querySelectorAll("[data-mode]").forEach(b => b.addEventListener("click", () => go({ name: "levels", mode: b.dataset.mode })));
 }
 
@@ -999,12 +1260,12 @@ function renderLevels(modeId) {
   const m = modeById(modeId);
   const u = unlockedOf(modeId);
   const cards = Array.from({ length: LEVELS }, (_, k) => {
-    const l = k + 1, locked = l > u, cleared = clearedFor(modeId, l), best = bestFor(modeId, l), t = timeFor(modeId, l);
+    const l = k + 1, locked = l > u, cleared = clearedFor(modeId, l), best = bestFor(modeId, l), t = timeFor(modeId, l, state.stage);
     const chip = locked ? `<span class="chip lock">Locked</span>` : cleared ? `<span class="chip good">Cleared</span>` : `<span class="chip open">Open</span>`;
     return `<button class="level" data-level="${l}" ${locked ? "disabled" : ""}>
       <span class="label">Level</span><span class="lv">${l}</span>
       <span class="lname">${LEVEL_NAMES[k]}</span>${chip}
-      <small>${t ? t + " s per question" : "No timer"} · ×${(1 + k * 0.25).toFixed(2)}</small>
+      <small>${t ? t + " s per question" : "No timer"} · ×${((1 + k * 0.25) * STAGE_MULT[state.stage]).toFixed(2)}</small>
       <small>Best: <span class="num">${best ? fmt(best) : "—"}</span></small>
     </button>`;
   }).join("");
@@ -1013,10 +1274,11 @@ function renderLevels(modeId) {
     science: "Levels 1 to 4 cover everyday science. Level 5 is trick questions: read carefully, the answer is easier than it looks.",
     math: "Math Sprint builds new sums every time you play, and each level uses harder operations.",
   };
+  if (state.stage === 2) notes.math = "Brainstack Level 2 sums: bigger multiplications, squares and cubes, fractions and percentages. New sums every time.";
   view.innerHTML = `<section style="display:grid;gap:14px;--mc:var(${m.color})">
     <button class="back" id="back">← All games</button>
     <div class="mode-row"><span class="glyph" aria-hidden="true">${m.glyph}</span>
-      <div><h2>${m.name}</h2><p class="hint" style="margin:0">${m.blurb}</p></div></div>
+      <div><span class="label">${STAGE_NAME[state.stage]}</span><h2>${m.name}</h2><p class="hint" style="margin:0">${m.blurb}</p></div></div>
     <div class="levels">${cards}</div>
     <div class="rules">${notes[modeId] || "Each level has its own set of " + PER_ROUND + " questions, so moving up always means new material. The timer gets shorter as you climb."}</div>
   </section>`;
@@ -1026,8 +1288,9 @@ function renderLevels(modeId) {
 
 /* -------------------------------------------------------------------- game */
 function startGame(mode, level) {
-  game = { mode, level, qs: buildRound(mode, level), i: 0, points: 0, correct: 0, streak: 0, bestStreak: 0,
-           limit: timeFor(mode, level), left: 0, locked: false, results: [] };
+  const stage = state.stage;
+  game = { mode, level, stage, qs: buildRound(mode, level, stage), i: 0, points: 0, correct: 0, streak: 0, bestStreak: 0,
+           limit: timeFor(mode, level, stage), left: 0, locked: false, results: [] };
   screen = { name: "game" };
   renderHeader();
   renderQuestion();
@@ -1055,7 +1318,7 @@ function renderQuestion() {
   }
   view.innerHTML = `<section class="game" style="--mc:var(${m.color})">
     <div class="hud">
-      <div class="stat"><span class="label">${esc(m.name)}</span><span class="num">Level ${game.level}</span></div>
+      <div class="stat"><span class="label">${game.stage === 2 ? "BS2 · " : ""}${esc(m.name)}</span><span class="num">Level ${game.level}</span></div>
       <div class="stat"><span class="label">Question</span><span class="num">${game.i + 1}/${game.qs.length}</span></div>
       <div class="stat"><span class="label">Points</span><span class="num" id="pts">${fmt(game.points)}</span></div>
       <div class="stat"><span class="label">Streak</span><span class="num">${game.streak}</span></div>
@@ -1110,7 +1373,7 @@ function answer(choice) {
   let gained = 0;
   if (ok) {
     game.correct++; game.streak++; game.bestStreak = Math.max(game.bestStreak, game.streak);
-    const mult = 1 + (game.level - 1) * 0.25;
+    const mult = (1 + (game.level - 1) * 0.25) * STAGE_MULT[game.stage];
     const speed = game.limit ? Math.round((game.left / game.limit) * 100) : 50;
     const streakBonus = game.streak >= 3 ? 25 * (game.streak - 2) : 0;
     gained = Math.round((100 + speed) * mult) + streakBonus;
@@ -1150,20 +1413,25 @@ function finishGame() {
   const g = game; game = null;
   const a = me();
   const passed = g.correct >= PASS;
+  const key = unlockKey(g.stage);
+  if (!a[key]) a[key] = freshUnlocked();
   let newUnlock = false;
-  if (passed && g.level === (a.unlocked[g.mode] || 1) && g.level < LEVELS) { a.unlocked[g.mode] = g.level + 1; newUnlock = true; }
+  if (passed && g.level === (a[key][g.mode] || 1) && g.level < LEVELS) { a[key][g.mode] = g.level + 1; newUnlock = true; }
   const rec = { id: "g-" + Date.now().toString(36) + randId(4), ts: Date.now(), acct: a.id,
     mode: g.mode, level: g.level, correct: g.correct, total: g.qs.length, points: g.points, passed, bestStreak: g.bestStreak };
+  if (g.stage === 2) rec.stage = 2;
+  const wasOpen = stage2Open(a.id);
   state.games.unshift(rec);
+  const stage2New = !wasOpen && stage2Open(a.id);
   a.lastUsed = Date.now();
   persistGame(rec);
   persistAccount(a);
-  go({ name: "result", rec, recap: g.results, newUnlock });
+  go({ name: "result", rec, recap: g.results, newUnlock, stage2New });
 }
 
-function renderResult(rec, recap, newUnlock) {
+function renderResult(rec, recap, newUnlock, stage2New) {
   const m = modeById(rec.mode);
-  const same = myGames().filter(g => g.mode === rec.mode && g.level === rec.level);
+  const same = myGames().filter(g => inStage(g, rec.mode, rec.level, stageOf(rec)));
   const isBest = rec.points > 0 && same.length > 1 && same.every(g => g.id === rec.id || g.points < rec.points);
   const headline = rec.passed ? (rec.correct === rec.total ? "Perfect round" : "Level cleared") : "Not this time";
   const sub = rec.passed
@@ -1173,8 +1441,12 @@ function renderResult(rec, recap, newUnlock) {
       <span class="q">${esc(r.q)}<small>${r.ok ? "Answered " + esc(r.answer) : (r.timeout ? "Timed out" : "You said " + esc(r.choice)) + " · answer: " + esc(r.answer)}</small></span>
       <b class="num">${r.ok ? "+" + fmt(r.gained) : "0"}</b></li>`).join("");
   const canNext = rec.passed && rec.level < LEVELS;
-  view.innerHTML = `<section class="game result" style="--mc:var(${m.color})">
-    <span class="chip ${rec.passed ? "good" : "bad"}">${esc(m.name)} · Level ${rec.level}</span>
+  view.innerHTML = `${stage2New ? `<div class="unlock" style="margin-bottom:16px"><span class="label" style="color:inherit;opacity:.8">Unlocked</span>
+      <h2>Brainstack Level 2 is open</h2>
+      <p>You've cleared all ${TOTAL_LEVELS} levels and played ${gamesOf(rec.acct).length} games. Seven games, 35 new levels, 1.5× points.</p>
+      <button class="btn" id="go-stage2">Go to Brainstack Level 2 →</button></div>` : ""}
+  <section class="game result" style="--mc:var(${m.color})">
+    <span class="chip ${rec.passed ? "good" : "bad"}">${stageOf(rec) === 2 ? "BS2 · " : ""}${esc(m.name)} · Level ${rec.level}</span>
     <h2 style="font-size:30px">${headline}</h2>
     <p class="hint" style="margin:0">${sub}</p>
     <div><span class="big num" style="color:var(--mc)">${fmt(rec.points)}</span><div class="label" style="margin-top:6px">points${isBest ? " · new best for this level" : ""}</div></div>
@@ -1195,7 +1467,8 @@ function renderResult(rec, recap, newUnlock) {
   $("#r-retry").addEventListener("click", () => startGame(rec.mode, rec.level));
   $("#r-levels").addEventListener("click", () => go({ name: "levels", mode: rec.mode }));
   $("#r-records").addEventListener("click", () => go({ name: "records" }));
-  (canNext ? $("#r-next") : $("#r-retry")).focus();
+  if (stage2New) $("#go-stage2").addEventListener("click", () => { const a = me(); a.seen2 = true; persistAccount(a); setStage(2); go({ name: "home" }); });
+  (stage2New ? $("#go-stage2") : canNext ? $("#r-next") : $("#r-retry")).focus();
 }
 
 /* ----------------------------------------------------------------- records */
@@ -1206,8 +1479,9 @@ function renderRecords() {
   const answered = games.reduce((s, g) => s + g.total, 0);
   const right = games.reduce((s, g) => s + g.correct, 0);
   const acc = answered ? Math.round(right / answered * 100) : 0;
+  const open2 = stage2Open(a.id), bestStage = open2 ? state.stage : 1;
   const bests = MODES.map(m => {
-    const mg = games.filter(g => g.mode === m.id);
+    const mg = games.filter(g => g.mode === m.id && stageOf(g) === bestStage);
     const top = mg.reduce((b, g) => (!b || g.points > b.points ? g : b), null);
     const pts = mg.reduce((s, g) => s + g.points, 0);
     return `<div class="mb" style="--mc:var(${m.color})"><b>${m.name}</b>
@@ -1219,31 +1493,31 @@ function renderRecords() {
     const m = modeById(g.mode); const d = new Date(g.ts);
     return `<tr><td>${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })} <span class="hint">${d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}</span></td>
       <td><span class="mdot" style="--mc:var(${m.color})"></span>${m.name}</td>
-      <td class="num">L${g.level}</td>
+      <td class="num">${stageOf(g) === 2 ? "BS2 · " : ""}L${g.level}</td>
       <td class="num r">${g.correct}/${g.total}</td>
       <td class="num r">${fmt(g.points)}</td>
       <td><span class="chip ${g.passed ? "good" : "bad"}">${g.passed ? "Cleared" : "Missed"}</span></td></tr>`;
   }).join("");
-  const board = state.accounts.map(p => ({ p, pts: pointsOf(p.id), n: gamesOf(p.id).length, lv: clearedCountOf(p.id) }))
+  const board = state.accounts.map(p => ({ p, pts: pointsOf(p.id), n: gamesOf(p.id).length, lv: clearedCountOf(p.id), lv2: stage2Open(p.id) ? clearedCountOf(p.id, 2) : null }))
     .sort((x, y) => y.pts - x.pts)
     .map((r, i) => `<tr class="${r.p.id === a.id ? "me" : ""}"><td class="num">${i + 1}</td>
       <td><span class="cell-player">${avatar(r.p)}${esc(r.p.name)}${r.p.id === a.id ? ' <span class="hint">(you)</span>' : ""}</span></td>
-      <td class="num r">${fmt(r.pts)}</td><td class="num r">${r.n}</td><td class="num r">${r.lv}/${MODES.length * LEVELS}</td></tr>`).join("");
+      <td class="num r">${fmt(r.pts)}</td><td class="num r">${r.n}</td><td class="num r">${r.lv}/${TOTAL_LEVELS}</td><td class="num r">${r.lv2 === null ? '<span class="hint">Locked</span>' : r.lv2 + "/" + TOTAL_LEVELS}</td></tr>`).join("");
   view.innerHTML = `<section style="display:grid;gap:16px">
     <div class="section-head"><h2>${esc(a.name)}'s records</h2><p>Every round you finish is logged here.</p></div>
     <div class="tiles-row">
       <div class="kpi"><span class="label">Total points</span><span class="num">${fmt(pointsOf(a.id))}</span><small>across all games</small></div>
       <div class="kpi"><span class="label">Games played</span><span class="num">${played}</span><small>${right} correct answers</small></div>
       <div class="kpi"><span class="label">Accuracy</span><span class="num">${answered ? acc + "%" : "—"}</span><small>${answered} questions answered</small></div>
-      <div class="kpi"><span class="label">Levels cleared</span><span class="num">${clearedCountOf(a.id)}/${MODES.length * LEVELS}</span><small>in ${MODES.length} games</small></div>
+      <div class="kpi"><span class="label">Levels cleared</span><span class="num">${clearedCountOf(a.id)}/${TOTAL_LEVELS}</span><small>${open2 ? "Brainstack Level 2: " + clearedCountOf(a.id, 2) + "/" + TOTAL_LEVELS : "Brainstack Level 2 locked"}</small></div>
     </div>
-    <h3>Best by game</h3>
+    <h3>Best by game${open2 ? " · " + STAGE_NAME[bestStage] : ""}</h3>
     <div class="mode-bests">${bests}</div>
     <h3>Game history</h3>
     <div class="table-wrap">${played ? `<table><thead><tr><th>When</th><th>Game</th><th>Level</th><th class="r">Correct</th><th class="r">Points</th><th>Result</th></tr></thead><tbody>${rows}</tbody></table>`
       : `<div class="empty">No games yet. Finished rounds appear here with their score, level and result.<br><br><button class="btn" id="go-play">Play your first game</button></div>`}</div>
     <h3>All players</h3>
-    <div class="table-wrap"><table><thead><tr><th>#</th><th>Player</th><th class="r">Points</th><th class="r">Games</th><th class="r">Levels cleared</th></tr></thead><tbody>${board}</tbody></table></div>
+    <div class="table-wrap"><table><thead><tr><th>#</th><th>Player</th><th class="r">Points</th><th class="r">Games</th><th class="r">Level 1 cleared</th><th class="r">Level 2 cleared</th></tr></thead><tbody>${board}</tbody></table></div>
     ${played ? `<div class="danger" id="danger"><span>Start over with all of your levels locked again?</span><button class="btn ghost" id="reset">Reset my records</button></div>` : ""}
   </section>`;
   if (!played) $("#go-play").addEventListener("click", () => go({ name: "home" }));
@@ -1256,6 +1530,7 @@ function renderRecords() {
       const ids = games.map(g => g.id);
       state.games = state.games.filter(g => g.acct !== a.id);
       a.unlocked = freshUnlocked();
+      delete a.unlocked2; delete a.seen2;
       persistAccount(a);
       for (const id of ids) await cloudDel(id);
       renderRecords(); renderHeader();
