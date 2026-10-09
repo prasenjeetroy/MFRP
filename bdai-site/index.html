@@ -1,0 +1,1210 @@
+<title>BDAI Mathematics &amp; Technology</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: sticky nav, hero with the rebrand wordmark beside a Fibonacci spiral, then a navy
+   presentation stage, the team ledger and the papers library, each on a 1180px column. */
+:root{
+  --bg:#F3F7F8; --surface:#FFFFFF; --surface-2:#E9F1F3; --ink:#0E2A38; --ink-2:#3E5C68; --muted:#5B7681;
+  --line:#D3E1E5; --accent:#1B8C86; --accent-strong:#0F5F62; --accent-soft:#D6ECEA; --on-accent:#FFFFFF;
+  --heat:#0F6E6A; --on-heat:#FFFFFF; --crit:#B23A2A; --crit-soft:#F7E2DD;
+  --seq1:#C4E5E2; --seq2:#8FCDC7; --seq3:#52AFA8; --seq4:#1B8C86; --seq5:#0F5F62;
+  --seqi1:#0E2A38; --seqi2:#0E2A38; --seqi3:#0E2A38; --seqi4:#FFFFFF; --seqi5:#FFFFFF;
+  --paper-shadow:0 1px 2px rgba(14,42,56,.08),0 8px 24px rgba(14,42,56,.08);
+  /* the presentation stage keeps one navy look in both themes, like a projector screen */
+  --stage:#0E2A38; --stage-2:#13384A; --stage-ink:#F2F8F9; --stage-ink-2:#A9C4CB; --stage-line:#29506A;
+  --stage-accent:#5CC8C0; --stage-crit:#F39A84;
+  --sseq1:#1F5A5E; --sseq2:#2A7F7E; --sseq3:#3AA39E; --sseq4:#6CC6BF; --sseq5:#B4E6E1;
+  --sseqi1:#F2F8F9; --sseqi2:#F2F8F9; --sseqi3:#0E2A38; --sseqi4:#0E2A38; --sseqi5:#0E2A38;
+  --f-sans:"Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r-sm:6px; --r-md:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#08161D; --surface:#0E222B; --surface-2:#132C37; --ink:#E6F0F2; --ink-2:#AFC6CD; --muted:#88A3AC;
+  --line:#21404C; --accent:#45B9B1; --accent-strong:#8ADBD4; --accent-soft:#123B3D; --on-accent:#05161C;
+  --heat:#4FC2BA; --on-heat:#05161C; --crit:#F08A73; --crit-soft:#3A1F1A;
+  --seq1:#1F5A5E; --seq2:#2A7F7E; --seq3:#3AA39E; --seq4:#6CC6BF; --seq5:#B4E6E1;
+  --seqi1:#F2F8F9; --seqi2:#F2F8F9; --seqi3:#0E2A38; --seqi4:#0E2A38; --seqi5:#0E2A38;
+  --paper-shadow:0 0 0 1px #21404C,0 10px 30px rgba(0,0,0,.4);
+  --stage:#0B2431; --stage-line:#2A5266;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#08161D; --surface:#0E222B; --surface-2:#132C37; --ink:#E6F0F2; --ink-2:#AFC6CD; --muted:#88A3AC;
+  --line:#21404C; --accent:#45B9B1; --accent-strong:#8ADBD4; --accent-soft:#123B3D; --on-accent:#05161C;
+  --heat:#4FC2BA; --on-heat:#05161C; --crit:#F08A73; --crit-soft:#3A1F1A;
+  --seq1:#1F5A5E; --seq2:#2A7F7E; --seq3:#3AA39E; --seq4:#6CC6BF; --seq5:#B4E6E1;
+  --seqi1:#F2F8F9; --seqi2:#F2F8F9; --seqi3:#0E2A38; --seqi4:#0E2A38; --seqi5:#0E2A38;
+  --paper-shadow:0 0 0 1px #21404C,0 10px 30px rgba(0,0,0,.4);
+  --stage:#0B2431; --stage-line:#2A5266;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;text-wrap:balance;line-height:1.15}
+p{margin:0}
+a{color:var(--accent-strong)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.wrap{max-width:1180px;margin-inline:auto;padding-inline:20px}
+.mono{font-family:var(--f-mono)}
+.num{font-variant-numeric:tabular-nums}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+/* nav */
+.nav{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in oklab,var(--bg) 88%,transparent);backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+.nav .wrap{display:flex;align-items:center;gap:16px;min-height:60px;flex-wrap:wrap}
+.brand{display:flex;align-items:baseline;gap:8px;text-decoration:none;color:var(--ink)}
+.brand b{font-weight:800;font-size:20px;letter-spacing:.04em}
+.brand small{font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.nav ul{list-style:none;margin:0 0 0 auto;padding:0;display:flex;gap:4px;flex-wrap:wrap}
+.nav ul a{display:block;padding:6px 12px;border-radius:999px;text-decoration:none;color:var(--ink-2);font-weight:600;font-size:14px}
+.nav ul a:hover{background:var(--surface-2);color:var(--ink)}
+
+/* hero */
+.hero{padding-block:56px 40px}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:40px;align-items:center}
+.mark{font-weight:800;font-size:clamp(84px,15vw,184px);letter-spacing:-.02em;line-height:.9;display:flex;margin-block:14px 6px}
+.flip{display:inline-grid;overflow:hidden;clip-path:inset(0 -0.1em)}
+.flip>span{grid-area:1/1;display:block}
+.flip .new{color:var(--accent)}
+.mark.play .flip .old{animation:flip-out .55s cubic-bezier(.6,0,.3,1) both;animation-delay:var(--t)}
+.mark.play .flip .new{animation:flip-in .55s cubic-bezier(.6,0,.3,1) both;animation-delay:var(--t)}
+.flip .old{transform:translateY(-105%)}
+@keyframes flip-out{from{transform:translateY(0)}to{transform:translateY(-105%)}}
+@keyframes flip-in{from{transform:translateY(105%)}to{transform:translateY(0)}}
+.rename{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-family:var(--f-mono);font-size:14px;color:var(--ink-2)}
+.rename s{color:var(--muted)}
+.rename .arrow{color:var(--accent)}
+.btn-ghost{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--ink-2)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--ink)}
+.lede{font-size:clamp(18px,2vw,21px);color:var(--ink-2);max-width:34ch;margin-top:22px}
+.hero-art{position:relative}
+.hero-art svg{width:100%;height:auto;display:block}
+.hero-art .sp{stroke-dasharray:1;stroke-dashoffset:0;animation:draw 3.2s cubic-bezier(.4,0,.2,1) .2s both}
+.hero-art .lbl{font-family:var(--f-mono);fill:var(--muted)}
+.art-caption{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-top:10px}
+@keyframes draw{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-top:44px}
+.fact{padding:18px 18px 18px 0;display:grid;gap:4px;text-decoration:none;color:inherit}
+.fact+.fact{padding-left:18px;border-left:1px solid var(--line)}
+.fact b{font-size:30px;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.fact span{font-size:14px;color:var(--ink-2)}
+.fact:hover b{color:var(--accent)}
+
+.org{display:flex;align-items:stretch;gap:10px;flex-wrap:wrap;margin-top:28px}
+.org-node{border:1px solid var(--line);background:var(--surface);border-radius:var(--r-md);padding:12px 16px;min-width:0;flex:1 1 160px}
+.org-node .eyebrow{font-size:11px}
+.org-node b{display:block;font-size:19px;font-weight:800;margin-top:2px}
+.org-node small{color:var(--muted);font-size:13px}
+.org-node.parent{border-color:var(--accent);background:var(--accent-soft)}
+.org-arrow{align-self:center;font-family:var(--f-mono);color:var(--accent);font-size:20px}
+
+/* sections */
+section.block{padding-block:72px 24px}
+.sec-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px 24px;align-items:end;margin-bottom:28px}
+.sec-head h2{font-size:clamp(28px,4vw,40px);font-weight:800;letter-spacing:-.015em;margin-top:6px}
+.sec-head p{color:var(--ink-2);max-width:60ch;margin-top:10px}
+.source{font-family:var(--f-mono);font-size:12px;color:var(--muted)}
+
+/* ===== presentation stage ===== */
+.stage-shell{background:var(--stage);color:var(--stage-ink);border-radius:14px;border:1px solid var(--stage-line);overflow:hidden}
+.chapters{display:flex;gap:6px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--stage-line)}
+.chapters button{background:transparent;border:1px solid var(--stage-line);color:var(--stage-ink-2);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;font-weight:600}
+.chapters button[aria-current="true"]{background:var(--stage-accent);border-color:var(--stage-accent);color:#0E2A38}
+.chapters .count{margin-left:auto;font-family:var(--f-mono);font-size:13px;color:var(--stage-ink-2);align-self:center}
+.stage{display:grid;position:relative;touch-action:pan-y}
+.slide{grid-area:1/1;aspect-ratio:16/9;padding:clamp(22px,4.2vw,52px);display:flex;flex-direction:column;gap:18px;visibility:hidden;opacity:0;transform:translateX(24px);transition:opacity .5s ease,transform .6s cubic-bezier(.2,.7,.2,1),visibility 0s .6s;min-width:0}
+.slide.is-active{visibility:visible;opacity:1;transform:none;transition:opacity .5s ease,transform .6s cubic-bezier(.2,.7,.2,1),visibility 0s}
+.slide.is-prev{transform:translateX(-24px)}
+.s-tag{display:flex;gap:10px;align-items:center;font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--stage-ink-2)}
+.s-tag i{width:8px;height:8px;border-radius:2px;background:var(--stage-accent);display:inline-block}
+.s-grid{flex:1;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:clamp(18px,3vw,40px);align-items:center;min-height:0}
+.s-grid.one{grid-template-columns:minmax(0,1fr)}
+.s-kicker{font-family:var(--f-mono);font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--stage-accent)}
+.s-title{font-size:clamp(26px,3.6vw,46px);font-weight:800;letter-spacing:-.015em;line-height:1.08;margin-top:10px}
+.s-title.xl{font-size:clamp(44px,7.4vw,96px);letter-spacing:-.03em}
+.s-body{color:var(--stage-ink-2);font-size:clamp(15px,1.5vw,19px);margin-top:14px;max-width:44ch}
+.s-pic{min-width:0;display:flex;align-items:center;justify-content:center}
+.s-pic svg{width:100%;max-height:100%;height:auto;display:block}
+.s-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:20px}
+.s-card{border:1px solid var(--stage-line);background:var(--stage-2);border-radius:var(--r-md);padding:16px;min-width:0}
+.s-card h4{font-size:clamp(16px,1.6vw,20px);font-weight:800;margin-top:10px}
+.s-card p{color:var(--stage-ink-2);font-size:14px;margin-top:6px}
+.s-card .step{font-family:var(--f-mono);color:var(--stage-accent);font-size:14px}
+.s-card svg{width:40px;height:40px;display:block}
+.stroke{fill:none;stroke:var(--stage-accent);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.stroke-dim{fill:none;stroke:var(--stage-line);stroke-width:1.2}
+.s-quote{font-size:clamp(26px,4vw,52px);font-weight:700;line-height:1.15;letter-spacing:-.015em;max-width:22ch}
+.s-quote em{font-style:normal;color:var(--stage-accent)}
+
+/* org chain on slide */
+.chain{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:26px}
+.chain .node{border:1px solid var(--stage-line);background:var(--stage-2);border-radius:var(--r-md);padding:14px 18px;flex:1 1 150px;min-width:0}
+.chain .node.hi{border-color:var(--stage-accent)}
+.chain .node span{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;color:var(--stage-ink-2)}
+.chain .node b{display:block;font-size:clamp(20px,2.4vw,30px);font-weight:800;margin-top:4px}
+.chain .node small{color:var(--stage-ink-2);font-size:13px}
+.chain .to{font-family:var(--f-mono);color:var(--stage-accent);font-size:22px}
+
+/* quiz */
+.quiz{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:22px}
+.q-opt{border:1px solid var(--stage-line);background:var(--stage-2);border-radius:var(--r-md);padding:12px;display:grid;gap:8px;min-width:0;transition:border-color .4s,background .4s}
+.q-opt svg{width:100%;height:auto;aspect-ratio:1;display:block}
+.q-opt b{font-family:var(--f-mono);color:var(--stage-accent)}
+.q-opt span{font-size:14px}
+.quiz-ans{margin-top:16px;font-weight:700;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.quiz.revealed .q-opt.right{border-color:var(--stage-accent);background:color-mix(in oklab,var(--stage-accent) 18%,var(--stage-2))}
+.quiz.revealed .q-opt.wrong{opacity:.55}
+.btn-stage{background:transparent;border:1px solid var(--stage-accent);color:var(--stage-ink);border-radius:999px;padding:6px 14px;font-size:14px;cursor:pointer;font-weight:600}
+.btn-stage:hover{background:var(--stage-accent);color:#0E2A38}
+
+/* KPI on slide */
+.s-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:22px}
+.s-kpi{border-top:2px solid var(--stage-accent);padding-top:10px;min-width:0}
+.s-kpi b{display:block;font-size:clamp(26px,3.6vw,44px);font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.s-kpi span{color:var(--stage-ink-2);font-size:13px}
+
+/* bar charts (shared by slides and page) */
+.hbars{display:grid;gap:6px;min-width:0}
+.hbar{display:grid;grid-template-columns:var(--lab,120px) minmax(0,1fr) 56px;gap:10px;align-items:center;font-size:13px;min-width:0}
+.hbar .lab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbar .track{position:relative;height:14px}
+.hbar .fill{position:absolute;inset:0 auto 0 0;border-radius:0 4px 4px 0;background:var(--c,var(--accent));transform-origin:left}
+.hbar .val{font-family:var(--f-mono);font-variant-numeric:tabular-nums;text-align:right}
+.hbar.crit .fill{--c:var(--crit)}
+.stage .hbar .fill{--c:var(--stage-accent)}
+.stage .hbar.crit .fill{--c:var(--stage-crit)}
+.stage .hbar .lab,.stage .hbar .val{color:var(--stage-ink)}
+.avgline{position:absolute;top:-4px;bottom:-4px;border-left:1.5px dashed var(--muted)}
+.stage .avgline{border-color:var(--stage-ink-2)}
+.axis{display:grid;grid-template-columns:var(--lab,120px) minmax(0,1fr) 56px;gap:10px;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.axis .ticks{position:relative;height:16px}
+.axis .ticks span{position:absolute;transform:translateX(-50%)}
+.axis .ticks span:first-child{transform:none}
+.axis .ticks span:last-child{transform:translateX(-100%)}
+.stage .axis{color:var(--stage-ink-2)}
+
+/* stacked bars (question types) */
+.stack{display:flex;gap:2px;height:34px;min-width:0}
+.stack>div{display:flex;align-items:center;justify-content:center;font-family:var(--f-mono);font-size:12px;font-weight:600;min-width:0;overflow:hidden;transform-origin:left}
+.stack>div:last-child{border-radius:0 4px 4px 0}
+.seq1{background:var(--seq1);color:var(--seqi1)} .seq2{background:var(--seq2);color:var(--seqi2)} .seq3{background:var(--seq3);color:var(--seqi3)} .seq4{background:var(--seq4);color:var(--seqi4)} .seq5{background:var(--seq5);color:var(--seqi5)}
+.stage .seq1{background:var(--sseq1);color:var(--sseqi1)} .stage .seq2{background:var(--sseq2);color:var(--sseqi2)} .stage .seq3{background:var(--sseq3);color:var(--sseqi3)} .stage .seq4{background:var(--sseq4);color:var(--sseqi4)} .stage .seq5{background:var(--sseq5);color:var(--sseqi5)}
+.legend{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:12px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:12px;height:12px;border-radius:3px;display:inline-block}
+.stage .legend{color:var(--stage-ink-2)}
+.stack-rows{display:grid;gap:12px}
+.stack-row{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;align-items:center}
+.stack-row .lab b{display:block;font-size:14px}
+.stack-row .lab small{color:var(--muted);font-size:12px}
+.stage .stack-row .lab small{color:var(--stage-ink-2)}
+
+/* grade columns */
+.gcols{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;align-items:end;height:100%;min-height:0}
+.gcol{display:grid;grid-template-rows:auto 1fr auto auto;gap:6px;height:100%;min-width:0}
+.gcol .n{font-family:var(--f-mono);font-size:22px;font-weight:600;text-align:center}
+.gcol .col{align-self:end;background:var(--stage-accent);border-radius:4px 4px 0 0;transform-origin:bottom}
+.gcol.f .col{background:var(--stage-crit)}
+.gcol.zero .col{background:transparent;border-bottom:2px solid var(--stage-line);border-radius:0}
+.gcol .g{font-weight:800;font-size:22px;text-align:center;border-top:1px solid var(--stage-line);padding-top:6px}
+.gcol .who{font-size:11px;color:var(--stage-ink-2);text-align:center;line-height:1.35;min-height:2.7em}
+
+/* blueprint mini multiples on slide */
+.bp3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:18px}
+.bp3 h4{font-size:15px;font-weight:800}
+.bp3 small{color:var(--stage-ink-2);font-family:var(--f-mono);font-size:11px}
+.bp3 .hbars{margin-top:10px}
+.bp3 .hbar{grid-template-columns:minmax(0,1fr) 30px;row-gap:2px}
+.bp3 .hbar .lab{grid-column:1/-1;white-space:normal;font-size:12px;color:var(--stage-ink-2)}
+
+/* stage animation: only after the first move, so the first frame is complete */
+.stage.go .slide.is-active [data-in]{animation:rise .7s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--d,0) * 110ms + 150ms)}
+.stage.go .slide.is-active .draw{stroke-dasharray:1;animation:draw 2.4s cubic-bezier(.4,0,.2,1) .3s both}
+.stage.go .slide.is-active .grow-x{animation:grow-x 1s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--d,0) * 70ms + 300ms)}
+.stage.go .slide.is-active .grow-y{animation:grow-y 1s cubic-bezier(.2,.7,.2,1) both;animation-delay:calc(var(--d,0) * 90ms + 300ms)}
+.stage.go .slide.is-active .pop{animation:pop .5s ease both;animation-delay:calc(var(--d,0) * 25ms + 200ms)}
+.draw{stroke-dasharray:1;stroke-dashoffset:0}
+@keyframes rise{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+@keyframes grow-x{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes grow-y{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+
+.controls{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--stage-line);flex-wrap:wrap}
+.ctl{width:38px;height:38px;border-radius:999px;border:1px solid var(--stage-line);background:transparent;color:var(--stage-ink);cursor:pointer;display:grid;place-items:center}
+.ctl:hover{border-color:var(--stage-accent)}
+.ctl svg{width:16px;height:16px}
+.dots{display:flex;gap:5px;flex-wrap:wrap;flex:1 1 180px;min-width:0}
+.dots button{width:22px;height:6px;border-radius:3px;border:0;background:var(--stage-line);cursor:pointer;padding:0;position:relative;overflow:hidden}
+.dots button[aria-current="true"]{background:var(--stage-ink-2)}
+.dots button[aria-current="true"]::after{content:"";position:absolute;inset:0;background:var(--stage-accent);transform-origin:left;transform:scaleX(1)}
+.stage-shell.playing .dots button[aria-current="true"]::after{animation:grow-x var(--dur,8s) linear both}
+.hint{font-family:var(--f-mono);font-size:11px;color:var(--stage-ink-2)}
+
+/* ===== team ===== */
+.kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);overflow:hidden}
+.kpi{padding:16px 18px;min-width:0}
+.kpi+.kpi{border-left:1px solid var(--line)}
+.kpi .eyebrow{font-size:11px}
+.kpi b{display:block;font-size:28px;font-weight:800;margin-top:6px;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.kpi small{color:var(--ink-2);font-size:13px}
+.team-charts{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);gap:20px;margin-top:20px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:18px;min-width:0}
+.panel h3{font-size:17px;font-weight:800}
+.panel .sub{font-size:13px;color:var(--muted);margin-top:2px;margin-bottom:14px}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-block:28px 12px}
+.search{flex:1 1 220px;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 14px;font:inherit;font-size:14px;color:var(--ink)}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;color:var(--ink-2)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.team-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
+.table-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface)}
+table.ledger{border-collapse:separate;border-spacing:0;width:100%;min-width:900px;font-size:14px}
+.ledger th,.ledger td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+.ledger th{font-size:11px;font-family:var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;vertical-align:bottom;background:var(--surface);position:relative}
+.ledger th.grp{text-align:center;border-bottom:1px solid var(--line);color:var(--ink-2)}
+.ledger th button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center;white-space:normal;text-align:inherit;line-height:1.25}
+.ledger th button:focus-visible{outline:2px solid var(--accent)}
+.ledger th[aria-sort] button::after{content:"↕";opacity:.35}
+.ledger th[aria-sort="ascending"] button::after{content:"↑";opacity:1;color:var(--accent)}
+.ledger th[aria-sort="descending"] button::after{content:"↓";opacity:1;color:var(--accent)}
+.ledger td{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.ledger td.name,.ledger th.name{text-align:left;font-family:var(--f-sans)}
+.ledger td.name{font-weight:700}
+.ledger td.heat{border-left:2px solid var(--surface)}
+.ledger tbody tr{cursor:pointer}
+.ledger tbody tr:hover td{box-shadow:inset 0 9999px 0 color-mix(in oklab,var(--ink) 5%,transparent)}
+.ledger tbody tr.sel td.name{box-shadow:inset 3px 0 0 var(--accent)}
+.ledger tbody tr:last-child td{border-bottom:0}
+.ledger td.sep,.ledger th.sep{border-left:1px solid var(--line)}
+.grade{display:inline-grid;place-items:center;width:26px;height:22px;border-radius:5px;font-family:var(--f-sans);font-weight:800;font-size:13px;background:var(--accent-soft);color:var(--accent-strong)}
+.grade.F{background:var(--crit-soft);color:var(--crit)}
+.note{font-size:12px;color:var(--muted);margin-top:10px}
+.profile{position:sticky;top:80px}
+.profile h3{font-size:22px;font-weight:800}
+.profile .meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-family:var(--f-mono);font-size:12px;color:var(--muted);margin-top:6px}
+.profile .big{display:flex;align-items:baseline;gap:8px;margin-block:14px 16px}
+.profile .big b{font-size:36px;font-weight:800;font-variant-numeric:tabular-nums}
+.profile .big span{color:var(--ink-2);font-family:var(--f-mono);font-size:13px}
+.pbar{display:grid;gap:4px;margin-bottom:10px}
+.pbar .top{display:flex;justify-content:space-between;font-size:13px;gap:8px}
+.pbar .top span:last-child{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.pbar .track{height:8px;background:var(--surface-2);border-radius:4px;position:relative}
+.pbar .fill{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:4px;transition:width .5s cubic-bezier(.2,.7,.2,1)}
+.pbar .avg{position:absolute;top:-3px;bottom:-3px;border-left:2px solid var(--ink)}
+.profile .key{font-size:12px;color:var(--muted);display:flex;gap:14px;flex-wrap:wrap;margin-top:6px}
+.profile .key i{display:inline-block;vertical-align:middle;margin-right:5px}
+
+/* ===== papers ===== */
+.papers-top{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:20px}
+.instr{margin:10px 0 0;padding-left:20px;color:var(--ink-2);font-size:14px;display:grid;gap:6px}
+table.plain{border-collapse:collapse;width:100%;font-size:14px}
+.plain th,.plain td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+.plain th{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.plain td{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.plain td:first-child,.plain th:first-child{text-align:left;font-family:var(--f-sans);white-space:normal}
+.plain tr.total td{font-weight:700;border-bottom:0;border-top:1.5px solid var(--ink)}
+.plain .tot{font-weight:700}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-top:36px}
+.tab{background:transparent;border:0;border-bottom:3px solid transparent;padding:10px 14px;cursor:pointer;font-weight:700;color:var(--ink-2);text-align:left;display:grid;margin-bottom:-1px}
+.tab small{font-weight:500;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.tab[aria-selected="true"]{border-bottom-color:var(--accent);color:var(--ink)}
+.tabpanel{padding-top:24px}
+.paper-head{display:flex;gap:10px 24px;flex-wrap:wrap;align-items:baseline}
+.paper-head h3{font-size:clamp(22px,3vw,30px);font-weight:800}
+.paper-meta{display:flex;gap:8px;flex-wrap:wrap}
+.pill{font-family:var(--f-mono);font-size:12px;border:1px solid var(--line);border-radius:999px;padding:3px 10px;color:var(--ink-2);background:var(--surface)}
+.paper-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:20px;margin-top:18px}
+.ans-grid{display:grid;grid-template-columns:repeat(10,minmax(0,1fr));gap:6px}
+.ans{border:1px solid var(--line);border-radius:var(--r-sm);text-align:center;padding:6px 2px;background:var(--surface-2)}
+.ans small{display:block;font-family:var(--f-mono);font-size:11px;color:var(--muted)}
+.ans b{font-family:var(--f-mono);font-size:16px;color:var(--accent-strong)}
+.hide-ans .ans b{color:transparent;text-shadow:0 0 0 transparent;background:repeating-linear-gradient(45deg,var(--line) 0 3px,transparent 3px 6px);border-radius:3px}
+.panel-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap;margin-bottom:12px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;background:var(--surface)}
+.seg button{border:0;background:transparent;border-radius:999px;padding:6px 14px;font-weight:700;font-size:14px;cursor:pointer;color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+.viewer-bar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-block:28px 14px}
+.pages{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}
+.page{margin:0;display:grid;gap:8px;min-width:0}
+.page button{all:unset;cursor:zoom-in;display:block;border-radius:4px;box-shadow:var(--paper-shadow);background:#FFFFFF;overflow:hidden;transition:transform .2s ease}
+.page button:hover{transform:translateY(-3px)}
+.page button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.page img{display:block;width:100%;height:auto;aspect-ratio:1158/1638}
+.page figcaption{font-family:var(--f-mono);font-size:12px;color:var(--muted);display:flex;justify-content:space-between}
+dialog.lightbox{border:0;padding:0;background:transparent;max-width:min(980px,96vw);width:100%;color:var(--ink)}
+dialog.lightbox::backdrop{background:rgba(5,18,24,.82)}
+.lb-inner{display:grid;gap:10px}
+.lb-bar{display:flex;justify-content:space-between;align-items:center;gap:10px;color:#F2F8F9;font-family:var(--f-mono);font-size:13px}
+.lb-bar .ctl{color:#F2F8F9;border-color:rgba(255,255,255,.3)}
+.lb-btns{display:flex;gap:8px}
+.lb-img{max-height:82vh;overflow:auto;border-radius:4px;background:#FFFFFF}
+.lb-img img{display:block;width:100%;height:auto}
+
+footer{margin-top:80px;border-top:1px solid var(--line);padding-block:28px 40px;color:var(--muted);font-size:13px}
+footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
+footer b{color:var(--ink)}
+
+.tip{position:fixed;z-index:50;pointer-events:none;background:var(--ink);color:var(--bg);font-size:12px;padding:6px 9px;border-radius:6px;font-family:var(--f-mono);max-width:240px;opacity:0;transition:opacity .12s}
+.tip.on{opacity:1}
+
+/* responsive */
+@media (max-width:980px){
+  .team-layout{grid-template-columns:minmax(0,1fr)}
+  .profile{position:static}
+  .kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .kpi:nth-child(4){border-left:0}
+  .kpi:nth-child(n+4){border-top:1px solid var(--line)}
+}
+@media (max-width:860px){
+  .hero-grid,.team-charts,.papers-top,.paper-grid{grid-template-columns:minmax(0,1fr)}
+  .hero-art{max-width:520px}
+  .facts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fact:nth-child(3){border-left:0;padding-left:0}
+  .fact:nth-child(n+3){border-top:1px solid var(--line)}
+  .slide{aspect-ratio:auto;min-height:520px}
+  .s-grid{grid-template-columns:minmax(0,1fr)}
+  .s-pic{max-height:260px}
+  .s-pic svg{max-height:260px}
+  .s-cards,.bp3{grid-template-columns:minmax(0,1fr)}
+  .quiz,.s-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sec-head{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:520px){
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .kpi:nth-child(odd){border-left:0}
+  .kpi:nth-child(4){border-left:1px solid var(--line)}
+  .kpi:nth-child(n+3){border-top:1px solid var(--line)}
+  .ans-grid{grid-template-columns:repeat(5,minmax(0,1fr))}
+  .stack-row{grid-template-columns:minmax(0,1fr)}
+  .hbar,.axis{--lab:86px}
+  .gcol .who{display:none}
+  .nav ul a{padding:6px 9px}
+  .brand small,.hint{display:none}
+  .dots button{width:14px}
+}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  html{scroll-behavior:auto}
+}
+</style>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top"><b>BDAI</b><small>formerly BDBA</small></a>
+    <ul>
+      <li><a href="#showcase">Showcase</a></li>
+      <li><a href="#team">Team</a></li>
+      <li><a href="#papers">Papers</a></li>
+    </ul>
+  </div>
+</header>
+
+<main id="top">
+  <!-- HERO -->
+  <div class="wrap hero">
+    <div class="hero-grid">
+      <div>
+        <div class="eyebrow">Mathematics &amp; technology company</div>
+        <h1 class="mark play" id="mark" aria-label="BDAI">
+          <span>B</span><span>D</span>
+          <span class="flip" style="--t:1.1s"><span class="old" aria-hidden="true">B</span><span class="new">A</span></span>
+          <span class="flip" style="--t:1.35s"><span class="old" aria-hidden="true">A</span><span class="new">I</span></span>
+        </h1>
+        <div class="rename">
+          <span><s>BDBA</s> <span class="arrow">→</span> <b>BDAI</b></span>
+          <span>new name, same team</span>
+          <button class="btn-ghost" id="replay" type="button">Replay</button>
+        </div>
+        <p class="lede">We build mathematics people can see, handle and prove. Our studio Experimentium makes Mathopea, and our team sits the same papers we publish.</p>
+        <div class="org" aria-label="Company structure">
+          <div class="org-node parent"><span class="eyebrow">Parent company</span><b>BDAI</b><small>formerly BDBA</small></div>
+          <span class="org-arrow" aria-hidden="true">→</span>
+          <div class="org-node"><span class="eyebrow">Studio</span><b>Experimentium</b><small>design &amp; build</small></div>
+          <span class="org-arrow" aria-hidden="true">→</span>
+          <div class="org-node"><span class="eyebrow">Product</span><b>Mathopea</b><small>visual mathematics</small></div>
+        </div>
+      </div>
+      <figure class="hero-art" style="margin:0">
+        <svg id="hero-spiral" viewBox="0 0 100 62" role="img" aria-label="Fibonacci squares 1, 1, 2, 3, 5, 8, 13, 21, 34 with the golden spiral drawn through them"></svg>
+        <figcaption class="art-caption"><span>1 · 1 · 2 · 3 · 5 · 8 · 13 · 21 · 34</span><span>φ ≈ 1.6180</span></figcaption>
+      </figure>
+    </div>
+    <div class="facts">
+      <a class="fact" href="#team"><b id="f-emp">12</b><span>employees assessed, 2026–27</span></a>
+      <a class="fact" href="#team"><b id="f-avg">68.2%</b><span>average score across 7 subjects</span></a>
+      <a class="fact" href="#papers"><b>3 × 50</b><span>maths papers, 150 marks, with answer key</span></a>
+      <a class="fact" href="#showcase"><b>10</b><span>Mathopea deck slides, plus 6 data slides</span></a>
+    </div>
+  </div>
+
+  <!-- SHOWCASE -->
+  <section class="block" id="showcase">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <div class="eyebrow">Showcase</div>
+          <h2>Everything in one deck</h2>
+          <p>The Mathopea presentation, followed by our team results and the maths papers, all as animated slides. Use the arrow keys, swipe, or jump by chapter.</p>
+        </div>
+        <span class="source">Sources: Mathopea deck · Marks Analysis 2026–27 · Question Paper I–III</span>
+      </div>
+
+      <div class="stage-shell" id="shell">
+        <div class="chapters" id="chapters"></div>
+        <div class="stage" id="stage" aria-roledescription="carousel" aria-label="BDAI showcase">
+
+          <!-- 1 -->
+          <article class="slide" data-ch="Mathopea deck">
+            <div class="s-tag"><i></i>Experimentium × BDAI</div>
+            <div class="s-grid">
+              <div>
+                <div class="s-kicker" data-in style="--d:0">Introducing</div>
+                <h3 class="s-title xl" data-in style="--d:1">Mathopea</h3>
+                <p class="s-body" data-in style="--d:2">A mathematics organization built to make people fall in love with how math looks, thinks, and works.</p>
+              </div>
+              <div class="s-pic"><svg class="fib" viewBox="0 0 100 62" aria-hidden="true"></svg></div>
+            </div>
+          </article>
+
+          <!-- 2 -->
+          <article class="slide" data-ch="Mathopea deck">
+            <div class="s-tag"><i></i>The problem</div>
+            <div class="s-grid">
+              <div>
+                <h3 class="s-title" data-in style="--d:0">Most people meet math as a wall of numbers, not as a designed idea.</h3>
+                <p class="s-body" data-in style="--d:1">Textbooks explain math. Almost nothing shows it: the patterns, symmetry, and structure that make it beautiful in the first place.</p>
+              </div>
+              <div class="s-pic"><svg id="pi-wall" viewBox="0 0 220 220" role="img" aria-label="The first 100 digits of pi in a grid, with the two diagonals highlighted"></svg></div>
+            </div>
+          </article>
+
+          <!-- 3 -->
+          <article class="slide" data-ch="Mathopea deck">
+            <div class="s-tag"><i></i>Introducing</div>
+            <div class="s-grid one">
+              <div>
+                <h3 class="s-title" data-in style="--d:0">Mathopea turns mathematics into a visual, hands-on organization.</h3>
+                <div class="s-cards">
+                  <div class="s-card" data-in style="--d:1">
+                    <svg viewBox="0 0 40 40" aria-hidden="true"><circle class="stroke draw" pathLength="1" cx="20" cy="20" r="14"/><path class="stroke draw" pathLength="1" d="M6 20h28M20 6v28"/></svg>
+                    <h4>See it</h4><p>Every concept gets a visual form: geometry, motion, and pattern before formula.</p>
+                  </div>
+                  <div class="s-card" data-in style="--d:2">
+                    <svg viewBox="0 0 40 40" aria-hidden="true"><rect class="stroke draw" pathLength="1" x="6" y="22" width="12" height="12"/><rect class="stroke draw" pathLength="1" x="22" y="22" width="12" height="12"/><rect class="stroke draw" pathLength="1" x="14" y="6" width="12" height="12"/></svg>
+                    <h4>Build it</h4><p>Learners construct ideas themselves through structured, guided challenges.</p>
+                  </div>
+                  <div class="s-card" data-in style="--d:3">
+                    <svg viewBox="0 0 40 40" aria-hidden="true"><path class="stroke draw" pathLength="1" d="M8 21l8 8 16-17"/><rect x="28" y="28" width="7" height="7" fill="var(--stage-accent)"/></svg>
+                    <h4>Prove it</h4><p>Every module ends with a real check for understanding, not just completion.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 4 -->
+          <article class="slide" data-ch="Mathopea deck">
+            <div class="s-tag"><i></i>How it works</div>
+            <div class="s-grid one">
+              <div>
+                <h3 class="s-title" data-in style="--d:0">Three steps, every module.</h3>
+                <div class="s-cards">
+                  <div class="s-card" data-in style="--d:1"><span class="step">01</span><h4>Visualize</h4><p>An interactive diagram introduces the concept before any notation appears.</p></div>
+                  <div class="s-card" data-in style="--d:2"><span class="step">02</span><h4>Manipulate</h4><p>Learners drag, resize, and rebuild the idea until the pattern clicks.</p></div>
+                  <div class="s-card" data-in style="--d:3"><span class="step">03</span><h4>Explain</h4><p>A short quiz confirms the idea transferred, not just that a screen was seen.</p></div>
+                </div>
+                <svg viewBox="0 0 600 20" style="width:100%;height:20px;margin-top:14px" aria-hidden="true"><path class="stroke draw" pathLength="1" d="M10 10H590"/><circle cx="100" cy="10" r="5" fill="var(--stage-accent)"/><circle cx="300" cy="10" r="5" fill="var(--stage-accent)"/><circle cx="500" cy="10" r="5" fill="var(--stage-accent)"/></svg>
+              </div>
+            </div>
+          </article>
+
+          <!-- 5 -->
+          <article class="slide" data-ch="Mathopea deck">
+            <div class="s-tag"><i></i>Design philosophy</div>
+            <div class="s-grid">
+              <div>
+                <h3 class="s-title" data-in style="--d:0">Math already has a design system. We just put it on screen.</h3>
+                <p class="s-body" data-in style="--d:1">Grids, symmetry, ratio, and proof: the same structures mathematicians use to think are the structures Mathopea uses to teach.</p>
+              </div>
+              <div class="s-pic"><svg id="rosette" viewBox="0 0 200 200" aria-hidden="true"></svg></div>
+            </div>
+          </article>
+
+          <!-- 6 -->
+          <article class="slide" data-ch="Mathopea deck">
+            <div class="s-tag"><i></i>Behind the product</div>
+            <div class="s-grid one">
+              <div>
+                <h3 class="s-title" data-in style="--d:0">Built by Experimentium, backed by BDAI.</h3>
+                <div class="chain">
+                  <div class="node hi" data-in style="--d:1"><span>PARENT COMPANY</span><b>BDAI</b><small>formerly BDBA</small></div>
+                  <span class="to" data-in style="--d:2">→</span>
+                  <div class="node" data-in style="--d:3"><span>STUDIO</span><b>Experimentium</b></div>
+                  <span class="to" data-in style="--d:4">→</span>
+                  <div class="node" data-in style="--d:5"><span>PRODUCT</span><b>Mathopea</b></div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 7 -->
+          <article class="slide" data-ch="Mathopea deck">
+            <div class="s-tag"><i></i>Why it works</div>
+            <div class="s-grid one">
+              <div>
+                <h3 class="s-title" data-in style="--d:0">Seeing the structure changes how people feel about math.</h3>
+                <div class="s-cards">
+                  <div class="s-card" data-in style="--d:1"><svg viewBox="0 0 40 40" aria-hidden="true"><path class="stroke draw" pathLength="1" d="M4 32h8V24h8V16h8V8h8"/></svg><h4>Less intimidation</h4><p>A visual first pass lowers the barrier before symbols show up.</p></div>
+                  <div class="s-card" data-in style="--d:2"><svg viewBox="0 0 40 40" aria-hidden="true"><path class="stroke draw" pathLength="1" d="M4 34C10 12 22 8 36 6"/><path class="stroke-dim" d="M4 34h32"/></svg><h4>Deeper retention</h4><p>Building an idea by hand sticks longer than reading it once.</p></div>
+                  <div class="s-card" data-in style="--d:3"><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="10" y="10" width="20" height="20" fill="var(--stage-accent)"/></svg><h4>Genuine confidence</h4><p>The closing quiz proves understanding, not just attendance.</p></div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 8 -->
+          <article class="slide" data-ch="Mathopea deck">
+            <div class="s-tag"><i></i>Mission</div>
+            <div class="s-grid">
+              <p class="s-quote" data-in style="--d:0">Mathopea exists to convince everyone, once, that math was <em>designed</em>, not just discovered.</p>
+              <div class="s-pic"><svg id="golden-rects" viewBox="0 0 162 100" aria-hidden="true"></svg></div>
+            </div>
+          </article>
+
+          <!-- 9 -->
+          <article class="slide" data-ch="Mathopea deck">
+            <div class="s-tag"><i></i>Quick quiz</div>
+            <div class="s-grid one">
+              <div>
+                <h3 class="s-title" data-in style="--d:0">Quick check: which of these is a designed pattern?</h3>
+                <div class="quiz" id="quiz">
+                  <div class="q-opt right" data-in style="--d:1"><svg class="q-fib" viewBox="0 0 100 62" aria-hidden="true"></svg><span><b>A</b> The Fibonacci spiral</span></div>
+                  <div class="q-opt wrong" data-in style="--d:2"><svg id="q-dots" viewBox="0 0 100 100" aria-hidden="true"></svg><span><b>B</b> A random scatter of dots</span></div>
+                  <div class="q-opt right" data-in style="--d:3"><svg id="q-pascal" viewBox="0 0 100 100" aria-hidden="true"></svg><span><b>C</b> Pascal's triangle</span></div>
+                  <div class="q-opt wrong" data-in style="--d:4"><svg id="q-noise" viewBox="0 0 100 100" aria-hidden="true"></svg><span><b>D</b> Static noise</span></div>
+                </div>
+                <div class="quiz-ans" data-in style="--d:5"><button class="btn-stage" id="quiz-btn" type="button">Reveal answer</button><span id="quiz-text" hidden>Answer: A &amp; C. Both follow a mathematical rule.</span></div>
+              </div>
+            </div>
+          </article>
+
+          <!-- 10-15 data slides are generated below; 16 closing -->
+          <article class="slide" data-ch="Team results" id="s-kpis"></article>
+          <article class="slide" data-ch="Team results" id="s-board"></article>
+          <article class="slide" data-ch="Team results" id="s-subjects"></article>
+          <article class="slide" data-ch="Team results" id="s-grades"></article>
+          <article class="slide" data-ch="Maths papers" id="s-papers"></article>
+          <article class="slide" data-ch="Maths papers" id="s-blueprint"></article>
+
+          <article class="slide" data-ch="Mathopea deck">
+            <div class="s-tag"><i></i>Experimentium × BDAI</div>
+            <div class="s-grid">
+              <div>
+                <div class="s-kicker" data-in style="--d:0">Mathopea</div>
+                <h3 class="s-title xl" data-in style="--d:1;font-size:clamp(34px,5vw,64px)">Let's make math look like what it is.</h3>
+              </div>
+              <div class="s-pic"><svg class="fib" viewBox="0 0 100 62" aria-hidden="true"></svg></div>
+            </div>
+          </article>
+        </div>
+        <div class="controls">
+          <button class="ctl" id="prev" type="button" aria-label="Previous slide"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+          <button class="ctl" id="play" type="button" aria-label="Pause autoplay"><svg viewBox="0 0 16 16" aria-hidden="true" id="play-ico"></svg></button>
+          <button class="ctl" id="next" type="button" aria-label="Next slide"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+          <div class="dots" id="dots"></div>
+          <span class="hint">← → keys · swipe</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TEAM -->
+  <section class="block" id="team">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <div class="eyebrow">Team · 2026–27</div>
+          <h2>Employee marks</h2>
+          <p>Every employee sat seven subjects of 100 marks each: five in Section 1 and two in Section 2, for a total out of 700. Select a row to see that person's profile against the team average.</p>
+        </div>
+        <span class="source">Source: Marks Analysis of Employees 2026–27</span>
+      </div>
+
+      <div class="kpis" id="kpis"></div>
+
+      <div class="team-charts">
+        <div class="panel">
+          <h3>Total marks, ranked</h3>
+          <p class="sub">Out of 700. Dashed line is the team average.</p>
+          <div id="chart-totals"></div>
+        </div>
+        <div class="panel">
+          <h3>Average by subject</h3>
+          <p class="sub">Team mean, out of 100.</p>
+          <div id="chart-subjects"></div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <input class="search" id="team-search" type="search" placeholder="Search by name or ID" aria-label="Search employees">
+        <div role="group" aria-label="Filter by grade" style="display:flex;gap:6px;flex-wrap:wrap" id="grade-filter"></div>
+      </div>
+      <div class="team-layout">
+        <div style="min-width:0">
+          <div class="table-scroll">
+            <table class="ledger" id="ledger"></table>
+          </div>
+          <p class="note">Cell shading follows the mark: darker is higher. Ranks 3 and 3 are tied at 675. IDs are shown exactly as recorded in the sheet.</p>
+        </div>
+        <aside class="panel profile" id="profile" aria-live="polite"></aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAPERS -->
+  <section class="block" id="papers">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <div class="eyebrow">Papers</div>
+          <h2>Senior Secondary Mathematics</h2>
+          <p>Three papers of 50 marks each, 150 marks in all. Each paper is 2 hours and uses the attached formula sheet. Open any page to read it full size.</p>
+        </div>
+        <span class="source">Source: Question Paper and Answer Key, Parts I–III</span>
+      </div>
+
+      <div class="papers-top">
+        <div class="panel">
+          <h3>General instructions</h3>
+          <ol class="instr">
+            <li>All questions are compulsory. Internal choices are marked OR; attempt only one of them.</li>
+            <li>Section A: MCQ, 1 mark each. Section B: Very Short Answer, 2 marks each. Section C: Short Answer, 3 marks each. Section D: Case-Based, 4 marks each. Section E: Long Answer, 5 or 6 marks each.</li>
+            <li>Show all working for Sections B to E. Use of calculators is not permitted.</li>
+            <li>The attached formula sheet may be used in all three papers. Each paper is of 2 hours.</li>
+          </ol>
+        </div>
+        <div class="panel">
+          <h3>Marks by question type</h3>
+          <p class="sub">Each bar is one paper of 50 marks.</p>
+          <div id="paper-stacks"></div>
+        </div>
+      </div>
+
+      <div class="tabs" role="tablist" id="paper-tabs"></div>
+      <div id="paper-panels"></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span><b>BDAI</b> · formerly BDBA · Experimentium · Mathopea</span>
+    <span>Built from the Mathopea deck, Marks Analysis of Employees 2026–27 and Mathematics Papers I–III</span>
+  </div>
+</footer>
+
+<dialog class="lightbox" id="lightbox" aria-label="Paper page">
+  <div class="lb-inner">
+    <div class="lb-bar">
+      <span id="lb-cap"></span>
+      <div class="lb-btns">
+        <button class="ctl" id="lb-prev" type="button" aria-label="Previous page"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button class="ctl" id="lb-next" type="button" aria-label="Next page"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+        <button class="ctl" id="lb-close" type="button" aria-label="Close"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      </div>
+    </div>
+    <div class="lb-img"><img id="lb-img" alt=""></div>
+  </div>
+</dialog>
+
+<div class="tip" id="tip" role="tooltip"></div>
+
+<script>
+(function(){
+"use strict";
+const $ = (s, r=document) => r.querySelector(s);
+const $$ = (s, r=document) => Array.from(r.querySelectorAll(s));
+const NS = "http://www.w3.org/2000/svg";
+const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const title = s => s.charAt(0) + s.slice(1).toLowerCase();
+
+/* ---------- data: Marks Analysis of Employees 2026-27 ---------- */
+const SUBJECTS = [
+  {k:"m1", name:"Mathematics", sec:1},
+  {k:"ta", name:"Thinking Ability", sec:1},
+  {k:"cs", name:"Computer Science", sec:1},
+  {k:"se", name:"Software Engineering", sec:1},
+  {k:"ai", name:"Programming & AI", sec:1},
+  {k:"m2", name:"Mathematics", sec:2},
+  {k:"st", name:"Science & Technology", sec:2},
+];
+const RAW = [
+  [1,"TOLSTOY",197997,[100,99,99,99,99,100,100],696,"A"],
+  [2,"DAYASHANKAR",3,[100,91,93,98,99,100,99],680,"A"],
+  [3,"RHYTHM",236767,[99,91,92,97,98,99,99],675,"A"],
+  [3,"DEVI",201,[99,91,92,97,98,99,99],675,"A"],
+  [5,"VINDALU",1,[81,90,99,99,99,87,87],642,"B"],
+  [6,"DEVANAND",3,[100,79,89,99,99,87,87],640,"B"],
+  [7,"JELESKY",4,[100,88,88,88,88,87,87],626,"B"],
+  [8,"TARIT",5,[87,89,99,60,99,87,87],608,"B"],
+  [9,"JUMPY",390012,[20,74,30,23,49,1,1],198,"F"],
+  [10,"LEO",67,[30,30,33,30,30,1,1],155,"F"],
+  [11,"GIMATI",37,[11,92,2,11,11,1,1],129,"F"],
+  [12,"ABHIMANYU",1,[1,1,1,1,1,1,1],7,"F"],
+];
+const EMP = RAW.map(([rank,name,id,m,total,grade]) => {
+  const o = {rank, name:title(name), id, total, grade, pct: total/700*100};
+  SUBJECTS.forEach((s,i) => o[s.k] = m[i]);
+  return o;
+});
+const N = EMP.length;
+const avgTotal = EMP.reduce((a,e)=>a+e.total,0)/N;
+const SUBAVG = SUBJECTS.map(s => EMP.reduce((a,e)=>a+e[s.k],0)/N);
+const passN = EMP.filter(e=>e.grade!=="F").length;
+const GRADES = ["A","B","C","D","E","F"];
+const gradeCount = g => EMP.filter(e=>e.grade===g).length;
+const subjLabel = s => s.name + (s.k==="m1" ? " (S1)" : s.k==="m2" ? " (S2)" : "");
+
+/* ---------- data: Mathematics papers ---------- */
+const TYPES = [
+  {k:"MCQ", name:"MCQ", each:"1 mark"},
+  {k:"VSA", name:"Very short answer", each:"2 marks"},
+  {k:"SA", name:"Short answer", each:"3 marks"},
+  {k:"CBQ", name:"Case-based", each:"4 marks"},
+  {k:"LA", name:"Long answer", each:"5 or 6 marks"},
+];
+const PAPERS = [
+  {id:"p1", roman:"I", name:"Calculus (Integration)", short:"Calculus", qs:23, la:5,
+   types:{MCQ:[10,10],VSA:[5,10],SA:[4,12],CBQ:[2,8],LA:[2,10]},
+   topics:[["Integrals using trigonometric identities",[3,6,3,4,5],21],
+           ["Integration by trigonometric substitution",[3,2,6,4,5],20],
+           ["Integration by parts and partial fractions",[1,0,3,0,0],4],
+           ["Definite integrals and their properties",[3,2,0,0,0],5]],
+   mcq:"a a b b b a c b b a", qpages:[3,4,5], kpage:1},
+  {id:"p2", roman:"II", name:"Trigonometry and Geometry", short:"Trig. & Geometry", qs:22, la:6,
+   types:{MCQ:[10,10],VSA:[4,8],SA:[4,12],CBQ:[2,8],LA:[2,12]},
+   topics:[["Multiple, triple-angle and power identities",[2,2,3,0,6],13],
+           ["Sum–product formulas and a sin x + b cos x",[3,2,3,4,0],12],
+           ["Straight lines",[2,2,3,0,0],7],
+           ["Circles",[1,2,3,4,0],10],
+           ["Conic sections (parabola, ellipse)",[2,0,0,0,6],8]],
+   mcq:"a b b a b d a a c a", qpages:[6,7], kpage:2},
+  {id:"p3", roman:"III", name:"Differential Equations", short:"Diff. Equations", qs:23, la:5,
+   types:{MCQ:[10,10],VSA:[5,10],SA:[4,12],CBQ:[2,8],LA:[2,10]},
+   topics:[["Order, degree, formation and verification",[3,4,0,0,0],7],
+           ["Variable separable (including non-linear)",[2,4,6,4,0],16],
+           ["Homogeneous equations",[2,0,3,0,5],10],
+           ["Linear equations",[3,2,3,4,5],17]],
+   mcq:"a d c a b a b a c a", qpages:[8,9,10], kpage:3},
+];
+const qImg = n => "papers/question-p-" + String(n).padStart(2,"0") + ".png";
+const kImg = n => "papers/answer-key-p-" + n + ".png";
+
+/* ---------- drawings ---------- */
+function fibGeometry(count){
+  // squares placed right, down, left, up around a growing box; one quarter arc per square
+  let bx=0,by=0,bw=1,bh=1;
+  const sq=[{x:0,y:0,s:1}], arcs=[];
+  let d = "M0 1 A1 1 0 0 1 1 0";
+  const dirs=["r","d","l","u"];
+  for(let i=1;i<count;i++){
+    const dir = dirs[(i-1)%4];
+    let x,y,s,cx,cy;
+    if(dir==="r"){ s=bh; x=bx+bw; y=by; bw+=s; cx=x; cy=y+s; }
+    else if(dir==="d"){ s=bw; x=bx; y=by+bh; bh+=s; cx=x; cy=y; }
+    else if(dir==="l"){ s=bh; x=bx-s; y=by; bx-=s; bw+=s; cx=x+s; cy=y; }
+    else { s=bw; x=bx; y=by-s; by-=s; bh+=s; cx=x+s; cy=y+s; }
+    sq.push({x,y,s});
+    let ex,ey;
+    if(dir==="r"){ ex=cx+s; ey=cy; }
+    else if(dir==="d"){ ex=cx; ey=cy+s; }
+    else if(dir==="l"){ ex=cx-s; ey=cy; }
+    else { ex=cx; ey=cy-s; }
+    d += ` A${s} ${s} 0 0 1 ${ex} ${ey}`;
+  }
+  return {sq, d, box:{x:bx,y:by,w:bw,h:bh}};
+}
+function drawFib(svg, count, opts={}){
+  const g = fibGeometry(count);
+  const pad = g.box.w*0.02;
+  svg.setAttribute("viewBox", `${g.box.x-pad} ${g.box.y-pad} ${g.box.w+pad*2} ${g.box.h+pad*2}`);
+  const sqStroke = opts.sq || "var(--stage-line)";
+  const spStroke = opts.sp || "var(--stage-accent)";
+  let html = "";
+  g.sq.forEach(q => { html += `<rect x="${q.x}" y="${q.y}" width="${q.s}" height="${q.s}" fill="none" stroke="${sqStroke}" stroke-width="1" vector-effect="non-scaling-stroke"${opts.cls?` class="${opts.cls}-sq"`:""}/>`; });
+  if(opts.labels){ g.sq.forEach(q => { if(q.s>=3) html += `<text x="${q.x+q.s*0.08}" y="${q.y+q.s*0.06+Math.min(q.s*0.09,1.5)}" font-size="${Math.min(q.s*0.09,1.5)}" class="lbl">${q.s}</text>`; }); }
+  html += `<path d="${g.d}" pathLength="1" fill="none" stroke="${spStroke}" stroke-width="${(g.box.w*(opts.w||2.5)/500).toFixed(3)}" stroke-linecap="round" class="${opts.spCls||"draw"}"/>`;
+  svg.innerHTML = html;
+}
+drawFib($("#hero-spiral"), 9, {sq:"var(--line)", sp:"var(--accent)", w:3, spCls:"sp", labels:true});
+$$(".fib").forEach(s => drawFib(s, 9));
+$$(".q-fib").forEach(s => drawFib(s, 7, {w:7}));
+
+// pi wall
+(function(){
+  const PI = "3141592653589793238462643383279502884197169399375105820974944592307816406286208998628034825342117067";
+  let h = "";
+  for(let i=0;i<100;i++){
+    const r = Math.floor(i/10), c = i%10, on = (r===c || r+c===9);
+    const x = 11 + c*22, y = 11 + r*22;
+    if(on) h += `<rect class="pop" style="--d:${i};transform-box:fill-box;transform-origin:center" x="${x-9}" y="${y-9}" width="18" height="18" rx="3" fill="var(--stage-accent)"/>`;
+    h += `<text x="${x}" y="${y+4.5}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="13" fill="${on?"#0E2A38":"var(--stage-ink-2)"}" ${on?'font-weight="600"':''}>${PI[i]}</text>`;
+  }
+  $("#pi-wall").innerHTML = h;
+})();
+
+// rosette: grid + seed of life
+(function(){
+  let h = "";
+  for(let i=0;i<=200;i+=20){ h += `<path d="M${i} 0V200M0 ${i}H200" class="stroke-dim"/>`; }
+  const r = 40, cx=100, cy=100;
+  h += `<circle class="stroke draw" pathLength="1" cx="${cx}" cy="${cy}" r="${r}"/>`;
+  for(let k=0;k<6;k++){
+    const a = k*Math.PI/3;
+    h += `<circle class="stroke draw" pathLength="1" style="animation-delay:${0.3+k*0.18}s" cx="${(cx+r*Math.cos(a)).toFixed(2)}" cy="${(cy+r*Math.sin(a)).toFixed(2)}" r="${r}"/>`;
+  }
+  h += `<circle class="stroke draw" pathLength="1" style="animation-delay:1.5s" cx="${cx}" cy="${cy}" r="${r*2}"/>`;
+  $("#rosette").innerHTML = h;
+})();
+
+// golden rectangles
+drawFib($("#golden-rects"), 8, {w:2});
+
+// quiz pictures
+(function(){
+  let seed = 7; const rnd = () => (seed = (seed*16807) % 2147483647) / 2147483647;
+  let h = ""; for(let i=0;i<40;i++) h += `<circle cx="${(6+rnd()*88).toFixed(1)}" cy="${(6+rnd()*88).toFixed(1)}" r="${(1.5+rnd()*2.5).toFixed(1)}" fill="var(--stage-ink-2)"/>`;
+  $("#q-dots").innerHTML = h;
+  h = ""; for(let y=0;y<10;y++) for(let x=0;x<10;x++){ const v = Math.floor(rnd()*4); h += `<rect x="${x*10}" y="${y*10}" width="10" height="10" fill="${["#13384A","#29506A","#4C7184","#A9C4CB"][v]}"/>`; }
+  $("#q-noise").innerHTML = h;
+  h = ""; let row=[1];
+  for(let r=0;r<6;r++){
+    row.forEach((v,i) => { const x = 50 + (i - r/2)*15, y = 14 + r*15;
+      h += `<text x="${x}" y="${y}" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--stage-ink)">${v}</text>`; });
+    row = [1, ...row.slice(1).map((v,i)=>v+row[i]), 1];
+  }
+  $("#q-pascal").innerHTML = h;
+})();
+const quiz = $("#quiz"), quizBtn = $("#quiz-btn"), quizText = $("#quiz-text");
+function setQuiz(on){ quiz.classList.toggle("revealed", on); quizText.hidden = !on; quizBtn.textContent = on ? "Hide answer" : "Reveal answer"; }
+quizBtn.addEventListener("click", () => setQuiz(!quiz.classList.contains("revealed")));
+
+/* ---------- shared chart builders ---------- */
+function ticksHTML(max, step){
+  let t = ""; for(let v=0; v<=max; v+=step) t += `<span style="left:${v/max*100}%">${v}</span>`;
+  return `<div class="axis"><span></span><div class="ticks">${t}</div><span></span></div>`;
+}
+function hbars(rows, max, opt={}){
+  // rows: {label, value, tip, crit}
+  let h = `<div style="--lab:${opt.lab||"120px"};min-width:0"><div class="hbars">`;
+  rows.forEach((r,i) => {
+    h += `<div class="hbar${r.crit?" crit":""}" data-tip="${esc(r.tip||"")}">
+      <span class="lab">${esc(r.label)}</span>
+      <div class="track">${opt.avg!=null?`<span class="avgline" style="left:${opt.avg/max*100}%"></span>`:""}<div class="fill grow-x" style="width:${Math.max(r.value/max*100,0.4)}%;--d:${i}"></div></div>
+      <span class="val">${r.text!=null?r.text:r.value}</span></div>`;
+  });
+  h += `</div>`;
+  if(opt.ticks) h += ticksHTML(max, opt.ticks);
+  return h + `</div>`;
+}
+function stackRows(){
+  let h = `<div class="legend" style="margin-bottom:12px">` + TYPES.map((t,i)=>`<span><i class="seq${i+1}"></i>${t.k} · ${t.each}</span>`).join("") + `</div><div class="stack-rows">`;
+  PAPERS.forEach((p,pi) => {
+    h += `<div class="stack-row"><div class="lab"><b>Paper ${p.roman}</b><small>${p.short} · ${p.qs} questions</small></div><div class="stack">`;
+    TYPES.forEach((t,i) => { const [q,m] = p.types[t.k];
+      h += `<div class="seq${i+1} grow-x" style="flex:${m};--d:${pi*5+i}" data-tip="Paper ${p.roman} · ${t.name}: ${q} questions, ${m} marks">${m}</div>`; });
+    h += `</div></div>`;
+  });
+  return h + `</div>`;
+}
+
+/* ---------- data slides ---------- */
+function slideHead(tag){ return `<div class="s-tag"><i></i>${tag}</div>`; }
+$("#s-kpis").innerHTML = slideHead("Team results · 2026–27") + `<div class="s-grid one"><div>
+  <div class="s-kicker" data-in style="--d:0">BDAI in numbers</div>
+  <h3 class="s-title" data-in style="--d:1">${N} employees, 7 subjects, 700 marks each.</h3>
+  <div class="s-kpis">
+    <div class="s-kpi" data-in style="--d:2"><b>${avgTotal.toFixed(1)}</b><span>average total out of 700</span></div>
+    <div class="s-kpi" data-in style="--d:3"><b>${(avgTotal/7).toFixed(1)}%</b><span>average percentage</span></div>
+    <div class="s-kpi" data-in style="--d:4"><b>${(passN/N*100).toFixed(1)}%</b><span>pass rate (${passN} of ${N} not graded F)</span></div>
+    <div class="s-kpi" data-in style="--d:5"><b>${EMP[0].total}</b><span>top score, ${EMP[0].name} (${EMP[0].pct.toFixed(2)}%)</span></div>
+  </div></div></div>`;
+$("#s-board").innerHTML = slideHead("Team results · leaderboard") + `<div class="s-grid one"><div>
+  <h3 class="s-title" data-in style="--d:0">Total marks, ranked</h3>
+  <div style="margin-top:16px">${hbars(EMP.map(e=>({label:`${e.rank}. ${e.name}`, value:e.total, crit:e.grade==="F", text:e.total, tip:`${e.name} · ${e.total}/700 · ${e.pct.toFixed(1)}% · grade ${e.grade}`})), 700, {avg:avgTotal, ticks:100, lab:"140px"})}</div>
+  <p class="s-body" style="font-size:13px;margin-top:8px">Dashed line: team average ${avgTotal.toFixed(1)}. Grade F bars in coral.</p></div></div>`;
+$("#s-subjects").innerHTML = slideHead("Team results · subjects") + `<div class="s-grid"><div>
+  <h3 class="s-title" data-in style="--d:0">Thinking Ability holds up best across the team.</h3>
+  <p class="s-body" data-in style="--d:1">Team average for each subject, out of 100. The two Section 2 papers average lowest because all four grade F employees scored 1 in each.</p></div>
+  <div style="min-width:0;width:100%">${hbars(SUBJECTS.map((s,i)=>({label:subjLabel(s), value:SUBAVG[i], text:SUBAVG[i].toFixed(1), tip:`${subjLabel(s)} · team average ${SUBAVG[i].toFixed(2)}`})), 100, {ticks:25, lab:"150px"})}</div></div>`;
+$("#s-grades").innerHTML = slideHead("Team results · grades") + `<div class="s-grid"><div>
+  <h3 class="s-title" data-in style="--d:0">Four A's, four B's, four F's.</h3>
+  <p class="s-body" data-in style="--d:1">No employee landed in grades C to E. The gap between the lowest B (${EMP[7].total}) and the highest F (${EMP[8].total}) is ${EMP[7].total-EMP[8].total} marks.</p></div>
+  <div class="gcols" style="height:260px">${GRADES.map((g,i)=>{const c=gradeCount(g); const who=EMP.filter(e=>e.grade===g).map(e=>e.name).join(", ");
+    return `<div class="gcol${g==="F"?" f":""}${c?"":" zero"}" data-tip="Grade ${g}: ${c} employee${c===1?"":"s"}${who?" · "+esc(who):""}"><span class="n">${c}</span><div class="col grow-y" style="height:${c?c/4*100:0}%;--d:${i}"></div><span class="g">${g}</span><span class="who">${esc(who)||"none"}</span></div>`;}).join("")}</div></div>`;
+$("#s-papers").innerHTML = slideHead("Maths papers · structure") + `<div class="s-grid one"><div>
+  <h3 class="s-title" data-in style="--d:0">3 papers × 50 marks = 150 marks.</h3>
+  <p class="s-body" data-in style="--d:1">Each paper runs 2 hours across five sections, from 1-mark MCQs to long answers.</p>
+  <div style="margin-top:20px;--d:2" data-in>${stackRows()}</div></div></div>`;
+$("#s-blueprint").innerHTML = slideHead("Maths papers · blueprint") + `<div class="s-grid one"><div>
+  <h3 class="s-title" data-in style="--d:0">Where the marks go, topic by topic.</h3>
+  <div class="bp3">${PAPERS.map((p,pi)=>`<div data-in style="--d:${pi+1}"><h4>Paper ${p.roman}: ${p.short}</h4><small>50 marks · ${p.qs} questions</small>
+    ${hbars(p.topics.map(t=>({label:t[0], value:t[2], tip:`${t[0]} · ${t[2]} marks`})), 21)}</div>`).join("")}</div></div></div>`;
+
+/* ---------- stage controller ---------- */
+const stage = $("#stage"), shell = $("#shell");
+const slides = $$(".slide", stage);
+const dotsEl = $("#dots"), chEl = $("#chapters");
+const DUR = 8000;
+let cur = 0, timer = null, playing = !reduce, hovering = false, visible = true;
+shell.style.setProperty("--dur", DUR + "ms");
+slides.forEach((s,i) => {
+  s.setAttribute("role","group"); s.setAttribute("aria-roledescription","slide"); s.setAttribute("aria-label", `${i+1} of ${slides.length}`);
+  const b = document.createElement("button"); b.type="button"; b.setAttribute("aria-label", `Go to slide ${i+1}`);
+  b.addEventListener("click", () => go(i, true)); dotsEl.appendChild(b);
+});
+const chapters = [];
+slides.forEach((s,i) => { const c = s.dataset.ch; if(!chapters.find(x=>x.name===c)) chapters.push({name:c, first:i}); });
+chEl.innerHTML = chapters.map(c => `<button type="button" data-first="${c.first}">${c.name}</button>`).join("") + `<span class="count mono" id="count"></span>`;
+$$("button", chEl).forEach(b => b.addEventListener("click", () => go(+b.dataset.first, true)));
+const dots = $$("button", dotsEl);
+
+function go(i, user){
+  const n = slides.length;
+  i = (i + n) % n;
+  if(i !== cur) stage.classList.add("go");
+  slides.forEach((s,k) => { s.classList.toggle("is-active", k===i); s.classList.toggle("is-prev", k<i); s.setAttribute("aria-hidden", k===i ? "false" : "true"); s.inert = k!==i; });
+  dots.forEach((d,k) => d.setAttribute("aria-current", k===i ? "true" : "false"));
+  const ch = slides[i].dataset.ch;
+  $$("button", chEl).forEach(b => b.setAttribute("aria-current", b.textContent===ch ? "true" : "false"));
+  $("#count").textContent = String(i+1).padStart(2,"0") + " / " + String(n).padStart(2,"0");
+  cur = i;
+  if(slides[i].contains(quiz)) { setQuiz(false); }
+  schedule();
+}
+function schedule(){
+  clearTimeout(timer);
+  const run = playing && !hovering && visible && !document.hidden;
+  // restart the progress animation on the current dot
+  shell.classList.remove("playing"); void shell.offsetWidth;
+  if(run) shell.classList.add("playing");
+  if(run){
+    if(slides[cur].contains(quiz)) setTimeout(() => { if(slides[cur].contains(quiz)) setQuiz(true); }, DUR*0.55);
+    timer = setTimeout(() => go(cur+1), DUR);
+  }
+}
+function setPlay(p){
+  playing = p;
+  $("#play").setAttribute("aria-label", p ? "Pause autoplay" : "Start autoplay");
+  $("#play-ico").innerHTML = p ? '<path d="M5 3v10M11 3v10" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>' : '<path d="M5 3l8 5-8 5z" fill="currentColor"/>';
+  schedule();
+}
+$("#prev").addEventListener("click", () => go(cur-1, true));
+$("#next").addEventListener("click", () => go(cur+1, true));
+$("#play").addEventListener("click", () => setPlay(!playing));
+shell.addEventListener("keydown", e => {
+  if(e.key==="ArrowRight"){ go(cur+1,true); e.preventDefault(); }
+  if(e.key==="ArrowLeft"){ go(cur-1,true); e.preventDefault(); }
+});
+shell.tabIndex = -1;
+document.addEventListener("keydown", e => {
+  if(e.target.closest && e.target.closest("input,textarea,dialog")) return;
+  const r = shell.getBoundingClientRect();
+  if(r.top < innerHeight*0.6 && r.bottom > innerHeight*0.4 && !shell.contains(e.target)){
+    if(e.key==="ArrowRight") go(cur+1,true);
+    if(e.key==="ArrowLeft") go(cur-1,true);
+  }
+});
+stage.addEventListener("pointerenter", e => { if(e.pointerType==="mouse"){ hovering = true; schedule(); } });
+stage.addEventListener("pointerleave", () => { hovering = false; schedule(); });
+let sx = null;
+stage.addEventListener("pointerdown", e => { sx = e.clientX; });
+stage.addEventListener("pointerup", e => { if(sx==null) return; const dx = e.clientX - sx; sx = null; if(Math.abs(dx) > 50) go(cur + (dx<0?1:-1), true); });
+document.addEventListener("visibilitychange", schedule);
+if("IntersectionObserver" in window){
+  new IntersectionObserver(es => { visible = es[0].isIntersecting; schedule(); }, {threshold:.35}).observe(shell);
+}
+setPlay(playing);
+go(0);
+
+/* ---------- hero replay ---------- */
+$("#replay").addEventListener("click", () => { const m = $("#mark"); m.classList.remove("play"); void m.offsetWidth; m.classList.add("play");
+  const sp = $("#hero-spiral .sp"); if(sp){ sp.style.animation="none"; void sp.getBoundingClientRect(); sp.style.animation=""; } });
+
+/* ---------- team ---------- */
+$("#f-avg").textContent = (avgTotal/7).toFixed(1) + "%";
+$("#kpis").innerHTML = [
+  ["Employees", N, "assessed in 2026–27"],
+  ["Average total", avgTotal.toFixed(1), "out of 700"],
+  ["Average score", (avgTotal/7).toFixed(1)+"%", "across 7 subjects"],
+  ["Pass rate", (passN/N*100).toFixed(1)+"%", `${passN} of ${N} not graded F`],
+  ["Top score", EMP[0].total, `${EMP[0].name}, ${EMP[0].pct.toFixed(2)}%`],
+].map(([l,v,s]) => `<div class="kpi"><span class="eyebrow">${l}</span><b>${v}</b><small>${esc(s)}</small></div>`).join("");
+
+$("#chart-totals").innerHTML = hbars(EMP.map(e=>({label:e.name, value:e.total, crit:e.grade==="F", text:e.total, tip:`${e.name} · ${e.total}/700 · ${e.pct.toFixed(1)}% · grade ${e.grade}`})), 700, {avg:avgTotal, ticks:100, lab:"104px"});
+$("#chart-subjects").innerHTML = hbars(SUBJECTS.map((s,i)=>({label:subjLabel(s), value:SUBAVG[i], text:SUBAVG[i].toFixed(1), tip:`${subjLabel(s)} · team average ${SUBAVG[i].toFixed(2)}`})), 100, {ticks:25, lab:"150px"});
+
+const COLS = [
+  {k:"rank", label:"Rank", num:true},
+  {k:"name", label:"Name", cls:"name"},
+  {k:"id", label:"ID", num:true},
+  ...SUBJECTS.map((s,i) => ({k:s.k, label:s.name, num:true, heat:true, sep: i===0 || i===5})),
+  {k:"total", label:"Total /700", num:true, sep:true},
+  {k:"pct", label:"%", num:true},
+  {k:"grade", label:"Grade"},
+];
+let sortKey = "rank", sortDir = 1, query = "", gFilter = "All", selected = EMP[0];
+const ledger = $("#ledger");
+function renderLedger(){
+  let rows = EMP.filter(e => (gFilter==="All" || e.grade===gFilter) &&
+    (!query || e.name.toLowerCase().includes(query) || String(e.id).includes(query)));
+  rows.sort((a,b) => { const x=a[sortKey], y=b[sortKey]; return (typeof x==="string" ? x.localeCompare(y) : x-y) * sortDir || a.rank-b.rank; });
+  let h = `<thead><tr><th colspan="3"></th><th class="grp sep" colspan="5">Section 1 · out of 100</th><th class="grp sep" colspan="2">Section 2 · out of 100</th><th class="grp sep" colspan="3">Result</th></tr><tr>`;
+  COLS.forEach(c => {
+    const s = sortKey===c.k ? (sortDir>0?"ascending":"descending") : "none";
+    h += `<th scope="col" class="${c.cls||""}${c.sep?" sep":""}" aria-sort="${s}"><button type="button" data-k="${c.k}">${esc(c.label)}</button></th>`;
+  });
+  h += `</tr></thead><tbody>`;
+  if(!rows.length) h += `<tr><td colspan="${COLS.length}" class="name" style="text-align:center;font-weight:400;color:var(--muted);padding:24px">No employee matches that search. Clear the search box or pick another grade.</td></tr>`;
+  rows.forEach(e => {
+    h += `<tr data-name="${esc(e.name)}" tabindex="0" class="${e===selected?"sel":""}" aria-selected="${e===selected}">`;
+    COLS.forEach(c => {
+      let v = e[c.k], style = "", cls = (c.cls||"") + (c.sep?" sep":"");
+      if(c.heat){ const p = Math.round(v*0.85); style = `background:color-mix(in oklab,var(--heat) ${p}%,var(--surface));color:${p>=50?"var(--on-heat)":"var(--ink)"}`; cls += " heat"; }
+      if(c.k==="pct") v = v.toFixed(2);
+      if(c.k==="grade") v = `<span class="grade ${e.grade}">${e.grade}</span>`;
+      h += `<td class="${cls}" style="${style}">${v}</td>`;
+    });
+    h += `</tr>`;
+  });
+  ledger.innerHTML = h + `</tbody>`;
+}
+ledger.addEventListener("click", e => {
+  const b = e.target.closest("th button");
+  if(b){ const k = b.dataset.k; if(sortKey===k) sortDir*=-1; else { sortKey=k; sortDir = (k==="rank"||k==="name"||k==="id") ? 1 : -1; } renderLedger(); return; }
+  const tr = e.target.closest("tbody tr[data-name]"); if(tr) select(tr.dataset.name);
+});
+ledger.addEventListener("keydown", e => { const tr = e.target.closest("tbody tr[data-name]"); if(tr && (e.key==="Enter"||e.key===" ")){ e.preventDefault(); select(tr.dataset.name); } });
+function select(name){ selected = EMP.find(x=>x.name===name); renderLedger(); renderProfile(); const tr = ledger.querySelector(`tr[data-name="${name}"]`); }
+$("#team-search").addEventListener("input", e => { query = e.target.value.trim().toLowerCase(); renderLedger(); });
+const gf = $("#grade-filter");
+gf.innerHTML = ["All","A","B","F"].map(g => `<button class="chip" type="button" aria-pressed="${g==="All"}" data-g="${g}">${g==="All"?"All grades":"Grade "+g} · ${g==="All"?N:gradeCount(g)}</button>`).join("");
+gf.addEventListener("click", e => { const b = e.target.closest("button"); if(!b) return; gFilter = b.dataset.g; $$("button",gf).forEach(x=>x.setAttribute("aria-pressed", x===b)); renderLedger(); });
+
+function renderProfile(){
+  const e = selected;
+  let h = `<span class="eyebrow">Profile</span><h3>${esc(e.name)}</h3>
+    <div class="meta"><span>Rank ${e.rank} of ${N}</span><span>·</span><span>ID ${e.id}</span><span class="grade ${e.grade}">${e.grade}</span></div>
+    <div class="big"><b>${e.total}</b><span>/ 700 · ${e.pct.toFixed(2)}%</span></div>`;
+  SUBJECTS.forEach((s,i) => {
+    h += `<div class="pbar" data-tip="${esc(subjLabel(s))}: ${e[s.k]} · team average ${SUBAVG[i].toFixed(1)}"><div class="top"><span>${esc(subjLabel(s))}</span><span>${e[s.k]}</span></div>
+      <div class="track"><div class="fill" style="width:${e[s.k]}%"></div><span class="avg" style="left:${SUBAVG[i]}%"></span></div></div>`;
+  });
+  const diff = e.total - avgTotal;
+  h += `<div class="key"><span><i style="width:12px;height:8px;border-radius:3px;background:var(--accent)"></i>${esc(e.name)}</span><span><i style="width:2px;height:12px;background:var(--ink)"></i>Team average</span></div>
+    <p class="note">${Math.abs(diff).toFixed(1)} marks ${diff>=0?"above":"below"} the team average of ${avgTotal.toFixed(1)}.</p>`;
+  $("#profile").innerHTML = h;
+}
+renderLedger(); renderProfile();
+
+/* ---------- papers ---------- */
+$("#paper-stacks").innerHTML = stackRows() + `<div class="table-scroll" style="margin-top:16px;border:0"><table class="plain"><thead><tr><th>Type</th><th>Each</th>${PAPERS.map(p=>`<th>Paper ${p.roman}</th>`).join("")}</tr></thead><tbody>${
+  TYPES.map(t=>`<tr><td>${t.name} (${t.k})</td><td>${t.each.replace(" marks","").replace(" mark","")}</td>${PAPERS.map(p=>{const [q,m]=p.types[t.k]; return `<td>${q} Q = ${m}</td>`;}).join("")}</tr>`).join("")
+}<tr class="total"><td>Total</td><td></td>${PAPERS.map(p=>`<td>${p.qs} Q = 50</td>`).join("")}</tr></tbody></table></div>`;
+
+const TABS = [...PAPERS.map(p => ({id:p.id, label:`Paper ${p.roman}`, sub:p.short})), {id:"fs", label:"Formula sheet", sub:"cover & formulas"}];
+$("#paper-tabs").innerHTML = TABS.map((t,i) => `<button class="tab" role="tab" type="button" id="tab-${t.id}" aria-controls="panel-${t.id}" aria-selected="${i===0}" tabindex="${i===0?0:-1}">${t.label}<small>${t.sub}</small></button>`).join("");
+
+function pagesHTML(list){
+  return `<div class="pages">` + list.map((pg,i) => `<figure class="page"><button type="button" data-lb="${pg.src}" data-cap="${esc(pg.cap)}" data-group="${pg.group}" aria-label="Open ${esc(pg.cap)} full size"><img src="${pg.src}" alt="${esc(pg.cap)}" loading="lazy" width="1158" height="1638"></button><figcaption><span>${esc(pg.short)}</span><span>${i+1} of ${list.length}</span></figcaption></figure>`).join("") + `</div>`;
+}
+let panels = "";
+PAPERS.forEach((p,pi) => {
+  const mcq = p.mcq.split(" ");
+  const qList = p.qpages.map(n => ({src:qImg(n), cap:`Paper ${p.roman} question paper, page ${n} of 10`, short:`Question paper · page ${n}`, group:`${p.id}-q`}));
+  const kList = [{src:kImg(p.kpage), cap:`Paper ${p.roman} answer key, page ${p.kpage} of 3`, short:`Answer key · page ${p.kpage}`, group:`${p.id}-k`}];
+  panels += `<div class="tabpanel" role="tabpanel" id="panel-${p.id}" aria-labelledby="tab-${p.id}" ${pi?"hidden":""}>
+    <div class="paper-head"><h3>Paper ${p.roman}: ${p.name}</h3>
+      <div class="paper-meta"><span class="pill">2 hours</span><span class="pill">50 marks</span><span class="pill">${p.qs} questions</span><span class="pill">LA ${p.la} marks each</span></div></div>
+    <div class="paper-grid">
+      <div class="panel"><h3>Blueprint: marks by topic</h3><p class="sub">From the paper's own blueprint table.</p>
+        <div class="table-scroll" style="border:0"><table class="plain"><thead><tr><th>Topic</th><th>MCQ (1)</th><th>VSA (2)</th><th>SA (3)</th><th>CBQ (4)</th><th>LA (${p.la})</th><th>Total</th></tr></thead><tbody>
+        ${p.topics.map(t=>`<tr><td>${esc(t[0])}</td>${t[1].map(v=>`<td>${v||"–"}</td>`).join("")}<td class="tot">${t[2]}</td></tr>`).join("")}
+        <tr class="total"><td>Marks</td>${TYPES.map(t=>`<td>${p.types[t.k][1]}</td>`).join("")}<td>50</td></tr>
+        <tr><td>No. of questions</td>${TYPES.map(t=>`<td>${p.types[t.k][0]}</td>`).join("")}<td>${p.qs}</td></tr>
+        </tbody></table></div></div>
+      <div class="panel" id="ans-${p.id}">
+        <div class="panel-head"><div><h3>Section A answers</h3><p class="sub" style="margin:2px 0 0">Q1–Q10, one mark each.</p></div>
+          <button class="btn-ghost" type="button" data-hide="${p.id}" aria-pressed="false">Hide answers to practise</button></div>
+        <div class="ans-grid">${mcq.map((a,i)=>`<div class="ans"><small>Q${i+1}</small><b>(${a})</b></div>`).join("")}</div>
+        <p class="note">Worked answers and key steps for Sections B to E are on the answer key page below.</p>
+      </div>
+    </div>
+    <div class="viewer-bar"><div class="seg" role="group" aria-label="Show question paper or answer key">
+      <button type="button" aria-pressed="true" data-view="q" data-p="${p.id}">Question paper · ${qList.length} pages</button>
+      <button type="button" aria-pressed="false" data-view="k" data-p="${p.id}">Answer key</button></div>
+      <span class="source">Select a page to enlarge it</span></div>
+    <div data-pages="${p.id}-q">${pagesHTML(qList)}</div>
+    <div data-pages="${p.id}-k" hidden>${pagesHTML(kList)}</div>
+  </div>`;
+});
+panels += `<div class="tabpanel" role="tabpanel" id="panel-fs" aria-labelledby="tab-fs" hidden>
+  <div class="paper-head"><h3>Cover, blueprints and formula sheet</h3><div class="paper-meta"><span class="pill">used in all three papers</span></div></div>
+  <p style="color:var(--ink-2);margin-top:8px;max-width:62ch">Page 1 holds the instructions and the three blueprints. Page 2 is the formula sheet: triple-angle and power-reduction identities, sum-to-product formulas, standard integrals, trigonometric substitutions and the rules for linear and homogeneous differential equations.</p>
+  <div style="margin-top:20px">${pagesHTML([{src:qImg(1), cap:"Question paper cover and blueprints, page 1 of 10", short:"Cover · page 1", group:"fs"},{src:qImg(2), cap:"Attached formula sheet, page 2 of 10", short:"Formula sheet · page 2", group:"fs"}])}</div>
+</div>`;
+$("#paper-panels").innerHTML = panels;
+
+const tabs = $$(".tab");
+function selectTab(t){
+  tabs.forEach(x => { const on = x===t; x.setAttribute("aria-selected", on); x.tabIndex = on?0:-1; $("#"+x.getAttribute("aria-controls")).hidden = !on; });
+}
+tabs.forEach((t,i) => {
+  t.addEventListener("click", () => selectTab(t));
+  t.addEventListener("keydown", e => { let j = i; if(e.key==="ArrowRight") j=(i+1)%tabs.length; else if(e.key==="ArrowLeft") j=(i-1+tabs.length)%tabs.length; else return; e.preventDefault(); tabs[j].focus(); selectTab(tabs[j]); });
+});
+$("#paper-panels").addEventListener("click", e => {
+  const v = e.target.closest("[data-view]");
+  if(v){ const p = v.dataset.p; $$(`[data-p="${p}"]`).forEach(b => b.setAttribute("aria-pressed", b===v));
+    $(`[data-pages="${p}-q"]`).hidden = v.dataset.view!=="q"; $(`[data-pages="${p}-k"]`).hidden = v.dataset.view!=="k"; return; }
+  const hd = e.target.closest("[data-hide]");
+  if(hd){ const box = $("#ans-"+hd.dataset.hide); const on = !box.classList.contains("hide-ans"); box.classList.toggle("hide-ans", on); hd.setAttribute("aria-pressed", on); hd.textContent = on ? "Show answers" : "Hide answers to practise"; return; }
+  const lb = e.target.closest("[data-lb]"); if(lb) openLB(lb);
+});
+
+/* lightbox */
+const dlg = $("#lightbox"); let lbList = [], lbI = 0;
+function openLB(btn){
+  lbList = $$(`[data-lb][data-group="${btn.dataset.group}"]`); lbI = lbList.indexOf(btn); showLB();
+  try { dlg.showModal(); } catch(_) { dlg.setAttribute("open",""); }
+}
+function showLB(){ const b = lbList[lbI]; $("#lb-img").src = b.dataset.lb; $("#lb-img").alt = b.dataset.cap; $("#lb-cap").textContent = b.dataset.cap;
+  $("#lb-prev").disabled = lbI===0; $("#lb-next").disabled = lbI===lbList.length-1; $(".lb-img").scrollTop = 0; }
+$("#lb-prev").addEventListener("click", () => { if(lbI>0){ lbI--; showLB(); } });
+$("#lb-next").addEventListener("click", () => { if(lbI<lbList.length-1){ lbI++; showLB(); } });
+$("#lb-close").addEventListener("click", () => dlg.close());
+dlg.addEventListener("click", e => { if(e.target===dlg) dlg.close(); });
+dlg.addEventListener("keydown", e => { if(e.key==="ArrowRight") $("#lb-next").click(); if(e.key==="ArrowLeft") $("#lb-prev").click(); });
+
+/* tooltip */
+const tip = $("#tip");
+document.addEventListener("pointermove", e => {
+  const t = e.target.closest && e.target.closest("[data-tip]");
+  if(!t || !t.dataset.tip){ tip.classList.remove("on"); return; }
+  tip.textContent = t.dataset.tip; tip.classList.add("on");
+  const w = tip.offsetWidth, h = tip.offsetHeight;
+  let x = e.clientX + 14, y = e.clientY - h - 10;
+  if(x + w > innerWidth - 8) x = e.clientX - w - 14;
+  if(y < 8) y = e.clientY + 16;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+});
+document.addEventListener("pointerleave", () => tip.classList.remove("on"));
+})();
+</script>
