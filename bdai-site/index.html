@@ -78,8 +78,6 @@ button{font:inherit;color:inherit}
 @keyframes flip-out{from{transform:translateY(0)}to{transform:translateY(-105%)}}
 @keyframes flip-in{from{transform:translateY(105%)}to{transform:translateY(0)}}
 .rename{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-family:var(--f-mono);font-size:14px;color:var(--ink-2)}
-.rename s{color:var(--muted)}
-.rename .arrow{color:var(--accent)}
 .btn-ghost{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;font-size:13px;cursor:pointer;color:var(--ink-2)}
 .btn-ghost:hover{border-color:var(--accent);color:var(--ink)}
 .lede{font-size:clamp(18px,2vw,21px);color:var(--ink-2);max-width:34ch;margin-top:22px}
@@ -417,8 +415,7 @@ footer b{color:var(--ink)}
           <span class="flip" style="--t:1.35s"><span class="old" aria-hidden="true">A</span><span class="new">I</span></span>
         </h1>
         <div class="rename">
-          <span><s>BDBA</s> <span class="arrow">→</span> <b>BDAI</b></span>
-          <span>new name, same team</span>
+          <span>Formerly BDBA, now <b>BDAI</b>. New name, same team.</span>
           <button class="btn-ghost" id="replay" type="button">Replay</button>
         </div>
         <p class="lede">We build mathematics people can see, handle and prove. Our studio Experimentium makes Mathopea, and our team sits the same papers we publish.</p>
