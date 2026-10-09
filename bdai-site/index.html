@@ -225,7 +225,7 @@ section.block{padding-block:72px 24px}
 .gcol.f .col{background:var(--stage-crit)}
 .gcol.zero .col{background:transparent;border-bottom:2px solid var(--stage-line);border-radius:0}
 .gcol .g{font-weight:800;font-size:22px;text-align:center;border-top:1px solid var(--stage-line);padding-top:6px}
-.gcol .who{font-size:11px;color:var(--stage-ink-2);text-align:center;line-height:1.35;min-height:2.7em}
+.gcol .who{font-size:11px;color:var(--stage-ink-2);text-align:center;line-height:1.35;height:7em;overflow:hidden}
 
 /* blueprint mini multiples on slide */
 .bp3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:18px}
@@ -448,7 +448,7 @@ footer b{color:var(--ink)}
     </div>
     <div class="facts">
       <a class="fact" href="#team"><b id="f-emp">12</b><span>employees assessed, 2026–27</span></a>
-      <a class="fact" href="#team"><b id="f-avg">68.2%</b><span>average score across 7 subjects</span></a>
+      <a class="fact" href="#team"><b id="f-avg">89.6%</b><span>average score across 7 subjects</span></a>
       <a class="fact" href="#papers"><b>3 × 50</b><span>maths papers, 150 marks, with answer key</span></a>
       <a class="fact" href="#showcase"><b>10</b><span>Mathopea deck slides, plus 6 data slides</span></a>
     </div>
@@ -756,31 +756,46 @@ const SUBJECTS = [
   {k:"m2", name:"Mathematics", sec:2},
   {k:"st", name:"Science & Technology", sec:2},
 ];
+// marks out of 100: Section 1 (5 subjects), then Section 2 (2 subjects).
+// Jumpy, Leo, Gimati and Abhimanyu carry the updated marks supplied after the sheet.
 const RAW = [
-  [1,"TOLSTOY",197997,[100,99,99,99,99,100,100],696,"A"],
-  [2,"DAYASHANKAR",3,[100,91,93,98,99,100,99],680,"A"],
-  [3,"RHYTHM",236767,[99,91,92,97,98,99,99],675,"A"],
-  [3,"DEVI",201,[99,91,92,97,98,99,99],675,"A"],
-  [5,"VINDALU",1,[81,90,99,99,99,87,87],642,"B"],
-  [6,"DEVANAND",3,[100,79,89,99,99,87,87],640,"B"],
-  [7,"JELESKY",4,[100,88,88,88,88,87,87],626,"B"],
-  [8,"TARIT",5,[87,89,99,60,99,87,87],608,"B"],
-  [9,"JUMPY",390012,[20,74,30,23,49,1,1],198,"F"],
-  [10,"LEO",67,[30,30,33,30,30,1,1],155,"F"],
-  [11,"GIMATI",37,[11,92,2,11,11,1,1],129,"F"],
-  [12,"ABHIMANYU",1,[1,1,1,1,1,1,1],7,"F"],
+  ["TOLSTOY",197997,[100,99,99,99,99,100,100]],
+  ["DAYASHANKAR",3,[100,91,93,98,99,100,99]],
+  ["RHYTHM",236767,[99,91,92,97,98,99,99]],
+  ["DEVI",201,[99,91,92,97,98,99,99]],
+  ["VINDALU",1,[81,90,99,99,99,87,87]],
+  ["DEVANAND",3,[100,79,89,99,99,87,87]],
+  ["JELESKY",4,[100,88,88,88,88,87,87]],
+  ["TARIT",5,[87,89,99,60,99,87,87]],
+  ["JUMPY",390012,[80,90,90,85,89.5,96,80]],
+  ["LEO",67,[80,87,82,81,87,90,93]],
+  ["GIMATI",37,[80,80,80,90,92,85,82]],
+  ["ABHIMANYU",1,[60,58,76,40,86,80,87]],
 ];
-const EMP = RAW.map(([rank,name,id,m,total,grade]) => {
-  const o = {rank, name:title(name), id, total, grade, pct: total/700*100};
+// grade bands by percentage; they reproduce every grade in the original sheet
+const BANDS = [["A",95],["B",85],["C",75],["D",65],["E",50],["F",0]];
+const gradeOf = pct => BANDS.find(([,min]) => pct >= min)[0];
+const fmt = v => Number.isInteger(v) ? String(v) : v.toFixed(1);
+const EMP = RAW.map(([name,id,m]) => {
+  const total = m.reduce((a,v)=>a+v,0), pct = total/700*100;
+  const o = {name:title(name), id, total, pct, grade:gradeOf(pct)};
   SUBJECTS.forEach((s,i) => o[s.k] = m[i]);
   return o;
-});
+}).sort((a,b) => b.total - a.total);
+// competition ranking: ties share a rank, the next rank skips
+EMP.forEach((e,i) => e.rank = i && e.total === EMP[i-1].total ? EMP[i-1].rank : i+1);
 const N = EMP.length;
 const avgTotal = EMP.reduce((a,e)=>a+e.total,0)/N;
 const SUBAVG = SUBJECTS.map(s => EMP.reduce((a,e)=>a+e[s.k],0)/N);
 const passN = EMP.filter(e=>e.grade!=="F").length;
 const GRADES = ["A","B","C","D","E","F"];
 const gradeCount = g => EMP.filter(e=>e.grade===g).length;
+const WORDS = ["no","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve"];
+function gradeSummary(){
+  const parts = GRADES.filter(gradeCount).map(g => { const c = gradeCount(g); return `${WORDS[c]||c} ${g}${c>1?"'s":""}`; });
+  const t = parts.length > 1 ? parts.slice(0,-1).join(", ") + " and " + parts.at(-1) : parts[0];
+  return t.charAt(0).toUpperCase() + t.slice(1);
+}
 const subjLabel = s => s.name + (s.k==="m1" ? " (S1)" : s.k==="m2" ? " (S2)" : "");
 
 /* ---------- data: Mathematics papers ---------- */
@@ -952,16 +967,16 @@ $("#s-kpis").innerHTML = slideHead("Team results · 2026–27") + `<div class="s
 $("#s-board").innerHTML = slideHead("Team results · leaderboard") + `<div class="s-grid one"><div>
   <h3 class="s-title" data-in style="--d:0">Total marks, ranked</h3>
   <div style="margin-top:16px">${hbars(EMP.map(e=>({label:`${e.rank}. ${e.name}`, value:e.total, crit:e.grade==="F", text:e.total, tip:`${e.name} · ${e.total}/700 · ${e.pct.toFixed(1)}% · grade ${e.grade}`})), 700, {avg:avgTotal, ticks:100, lab:"140px"})}</div>
-  <p class="s-body" style="font-size:13px;margin-top:8px">Dashed line: team average ${avgTotal.toFixed(1)}. Grade F bars in coral.</p></div></div>`;
+  <p class="s-body" style="font-size:13px;margin-top:8px">Dashed line: team average ${avgTotal.toFixed(1)}.${EMP.some(e=>e.grade==="F")?" Grade F bars in coral.":""}</p></div></div>`;
 $("#s-subjects").innerHTML = slideHead("Team results · subjects") + `<div class="s-grid"><div>
-  <h3 class="s-title" data-in style="--d:0">Thinking Ability holds up best across the team.</h3>
-  <p class="s-body" data-in style="--d:1">Team average for each subject, out of 100. The two Section 2 papers average lowest because all four grade F employees scored 1 in each.</p></div>
+  <h3 class="s-title" data-in style="--d:0">${subjLabel(SUBJECTS[SUBAVG.indexOf(Math.max(...SUBAVG))])} leads the team at ${Math.max(...SUBAVG).toFixed(1)}.</h3>
+  <p class="s-body" data-in style="--d:1">Team average for each subject, out of 100. Lowest: ${SUBJECTS.filter((x,i)=>SUBAVG[i].toFixed(1)===Math.min(...SUBAVG).toFixed(1)).map(subjLabel).join(" and ")} at ${Math.min(...SUBAVG).toFixed(1)}.</p></div>
   <div style="min-width:0;width:100%">${hbars(SUBJECTS.map((s,i)=>({label:subjLabel(s), value:SUBAVG[i], text:SUBAVG[i].toFixed(1), tip:`${subjLabel(s)} · team average ${SUBAVG[i].toFixed(2)}`})), 100, {ticks:25, lab:"150px"})}</div></div>`;
 $("#s-grades").innerHTML = slideHead("Team results · grades") + `<div class="s-grid"><div>
-  <h3 class="s-title" data-in style="--d:0">Four A's, four B's, four F's.</h3>
-  <p class="s-body" data-in style="--d:1">No employee landed in grades C to E. The gap between the lowest B (${EMP[7].total}) and the highest F (${EMP[8].total}) is ${EMP[7].total-EMP[8].total} marks.</p></div>
+  <h3 class="s-title" data-in style="--d:0">${gradeSummary()}.</h3>
+  <p class="s-body" data-in style="--d:1">${gradeCount("F") ? gradeCount("F") + " graded F." : "Nobody is graded F."} Bands: A 95%+, B 85–95%, C 75–85%, D 65–75%, E 50–65%, F under 50%.</p></div>
   <div class="gcols" style="height:260px">${GRADES.map((g,i)=>{const c=gradeCount(g); const who=EMP.filter(e=>e.grade===g).map(e=>e.name).join(", ");
-    return `<div class="gcol${g==="F"?" f":""}${c?"":" zero"}" data-tip="Grade ${g}: ${c} employee${c===1?"":"s"}${who?" · "+esc(who):""}"><span class="n">${c}</span><div class="col grow-y" style="height:${c?c/4*100:0}%;--d:${i}"></div><span class="g">${g}</span><span class="who">${esc(who)||"none"}</span></div>`;}).join("")}</div></div>`;
+    return `<div class="gcol${g==="F"?" f":""}${c?"":" zero"}" data-tip="Grade ${g}: ${c} employee${c===1?"":"s"}${who?" · "+esc(who):""}"><span class="n">${c}</span><div class="col grow-y" style="height:${c?c/Math.max(...GRADES.map(gradeCount))*100:0}%;--d:${i}"></div><span class="g">${g}</span><span class="who">${esc(who)||"none"}</span></div>`;}).join("")}</div></div>`;
 $("#s-papers").innerHTML = slideHead("Maths papers · structure") + `<div class="s-grid one"><div>
   <h3 class="s-title" data-in style="--d:0">3 papers × 50 marks = 150 marks.</h3>
   <p class="s-body" data-in style="--d:1">Each paper runs 2 hours across five sections, from 1-mark MCQs to long answers.</p>
@@ -1110,7 +1125,7 @@ ledger.addEventListener("keydown", e => { const tr = e.target.closest("tbody tr[
 function select(name){ selected = EMP.find(x=>x.name===name); renderLedger(); renderProfile(); const tr = ledger.querySelector(`tr[data-name="${name}"]`); }
 $("#team-search").addEventListener("input", e => { query = e.target.value.trim().toLowerCase(); renderLedger(); });
 const gf = $("#grade-filter");
-gf.innerHTML = ["All","A","B","F"].map(g => `<button class="chip" type="button" aria-pressed="${g==="All"}" data-g="${g}">${g==="All"?"All grades":"Grade "+g} · ${g==="All"?N:gradeCount(g)}</button>`).join("");
+gf.innerHTML = ["All", ...GRADES.filter(gradeCount)].map(g => `<button class="chip" type="button" aria-pressed="${g==="All"}" data-g="${g}">${g==="All"?"All grades":"Grade "+g} · ${g==="All"?N:gradeCount(g)}</button>`).join("");
 gf.addEventListener("click", e => { const b = e.target.closest("button"); if(!b) return; gFilter = b.dataset.g; $$("button",gf).forEach(x=>x.setAttribute("aria-pressed", x===b)); renderLedger(); });
 
 function renderProfile(){
