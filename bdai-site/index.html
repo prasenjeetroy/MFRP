@@ -6,16 +6,16 @@
 /* Layout: sticky nav, hero with the rebrand wordmark beside a pastel Fibonacci spiral, then a
    pastel presentation stage (one tone per slide), the team ledger and the papers library, each on a 1180px column. */
 :root{
-  --bg:#F3F7F8; --surface:#FFFFFF; --surface-2:#E9F1F3; --ink:#0E2A38; --ink-2:#3E5C68; --muted:#5B7681;
-  --line:#D3E1E5; --accent:#1B8C86; --accent-strong:#0F5F62; --accent-soft:#D6ECEA; --on-accent:#FFFFFF;
+  --bg:#FFFDF9; --surface:#FFFFFF; --surface-2:#F6F2EA; --ink:#0E2A38; --ink-2:#3E5C68; --muted:#5B7681;
+  --line:#E8E2D6; --accent:#1B8C86; --accent-strong:#0F5F62; --accent-soft:#D6ECEA; --on-accent:#FFFFFF;
   --heat:#0F6E6A; --on-heat:#FFFFFF; --crit:#B23A2A; --crit-soft:#F7E2DD;
   --seq1:#C4E5E2; --seq2:#8FCDC7; --seq3:#52AFA8; --seq4:#1B8C86; --seq5:#0F5F62;
   --seqi1:#0E2A38; --seqi2:#0E2A38; --seqi3:#0E2A38; --seqi4:#FFFFFF; --seqi5:#FFFFFF;
   --paper-shadow:0 1px 2px rgba(14,42,56,.08),0 8px 24px rgba(14,42,56,.08);
   /* pastel set: tints for tiles, and stronger blobs for the soft colour fields */
-  --p-peach:#FFE6D8; --p-lav:#ECE5FC; --p-mint:#DDF4E9; --p-sky:#DFEDFC; --p-butter:#FFF3CF; --p-rose:#FCE3EA;
+  --p-peach:#FFE6D8; --p-lav:#ECE5FC; --p-mint:#DDF4E9; --p-sky:#DFEDFC; --p-butter:#FFF6D6; --p-rose:#FCE3EA;
   --b-peach:#FFC6AC; --b-lav:#D3C6F8; --b-mint:#B9EAD3; --b-sky:#BCD8F8; --b-butter:#FFE49A; --b-rose:#F7C1D2;
-  --grain-op:.28;
+  --grain-op:.22; --wash-op:.55;
   --f-sans:"Manrope", "Segoe UI", system-ui, -apple-system, sans-serif;
   --f-mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --r-sm:6px; --r-md:10px;
@@ -29,7 +29,7 @@
   --paper-shadow:0 0 0 1px #21404C,0 10px 30px rgba(0,0,0,.4);
   --p-peach:#33241F; --p-lav:#272439; --p-mint:#1B302B; --p-sky:#1C2B3C; --p-butter:#302B1C; --p-rose:#33212B;
   --b-peach:#6E3E30; --b-lav:#463C7E; --b-mint:#22604F; --b-sky:#26507E; --b-butter:#6A5520; --b-rose:#6A2E48;
-  --grain-op:.12;
+  --grain-op:.10; --wash-op:.35;
   color-scheme:dark;
 }}
 :root[data-theme="dark"]{
@@ -41,13 +41,20 @@
   --paper-shadow:0 0 0 1px #21404C,0 10px 30px rgba(0,0,0,.4);
   --p-peach:#33241F; --p-lav:#272439; --p-mint:#1B302B; --p-sky:#1C2B3C; --p-butter:#302B1C; --p-rose:#33212B;
   --b-peach:#6E3E30; --b-lav:#463C7E; --b-mint:#22604F; --b-sky:#26507E; --b-butter:#6A5520; --b-rose:#6A2E48;
-  --grain-op:.12;
+  --grain-op:.10; --wash-op:.35;
   color-scheme:dark;
 }
 
 *{box-sizing:border-box}
 html{scroll-behavior:smooth;scroll-padding-top:72px}
 body{background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+/* pastel wash and paper grain behind the whole page */
+body::before,body::after{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none}
+body::before{opacity:var(--wash-op);
+  background:radial-gradient(38% 34% at 8% 6%,var(--b-peach),transparent 70%),radial-gradient(34% 32% at 92% 14%,var(--b-lav),transparent 70%),
+  radial-gradient(40% 36% at 86% 88%,var(--b-mint),transparent 70%),radial-gradient(36% 34% at 12% 92%,var(--b-butter),transparent 70%),
+  radial-gradient(30% 28% at 50% 50%,var(--b-sky),transparent 70%)}
+body::after{opacity:var(--grain-op);mix-blend-mode:multiply;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .42 0 0 0 0 .34 0 0 0 0 .28 0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
 h1,h2,h3,h4{margin:0;text-wrap:balance;line-height:1.15}
 p{margin:0}
 a{color:var(--accent-strong)}
@@ -139,14 +146,14 @@ section.block{padding-block:72px 24px}
   radial-gradient(40% 44% at 64% 86%,var(--b3),transparent 70%),radial-gradient(26% 30% at 10% 90%,#FFFFFFB3,transparent 70%);
   filter:blur(14px);animation:drift 20s ease-in-out infinite alternate}
 .slide:not(.is-active)::before{animation-play-state:paused}
-.slide::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.32;mix-blend-mode:multiply;
-  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .12 0 0 0 0 .16 0 0 0 0 .22 0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+.slide::after{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;opacity:.2;mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .42 0 0 0 0 .34 0 0 0 0 .28 0 0 0 .55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
 @keyframes drift{0%{transform:translate(0,0) rotate(0deg) scale(1)}50%{transform:translate(4%,-3%) rotate(8deg) scale(1.05)}100%{transform:translate(-4%,3%) rotate(-6deg) scale(1)}}
 .tone-peach{--s-bg:#FFE6D8;--b1:#FFC6AC;--b2:#FFE49A;--b3:#F7C1D2;--stage-accent:#D9653F;--s-acc-ink:#A4441F}
 .tone-mint{--s-bg:#DDF4E9;--b1:#B6EAD1;--b2:#DDF2B4;--b3:#BEE0F4;--stage-accent:#2E9C7A;--s-acc-ink:#1C6E55}
 .tone-lav{--s-bg:#ECE5FC;--b1:#D3C6F8;--b2:#F7CFE8;--b3:#C6DBFA;--stage-accent:#7A5CD6;--s-acc-ink:#5A3DB4}
 .tone-sky{--s-bg:#DFEDFC;--b1:#BCD8F8;--b2:#CDEFEA;--b3:#E3D5FA;--stage-accent:#3D7FD0;--s-acc-ink:#2A5FA3}
-.tone-butter{--s-bg:#FFF3CF;--b1:#FFE49A;--b2:#FFD3BC;--b3:#DDEFC0;--stage-accent:#C98A12;--s-acc-ink:#8A5C06}
+.tone-butter{--s-bg:#FFF8DC;--b1:#FFEBA6;--b2:#FFE0C9;--b3:#E6F4CC;--stage-accent:#C98A12;--s-acc-ink:#8A5C06}
 .tone-rose{--s-bg:#FCE3EA;--b1:#F7C1D2;--b2:#FFDCC4;--b3:#E4D0F6;--stage-accent:#D2557A;--s-acc-ink:#A43759}
 .s-tag{display:flex;gap:10px;align-items:center;font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--stage-ink-2)}
 .s-tag i{width:8px;height:8px;border-radius:2px;background:var(--stage-accent);display:inline-block}
