@@ -283,16 +283,16 @@
       <div class="grid">
         <div class="card">
           <div class="card-title">Create account</div>
-          <div class="card-meta">Both PINs must be exactly 4 digits.</div>
+          <div class="card-meta">Both PINs must be 4–8 digits.</div>
 
           <label for="newUsername">Username</label>
           <input id="newUsername" autocomplete="off" />
 
           <label for="newPin">PIN</label>
-          <input id="newPin" type="password" inputmode="numeric" maxlength="4" />
+          <input id="newPin" type="password" inputmode="numeric" maxlength="8" />
 
           <label for="newBackupPin">Backup PIN</label>
-          <input id="newBackupPin" type="password" inputmode="numeric" maxlength="4" />
+          <input id="newBackupPin" type="password" inputmode="numeric" maxlength="8" />
 
           <div class="row">
             <button class="btn btn-primary" onclick="createAccount()">Create account</button>
@@ -308,10 +308,10 @@
           <select id="loginUser"></select>
 
           <label for="loginPin">PIN</label>
-          <input id="loginPin" type="password" inputmode="numeric" maxlength="4" />
+          <input id="loginPin" type="password" inputmode="numeric" maxlength="8" />
 
           <label for="loginBackupPin">Backup PIN</label>
-          <input id="loginBackupPin" type="password" inputmode="numeric" maxlength="4" />
+          <input id="loginBackupPin" type="password" inputmode="numeric" maxlength="8" />
 
           <div class="row">
             <button class="btn btn-primary" onclick="login()">Log in</button>
@@ -413,7 +413,7 @@
 let accounts = JSON.parse(localStorage.getItem("mathlearn_accounts") || "[]");
 let currentUser = null;
 
-const PIN_PATTERN = /^\d{4}$/;
+const PIN_PATTERN = /^\d{4,8}$/;
 
 /* Save accounts to localStorage */
 function saveAccounts() {
@@ -450,7 +450,7 @@ function createAccount() {
   const status = document.getElementById("createStatus");
 
   if (!username || !PIN_PATTERN.test(pin) || !PIN_PATTERN.test(backupPin)) {
-    status.textContent = "Enter username, 4-digit PIN, and 4-digit backup PIN.";
+    status.textContent = "Enter username, a 4–8 digit PIN, and a 4–8 digit backup PIN.";
     status.className = "status err";
     return;
   }
