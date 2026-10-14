@@ -18,6 +18,25 @@
       --radius-lg: 18px;
       --radius-md: 12px;
       --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.7);
+
+      /* Chart tokens (validated against the --card surface) */
+      --series-1: #3987e5;
+      --series-wash: rgba(57, 135, 229, 0.10);
+      --meter-track: #172a46;
+      --grid: #1f2937;
+      --axis: #374151;
+      --heat-0: #161f30;
+      --heat-1: #184f95;
+      --heat-2: #256abf;
+      --heat-3: #3987e5;
+      --heat-4: #86b6ef;
+
+      /* Status (always paired with an icon + label) */
+      --good: #0ca30c;
+      --warning: #fab219;
+      --critical: #d03b3b;
+      --delta-up: #34d399;
+      --delta-down: #f87171;
     }
 
     * {
@@ -34,7 +53,7 @@
     }
 
     .app {
-      max-width: 1100px;
+      max-width: 1240px;
       margin: 0 auto;
       padding: 24px 16px 40px;
     }
@@ -105,13 +124,16 @@
       gap: 16px;
     }
 
+    .stack > * + * { margin-top: 16px; }
+
     /* Cards */
     .card {
       background: var(--card);
       border-radius: var(--radius-md);
-      padding: 14px;
+      padding: 16px;
       border: 1px solid rgba(55, 65, 81, 0.8);
       font-size: 13px;
+      min-width: 0;
     }
 
     .card-title {
@@ -123,7 +145,14 @@
     .card-meta {
       font-size: 11px;
       color: var(--muted);
-      margin-bottom: 8px;
+      margin-bottom: 10px;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 12px;
+      padding: 18px 0;
+      text-align: center;
     }
 
     /* Forms */
@@ -186,38 +215,98 @@
       border: 1px solid rgba(148, 163, 184, 0.5);
     }
 
+    .btn-small { padding: 6px 11px; font-size: 12px; }
+
     .btn:hover {
       transform: translateY(-1px);
       box-shadow: 0 12px 28px rgba(15, 23, 42, 0.8);
     }
 
-    /* Dashboard */
+    /* ---------- Dashboard: profile ---------- */
+    .profile {
+      display: grid;
+      grid-template-columns: minmax(220px, 1.2fr) minmax(220px, 1.4fr) minmax(160px, 0.8fr) auto;
+      gap: 20px;
+      align-items: center;
+    }
+
     .user-head {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin-bottom: 8px;
     }
 
     .avatar {
-      width: 40px;
-      height: 40px;
+      width: 52px;
+      height: 52px;
+      flex: none;
       border-radius: 999px;
       background: linear-gradient(135deg, var(--accent), var(--accent2));
       color: #0b1120;
       font-weight: 700;
+      font-size: 22px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
 
-    #dashProgress {
-      font-size: 12px;
-      margin-top: 10px;
-      line-height: 1.6;
+    #dashName { font-size: 18px; }
+
+    .mini-label {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 4px;
     }
 
-    /* Quiz */
+    .big-inline {
+      font-size: 22px;
+      font-weight: 600;
+    }
+
+    .meter {
+      height: 8px;
+      border-radius: 999px;
+      background: var(--meter-track);
+      overflow: hidden;
+      margin: 8px 0 6px;
+    }
+    .meter > div {
+      height: 100%;
+      background: var(--series-1);
+      border-radius: 999px;
+    }
+
+    .muted { color: var(--muted); }
+    .small { font-size: 11px; }
+
+    /* Achievements */
+    .badges {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+    }
+    .badge {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(55, 65, 81, 0.8);
+    }
+    .badge .b-icon { font-size: 20px; }
+    .badge .b-name { font-weight: 600; font-size: 12px; }
+    .badge .b-desc { font-size: 11px; color: var(--muted); }
+    .badge.locked { opacity: 0.45; filter: grayscale(1); }
+
+    /* ---------- Practice / quiz panel ---------- */
+    .practice {
+      display: grid;
+      grid-template-columns: minmax(220px, 300px) 1fr;
+      gap: 16px;
+    }
+
     .quiz-top {
       display: flex;
       justify-content: space-between;
@@ -227,7 +316,7 @@
     }
 
     #quizQuestion {
-      font-size: 16px;
+      font-size: 17px;
       font-weight: 600;
       margin-bottom: 12px;
     }
@@ -241,15 +330,199 @@
       transition: 0.15s;
     }
 
-    .option:hover {
+    .option:hover, .option:focus-visible {
       border-color: var(--accent);
       background: rgba(59, 130, 246, 0.12);
+      outline: none;
     }
 
     #reviewList {
       margin: 6px 0 0 18px;
       font-size: 12px;
     }
+
+    .answer-list { list-style: none; margin-top: 12px; }
+    .answer-list li {
+      display: flex;
+      gap: 10px;
+      padding: 8px 0;
+      border-top: 1px solid var(--grid);
+      font-size: 12px;
+    }
+
+    /* ---------- Filters ---------- */
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px 22px;
+      align-items: center;
+      margin: 26px 0 16px;
+    }
+    .filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .seg {
+      display: inline-flex;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .seg button {
+      background: transparent;
+      color: var(--muted);
+      border: none;
+      padding: 6px 12px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .seg button + button { border-left: 1px solid rgba(148, 163, 184, 0.2); }
+    .seg button:hover { background: rgba(148, 163, 184, 0.08); color: var(--text); }
+    .seg button[aria-pressed="true"] {
+      background: rgba(59, 130, 246, 0.18);
+      color: var(--text);
+      font-weight: 600;
+    }
+    #legacyNote { font-size: 11px; color: var(--muted); }
+
+    /* ---------- KPI tiles ---------- */
+    .kpis {
+      display: grid;
+      grid-template-columns: minmax(220px, 1.3fr) repeat(4, minmax(140px, 1fr));
+      grid-auto-rows: auto;
+      gap: 12px;
+    }
+    .kpi-hero { grid-row: span 2; display: flex; flex-direction: column; justify-content: center; }
+    .kpi-hero .kpi-value { font-size: 56px; line-height: 1; margin: 6px 0 8px; }
+    .kpi-label { font-size: 12px; color: var(--muted); }
+    .kpi-value { font-size: 24px; font-weight: 600; margin: 4px 0 2px; }
+    .kpi-sub { font-size: 11px; color: var(--muted); }
+    .delta-up { color: var(--delta-up); }
+    .delta-down { color: var(--delta-down); }
+
+    /* ---------- Chart cards ---------- */
+    .charts {
+      display: grid;
+      grid-template-columns: 1.6fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .chart-box { position: relative; width: 100%; }
+    .chart-box svg { display: block; overflow: visible; }
+    .chart-box svg:focus { outline: none; }
+    .chart-box svg:focus-visible { outline: 1px solid var(--axis); outline-offset: 4px; border-radius: 6px; }
+    .tick { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .end-label { fill: var(--text); font-size: 12px; font-weight: 600; }
+
+    /* Topic bars */
+    .bars { display: flex; flex-direction: column; gap: 16px; padding-top: 6px; }
+    .bar-row {
+      display: grid;
+      grid-template-columns: 86px 1fr;
+      align-items: center;
+      gap: 10px;
+    }
+    .bar-name { font-size: 12px; }
+    .bar-name .small { display: block; }
+    .bar-track {
+      position: relative;
+      height: 24px;
+      margin-right: 46px;
+      border-left: 1px solid var(--axis);
+      cursor: default;
+    }
+    .bar-track:focus-visible { outline: 1px solid var(--axis); outline-offset: 3px; }
+    .bar {
+      position: absolute;
+      left: 0;
+      top: 4px;
+      height: 16px;
+      background: var(--series-1);
+      border-radius: 0 4px 4px 0;
+      transition: filter 0.15s;
+    }
+    .bar-track:hover .bar, .bar-track:focus-visible .bar { filter: brightness(1.2); }
+    .bar-value {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    /* Heatmap */
+    .heatmap {
+      display: grid;
+      grid-auto-flow: column;
+      grid-template-rows: repeat(7, 1fr);
+      gap: 3px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .heat-label { font-size: 10px; color: var(--muted); line-height: 14px; padding-right: 6px; }
+    .heat-cell {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      background: var(--heat-0);
+    }
+    .heat-cell.future { background: transparent; }
+    .heat-cell:hover, .heat-cell:focus-visible { outline: 1px solid var(--text); outline-offset: 1px; }
+    .heat-legend { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); margin-top: 10px; }
+    .heat-legend .heat-cell { width: 11px; height: 11px; }
+    .heat-foot { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+
+    /* Insights */
+    .insights { list-style: none; }
+    .insights li {
+      display: flex;
+      gap: 10px;
+      padding: 10px 0;
+      border-top: 1px solid var(--grid);
+    }
+    .insights li:first-child { border-top: none; padding-top: 2px; }
+    .insights .i-icon { font-size: 16px; line-height: 1.2; }
+
+    .status-pill { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .status-icon {
+      width: 16px;
+      height: 16px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: #0b1120;
+    }
+    .s-good { background: var(--good); }
+    .s-warning { background: var(--warning); }
+    .s-critical { background: var(--critical); color: #fff; }
+    .s-none { background: var(--axis); color: var(--text); }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+    th { color: var(--muted); font-weight: 500; font-size: 11px; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    td.wrap { white-space: normal; min-width: 200px; }
+    tbody tr:hover { background: rgba(148, 163, 184, 0.05); }
+
+    /* Tooltip */
+    #tip {
+      position: fixed;
+      z-index: 50;
+      pointer-events: none;
+      background: #111a2e;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      display: none;
+      max-width: 260px;
+    }
+    #tip .t-value { font-size: 15px; font-weight: 700; }
+    #tip .t-line { color: var(--muted); margin-top: 2px; }
 
     /* Footer */
     footer {
@@ -259,6 +532,21 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+    }
+
+    /* Responsive */
+    @media (max-width: 1000px) {
+      .profile { grid-template-columns: 1fr 1fr; }
+      .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .kpi-hero { grid-column: span 2; grid-row: auto; }
+      .charts { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 640px) {
+      section { padding: 18px 14px; }
+      .profile { grid-template-columns: 1fr; }
+      .practice { grid-template-columns: 1fr; }
+      .kpi-hero .kpi-value { font-size: 48px; }
+      header { border-radius: 18px; }
     }
   </style>
 </head>
@@ -323,26 +611,41 @@
 
     <!-- DASHBOARD -->
     <section id="dashboard" style="display:none;">
-      <h2>Dashboard</h2>
-      <div class="subheading">Your progress and quizzes.</div>
 
-      <div class="grid">
-        <div class="card">
-          <div class="user-head">
-            <div id="dashAvatar" class="avatar"></div>
-            <div>
-              <div id="dashName" class="card-title"></div>
-              <div id="dashTag" class="card-meta"></div>
-            </div>
-          </div>
-          <p id="dashProgress"></p>
-          <div class="row">
-            <button class="btn btn-secondary" onclick="logout()">Log out</button>
+      <!-- Profile: level, streak, actions (all-time, not filtered) -->
+      <div class="card profile">
+        <div class="user-head">
+          <div id="dashAvatar" class="avatar"></div>
+          <div>
+            <div id="dashName" class="card-title"></div>
+            <div id="dashTag" class="card-meta" style="margin:0;"></div>
           </div>
         </div>
 
+        <div>
+          <div class="mini-label">Level</div>
+          <div class="big-inline" id="levelValue"></div>
+          <div class="meter" role="progressbar" aria-label="Progress to next level" id="levelMeter"><div></div></div>
+          <div class="small muted" id="levelNext"></div>
+        </div>
+
+        <div>
+          <div class="mini-label">Streak</div>
+          <div class="big-inline" id="streakValue"></div>
+          <div class="small muted" id="streakBest"></div>
+        </div>
+
+        <div class="row" style="margin:0;justify-content:flex-end;">
+          <button class="btn btn-secondary btn-small" onclick="resetProgress()">Reset progress</button>
+          <button class="btn btn-secondary btn-small" onclick="logout()">Log out</button>
+        </div>
+      </div>
+
+      <!-- Practice -->
+      <div class="practice" style="margin-top:16px;">
         <div class="card">
           <div class="card-title">Start a quiz</div>
+          <div class="card-meta">Results are added to your dashboard.</div>
 
           <label for="quizTopic">Topic</label>
           <select id="quizTopic">
@@ -369,33 +672,123 @@
             <button class="btn btn-primary" onclick="startQuiz()">Start quiz</button>
           </div>
         </div>
-      </div>
 
-      <!-- Active quiz -->
-      <div id="quizBox" class="card" style="display:none; margin-top:16px;">
-        <div class="quiz-top">
-          <span id="quizProgress"></span>
-          <span id="quizTimer"></span>
+        <div class="card" id="quizPanel">
+          <!-- Idle -->
+          <div id="quizIdle">
+            <div class="card-title">Quiz</div>
+            <div class="empty">Choose a topic and press <strong>Start quiz</strong>.</div>
+          </div>
+
+          <!-- Active quiz -->
+          <div id="quizBox" style="display:none;">
+            <div class="quiz-top">
+              <span id="quizProgress"></span>
+              <span id="quizTimer"></span>
+            </div>
+            <div id="quizQuestion"></div>
+            <div id="quizOptions"></div>
+            <div class="row">
+              <button class="btn btn-secondary btn-small" onclick="markForReview()">Mark for review</button>
+              <button class="btn btn-secondary btn-small" onclick="nextQuestion()">Skip</button>
+              <button class="btn btn-secondary btn-small" onclick="endQuiz()">End quiz</button>
+            </div>
+          </div>
+
+          <!-- Results -->
+          <div id="quizResults" style="display:none;">
+            <div class="card-title">Results</div>
+            <p id="quizScore"></p>
+            <ul class="answer-list" id="quizAnswers"></ul>
+          </div>
+
+          <!-- Marked for review -->
+          <div id="reviewBox" style="display:none; margin-top:14px;">
+            <div class="card-title">Marked for review</div>
+            <ul id="reviewList"></ul>
+          </div>
         </div>
-        <div id="quizQuestion"></div>
-        <div id="quizOptions"></div>
-        <div class="row">
-          <button class="btn btn-secondary" onclick="markForReview()">Mark for review</button>
-          <button class="btn btn-secondary" onclick="nextQuestion()">Skip</button>
-          <button class="btn btn-secondary" onclick="endQuiz()">End quiz</button>
+      </div>
+
+      <!-- Achievements -->
+      <div class="card" style="margin-top:16px;">
+        <div class="card-title">Achievements</div>
+        <div class="card-meta" id="badgeCount"></div>
+        <div class="badges" id="badges"></div>
+      </div>
+
+      <!-- Filters: scope everything below -->
+      <div class="filters" role="group" aria-label="Dashboard filters">
+        <div class="filter-group">
+          <span class="small muted">Period</span>
+          <div class="seg" id="rangeFilter">
+            <button data-value="all" aria-pressed="true">All time</button>
+            <button data-value="30">Last 30 days</button>
+            <button data-value="7">Last 7 days</button>
+            <button data-value="1">Today</button>
+          </div>
+        </div>
+        <div class="filter-group">
+          <span class="small muted">Topic</span>
+          <div class="seg" id="topicFilter">
+            <button data-value="all" aria-pressed="true">All</button>
+            <button data-value="algebra">Algebra</button>
+            <button data-value="geometry">Geometry</button>
+            <button data-value="calculus">Calculus</button>
+          </div>
+        </div>
+        <span id="legacyNote"></span>
+      </div>
+
+      <!-- KPI tiles -->
+      <div class="kpis" id="kpis"></div>
+
+      <!-- Charts -->
+      <div class="charts">
+        <div class="card">
+          <div class="card-title">Score per quiz</div>
+          <div class="card-meta">Percentage correct on each quiz (latest 30). Hover or use arrow keys for details.</div>
+          <div class="chart-box" id="scoreChart"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Accuracy by topic</div>
+          <div class="card-meta">Share of questions answered correctly.</div>
+          <div class="bars" id="topicBars"></div>
         </div>
       </div>
 
-      <!-- Results -->
-      <div id="quizResults" class="card" style="display:none; margin-top:16px;">
-        <div class="card-title">Results</div>
-        <p id="quizScore"></p>
+      <div class="charts">
+        <div class="card">
+          <div class="card-title">Activity</div>
+          <div class="card-meta">Quizzes completed per day, last 20 weeks.</div>
+          <div id="heatmap"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Insights</div>
+          <div class="card-meta">What to work on next.</div>
+          <ul class="insights" id="insights"></ul>
+        </div>
       </div>
 
-      <!-- Marked for review -->
-      <div id="reviewBox" class="card" style="display:none; margin-top:16px;">
-        <div class="card-title">Marked for review</div>
-        <ul id="reviewList"></ul>
+      <!-- Tables -->
+      <div class="card" style="margin-top:16px;">
+        <div class="card-title">Topic breakdown</div>
+        <div class="card-meta">Status: ✓ Strong ≥ 80% · ▲ Improving 50–79% · ! Needs work &lt; 50%.</div>
+        <div class="table-wrap" id="topicTable"></div>
+      </div>
+
+      <div class="charts">
+        <div class="card">
+          <div class="card-title">Quiz history</div>
+          <div class="card-meta" id="historyMeta"></div>
+          <div class="table-wrap" id="historyTable"></div>
+          <div class="row" id="historyMore"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Most-missed questions</div>
+          <div class="card-meta">Questions you got wrong or skipped most often.</div>
+          <div class="table-wrap" id="missedTable"></div>
+        </div>
       </div>
     </section>
 
@@ -404,6 +797,8 @@
       <span>Progress is saved in this browser.</span>
     </footer>
   </div>
+
+  <div id="tip" role="tooltip"></div>
 
 <script>
 /* ---------------------------------------------------------
@@ -506,7 +901,7 @@ function logout() {
   document.getElementById("dashboard").style.display = "none";
   document.getElementById("accounts").style.display = "block";
 
-  document.getElementById("quizResults").style.display = "none";
+  showQuizPanel("idle");
   document.getElementById("reviewBox").style.display = "none";
 
   document.getElementById("loginPin").value = "";
@@ -520,6 +915,15 @@ function logout() {
    CELL 3 — SAVED PROGRESS ENGINE (PER USER)
    --------------------------------------------------------- */
 
+const TOPICS = ["algebra", "geometry", "calculus"];
+const TOPIC_NAMES = { algebra: "Algebra", geometry: "Geometry", calculus: "Calculus" };
+const LEVELS = [
+  { level: 1, accuracy: 70, quizzes: 5 },
+  { level: 2, accuracy: 80, quizzes: 10 },
+  { level: 3, accuracy: 90, quizzes: 20 }
+];
+const MAX_HISTORY = 500;
+
 function defaultProgress() {
   return {
     totalQuizzes: 0,
@@ -527,9 +931,11 @@ function defaultProgress() {
     totalQuestions: 0,
     accuracy: 0,
     streak: 0,
+    bestStreak: 0,
     lastQuizDate: null,
     weakAreas: [],
-    level: 0
+    level: 0,
+    history: []
   };
 }
 
@@ -537,7 +943,10 @@ function defaultProgress() {
 function getProgress(username) {
   const data = JSON.parse(localStorage.getItem("mathlearn_progress_" + username) || "null");
   // Merge with defaults so older saves missing newer fields still work
-  return Object.assign(defaultProgress(), data || {});
+  const p = Object.assign(defaultProgress(), data || {});
+  if (!Array.isArray(p.history)) p.history = [];
+  p.bestStreak = Math.max(p.bestStreak || 0, p.streak);
+  return p;
 }
 
 /* Save progress for a specific user */
@@ -545,8 +954,18 @@ function saveProgress(username, progress) {
   localStorage.setItem("mathlearn_progress_" + username, JSON.stringify(progress));
 }
 
+/* Streak only counts if the last quiz was today or yesterday */
+function currentStreak(p) {
+  if (!p.lastQuizDate) return 0;
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  return (p.lastQuizDate === today.toDateString() || p.lastQuizDate === yesterday.toDateString())
+    ? p.streak : 0;
+}
+
 /* Apply progress updates after each quiz */
-function applyQuizProgress(score, totalQuestions, topic) {
+function applyQuizProgress(score, totalQuestions, topic, details = {}) {
   if (!currentUser || totalQuestions === 0) return;
 
   const username = currentUser.username;
@@ -573,6 +992,7 @@ function applyQuizProgress(score, totalQuestions, topic) {
     p.streak = 1;
   }
   p.lastQuizDate = today.toDateString();
+  p.bestStreak = Math.max(p.bestStreak, p.streak);
 
   // Weak areas: add on a poor score, remove once the topic is passed
   if (score < totalQuestions / 2) {
@@ -582,11 +1002,32 @@ function applyQuizProgress(score, totalQuestions, topic) {
   }
 
   // Leveling system
-  if (p.accuracy > 70 && p.totalQuizzes >= 5) p.level = Math.max(p.level, 1);
-  if (p.accuracy > 80 && p.totalQuizzes >= 10) p.level = Math.max(p.level, 2);
-  if (p.accuracy > 90 && p.totalQuizzes >= 20) p.level = Math.max(p.level, 3);
+  LEVELS.forEach(l => {
+    if (p.accuracy > l.accuracy && p.totalQuizzes >= l.quizzes) p.level = Math.max(p.level, l.level);
+  });
+
+  // Detailed history for the dashboard
+  p.history.push({
+    date: today.toISOString(),
+    topic,
+    score,
+    total: totalQuestions,
+    seconds: details.seconds || 0,
+    timedOut: !!details.timedOut,
+    reviewed: details.reviewed || 0,
+    answers: details.answers || []
+  });
+  if (p.history.length > MAX_HISTORY) p.history = p.history.slice(-MAX_HISTORY);
 
   saveProgress(username, p);
+  updateDashboardProgress();
+}
+
+/* Wipe the current user's progress */
+function resetProgress() {
+  if (!currentUser) return;
+  if (!confirm("Delete all quiz results and progress for " + currentUser.username + "? This can't be undone.")) return;
+  localStorage.removeItem("mathlearn_progress_" + currentUser.username);
   updateDashboardProgress();
 }
 </script>
@@ -619,6 +1060,8 @@ const quizBank = {
 let quiz = [];
 let quizTopic = null;
 let quizActive = false;
+let quizAnswers = [];
+let quizStartedAt = 0;
 let current = 0;
 let score = 0;
 let reviewList = [];
@@ -635,6 +1078,13 @@ function shuffle(arr) {
   return a;
 }
 
+/* Show one state of the quiz panel: idle | active | results */
+function showQuizPanel(state) {
+  document.getElementById("quizIdle").style.display = state === "idle" ? "block" : "none";
+  document.getElementById("quizBox").style.display = state === "active" ? "block" : "none";
+  document.getElementById("quizResults").style.display = state === "results" ? "block" : "none";
+}
+
 /* Start Quiz */
 function startQuiz() {
   if (!currentUser) {
@@ -646,6 +1096,7 @@ function startQuiz() {
   current = 0;
   score = 0;
   reviewList = [];
+  quizAnswers = [];
   document.getElementById("reviewBox").style.display = "none";
   document.getElementById("reviewList").innerHTML = "";
 
@@ -657,16 +1108,15 @@ function startQuiz() {
   // Randomize questions
   quiz = shuffle(quizBank[quizTopic]).slice(0, count);
   quizActive = true;
+  quizStartedAt = Date.now();
 
   // Timer
   timeLeft = minutes * 60;
   startTimer();
 
-  // Show quiz box
-  document.getElementById("quizBox").style.display = "block";
-  document.getElementById("quizResults").style.display = "none";
-
+  showQuizPanel("active");
   loadQuestion();
+  document.getElementById("quizPanel").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function renderTimer() {
@@ -683,7 +1133,7 @@ function startTimer() {
   timer = setInterval(() => {
     timeLeft--;
     renderTimer();
-    if (timeLeft <= 0) endQuiz();
+    if (timeLeft <= 0) endQuiz(true);
   }, 1000);
 }
 
@@ -709,27 +1159,42 @@ function loadQuestion() {
     const btn = document.createElement("div");
     btn.className = "option";
     btn.textContent = opt;
+    btn.tabIndex = 0;
     btn.onclick = () => selectOption(index);
+    btn.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectOption(index); } };
     optionsDiv.appendChild(btn);
   });
 }
 
-/* Select answer */
-function selectOption(index) {
-  if (!quizActive) return;
-  if (index === quiz[current].answer) score++;
-  nextQuestion();
+/* Record the answer (or null for skipped) for the current question */
+function recordAnswer(chosen) {
+  const q = quiz[current];
+  const correct = chosen === q.answer;
+  if (correct) score++;
+  quizAnswers.push({ q: q.q, options: q.options, chosen, answer: q.answer, correct });
 }
 
-/* Next question */
-function nextQuestion() {
-  if (!quizActive) return;
+function advance() {
   current++;
   if (current < quiz.length) {
     loadQuestion();
   } else {
     endQuiz();
   }
+}
+
+/* Select answer */
+function selectOption(index) {
+  if (!quizActive) return;
+  recordAnswer(index);
+  advance();
+}
+
+/* Next question (skip) */
+function nextQuestion() {
+  if (!quizActive) return;
+  recordAnswer(null);
+  advance();
 }
 
 /* Mark question for review */
@@ -748,23 +1213,176 @@ function markForReview() {
 }
 
 /* End quiz */
-function endQuiz() {
+function endQuiz(timedOut = false) {
   if (!quizActive) return; // guard against double-ending (timer + last answer)
   stopQuiz();
 
-  document.getElementById("quizResults").style.display = "block";
+  // Questions never reached count as unanswered
+  while (quizAnswers.length < quiz.length) {
+    current = quizAnswers.length;
+    recordAnswer(null);
+  }
+
+  const seconds = Math.round((Date.now() - quizStartedAt) / 1000);
+  const pct = Math.round((score / quiz.length) * 100);
+
+  showQuizPanel("results");
   document.getElementById("quizScore").innerHTML =
-    `You scored <strong>${score}</strong> out of <strong>${quiz.length}</strong>.`;
+    `You scored <strong>${score}</strong> out of <strong>${quiz.length}</strong> (${pct}%) in ${formatDuration(seconds)}` +
+    (timedOut ? " — time ran out." : ".");
+
+  // Per-question breakdown
+  const list = document.getElementById("quizAnswers");
+  list.innerHTML = "";
+  quizAnswers.forEach((a, i) => {
+    const icon = el("span", { class: "status-icon " + (a.correct ? "s-good" : "s-critical") }, a.correct ? "✓" : "✕");
+    const yours = a.chosen === null ? "Not answered" : a.options[a.chosen];
+    const detail = a.correct
+      ? el("div", { class: "muted" }, "Your answer: " + yours)
+      : el("div", { class: "muted" }, "Your answer: " + yours + " · Correct: " + a.options[a.answer]);
+    list.appendChild(el("li", {}, icon, el("div", {}, el("div", {}, `Q${i + 1}. ${a.q}`), detail)));
+  });
 
   // Save progress (from Cell 3)
-  applyQuizProgress(score, quiz.length, quizTopic);
+  applyQuizProgress(score, quiz.length, quizTopic, {
+    seconds,
+    timedOut,
+    reviewed: reviewList.length,
+    answers: quizAnswers.map(a => ({ q: a.q, correct: a.correct, skipped: a.chosen === null }))
+  });
 }
 </script>
 
 <script>
 /* ---------------------------------------------------------
-   CELL 5 — DASHBOARD INTEGRATION (UI + PROGRESS DISPLAY)
+   CELL 5 — DASHBOARD (STATS, CHARTS, INSIGHTS, TABLES)
    --------------------------------------------------------- */
+
+const dashFilter = { range: "all", topic: "all" };
+let historyExpanded = false;
+
+/* ---------- small helpers ---------- */
+const $ = id => document.getElementById(id);
+
+function el(tag, props = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "class") n.className = v;
+    else if (k === "style") n.style.cssText = v;
+    else if (k.startsWith("on")) n[k] = v;
+    else n.setAttribute(k, v);
+  }
+  kids.flat().forEach(k => { if (k != null) n.append(k instanceof Node ? k : String(k)); });
+  return n;
+}
+
+function svgEl(tag, attrs = {}) {
+  const n = document.createElementNS("http://www.w3.org/2000/svg", tag);
+  for (const [k, v] of Object.entries(attrs)) n.setAttribute(k, v);
+  return n;
+}
+
+const pctOf = e => (e.total ? Math.round((e.score / e.total) * 100) : 0);
+const plural = (n, word, many = word + "s") => `${n} ${n === 1 ? word : many}`;
+const nQuizzes = n => plural(n, "quiz", "quizzes");
+
+function formatDuration(sec) {
+  sec = Math.round(sec || 0);
+  if (sec < 60) return `${sec}s`;
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  if (h) return `${h}h ${m}m`;
+  return `${m}m ${s.toString().padStart(2, "0")}s`;
+}
+
+const fmtDate = d => new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+const fmtDateTime = d => new Date(d).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+const fmtDay = d => new Date(d).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+
+function emptyState(text) {
+  return el("div", { class: "empty" }, text);
+}
+
+function statusFor(accuracy, played = true) {
+  if (!played) return { cls: "s-none", icon: "–", label: "Not played" };
+  if (accuracy >= 80) return { cls: "s-good", icon: "✓", label: "Strong" };
+  if (accuracy >= 50) return { cls: "s-warning", icon: "▲", label: "Improving" };
+  return { cls: "s-critical", icon: "!", label: "Needs work" };
+}
+
+function statusPill(s) {
+  return el("span", { class: "status-pill" }, el("span", { class: "status-icon " + s.cls, "aria-hidden": "true" }, s.icon), s.label);
+}
+
+/* ---------- tooltip (shared by every chart) ---------- */
+function showTip(x, y, value, lines) {
+  const tip = $("tip");
+  tip.innerHTML = "";
+  tip.append(el("div", { class: "t-value" }, value));
+  lines.forEach(l => tip.append(el("div", { class: "t-line" }, l)));
+  tip.style.display = "block";
+  const r = tip.getBoundingClientRect();
+  let left = x + 14, top = y + 14;
+  if (left + r.width > window.innerWidth - 8) left = x - r.width - 14;
+  if (top + r.height > window.innerHeight - 8) top = y - r.height - 14;
+  tip.style.left = Math.max(8, left) + "px";
+  tip.style.top = Math.max(8, top) + "px";
+}
+function showTipAt(node, value, lines) {
+  const r = node.getBoundingClientRect();
+  showTip(r.left + r.width / 2, r.top + r.height / 2, value, lines);
+}
+function hideTip() { $("tip").style.display = "none"; }
+
+function attachTip(node, value, lines) {
+  node.tabIndex = 0;
+  node.setAttribute("aria-label", [value, ...lines].join(", "));
+  node.onpointermove = e => showTip(e.clientX, e.clientY, value, lines);
+  node.onpointerleave = hideTip;
+  node.onfocus = () => showTipAt(node, value, lines);
+  node.onblur = hideTip;
+}
+
+/* ---------- data ---------- */
+function filterHistory(history) {
+  let h = history;
+  if (dashFilter.topic !== "all") h = h.filter(e => e.topic === dashFilter.topic);
+  if (dashFilter.range !== "all") {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() - (parseInt(dashFilter.range, 10) - 1));
+    h = h.filter(e => new Date(e.date) >= start);
+  }
+  return h;
+}
+
+function summarize(h) {
+  const quizzes = h.length;
+  const questions = h.reduce((s, e) => s + e.total, 0);
+  const correct = h.reduce((s, e) => s + e.score, 0);
+  const pcts = h.map(pctOf);
+  const totalSeconds = h.reduce((s, e) => s + (e.seconds || 0), 0);
+  return {
+    quizzes,
+    questions,
+    correct,
+    accuracy: questions ? Math.round((correct / questions) * 100) : 0,
+    best: quizzes ? Math.max(...pcts) : 0,
+    avg: quizzes ? Math.round(pcts.reduce((a, b) => a + b, 0) / quizzes) : 0,
+    perfect: pcts.filter(x => x === 100).length,
+    totalSeconds,
+    avgSeconds: quizzes ? totalSeconds / quizzes : 0,
+    daysActive: new Set(h.map(e => new Date(e.date).toDateString())).size,
+    last: quizzes ? h[quizzes - 1] : null
+  };
+}
+
+function topicStats(h) {
+  return TOPICS
+    .filter(t => dashFilter.topic === "all" || dashFilter.topic === t)
+    .map(t => ({ topic: t, ...summarize(h.filter(e => e.topic === t)) }));
+}
+
+/* ---------- dashboard entry points ---------- */
 
 /* Build dashboard UI when user logs in */
 function showDashboard() {
@@ -776,30 +1394,431 @@ function showDashboard() {
   document.getElementById("dashAvatar").textContent =
     currentUser.username.charAt(0).toUpperCase();
 
+  showQuizPanel("idle");
+  historyExpanded = false;
+
   // Load progress
   updateDashboardProgress();
 }
 
-/* Update dashboard with saved progress */
+/* Re-render every dashboard panel from saved progress */
 function updateDashboardProgress() {
   if (!currentUser) return;
 
   const p = getProgress(currentUser.username);
+  const h = filterHistory(p.history);
 
-  // Tag under username
-  document.getElementById("dashTag").textContent =
-    `Level ${p.level} • Accuracy ${p.accuracy}% • Streak ${p.streak} days`;
+  renderProfile(p);
+  renderAchievements(p);
 
-  // Detailed progress section
-  document.getElementById("dashProgress").innerHTML = `
-    <strong>Total quizzes:</strong> ${p.totalQuizzes}<br>
-    <strong>Correct answers:</strong> ${p.correctAnswers} / ${p.totalQuestions}<br>
-    <strong>Accuracy:</strong> ${p.accuracy}%<br>
-    <strong>Streak:</strong> ${p.streak} days<br>
-    <strong>Level:</strong> ${p.level}<br>
-    <strong>Weak areas:</strong> ${p.weakAreas.join(", ") || "None"}
-  `;
+  const untracked = p.totalQuizzes - p.history.length;
+  $("legacyNote").textContent = untracked > 0
+    ? `${plural(untracked, "earlier quiz", "earlier quizzes")} saved before detailed results count toward level and streak only.`
+    : "";
+
+  renderKpis(h);
+  renderScoreChart(h);
+  renderTopicBars(h);
+  renderHeatmap(h);
+  renderInsights(h);
+  renderTopicTable(h);
+  renderHistoryTable(h);
+  renderMissed(h);
 }
+
+/* Refresh dashboard after quiz */
+function refreshDashboardAfterQuiz() {
+  updateDashboardProgress();
+}
+
+/* ---------- profile: level & streak ---------- */
+function renderProfile(p) {
+  const streak = currentStreak(p);
+
+  $("dashTag").textContent =
+    `Level ${p.level} • Accuracy ${p.accuracy}% • Streak ${plural(streak, "day")}`;
+
+  $("levelValue").textContent = `Level ${p.level}`;
+  const next = LEVELS.find(l => l.level > p.level);
+  const fill = $("levelMeter").firstElementChild;
+  if (!next) {
+    fill.style.width = "100%";
+    $("levelNext").textContent = "Top level reached — keep your accuracy above 90%.";
+  } else {
+    // Progress = average of the two requirements
+    const qPart = Math.min(p.totalQuizzes / next.quizzes, 1);
+    const aPart = Math.min(p.accuracy / (next.accuracy + 1), 1);
+    fill.style.width = Math.round(((qPart + aPart) / 2) * 100) + "%";
+    const needQ = Math.max(next.quizzes - p.totalQuizzes, 0);
+    const parts = [];
+    if (needQ) parts.push(plural(needQ, "more quiz", "more quizzes"));
+    if (p.accuracy <= next.accuracy) parts.push(`accuracy above ${next.accuracy}% (now ${p.accuracy}%)`);
+    $("levelNext").textContent = `Next: Level ${next.level} — ` + (parts.join(" and ") || "almost there");
+  }
+  $("levelMeter").setAttribute("aria-valuenow", parseInt(fill.style.width, 10));
+
+  $("streakValue").textContent = `🔥 ${plural(streak, "day")}`;
+  $("streakBest").textContent = `Best: ${plural(p.bestStreak, "day")}` +
+    (p.lastQuizDate ? ` · Last quiz ${fmtDate(p.lastQuizDate)}` : "");
+}
+
+/* ---------- achievements (all-time) ---------- */
+function renderAchievements(p) {
+  const h = p.history;
+  const s = summarize(h);
+  const topicsPlayed = new Set(h.map(e => e.topic)).size;
+  const fastPerfect = h.some(e => e.score === e.total && e.total >= 3 && e.seconds && e.seconds <= 30);
+
+  const list = [
+    { icon: "🎯", name: "First steps", desc: "Finish your first quiz", ok: p.totalQuizzes >= 1 },
+    { icon: "💯", name: "Perfect score", desc: "Get 100% on a quiz", ok: s.perfect >= 1 },
+    { icon: "🔥", name: "On fire", desc: "3-day streak", ok: p.bestStreak >= 3 },
+    { icon: "📅", name: "Week warrior", desc: "7-day streak", ok: p.bestStreak >= 7 },
+    { icon: "📚", name: "Dedicated", desc: "Finish 10 quizzes", ok: p.totalQuizzes >= 10 },
+    { icon: "🏃", name: "Marathon", desc: "Finish 25 quizzes", ok: p.totalQuizzes >= 25 },
+    { icon: "🧭", name: "All-rounder", desc: "Try every topic", ok: topicsPlayed === TOPICS.length },
+    { icon: "🏹", name: "Sharpshooter", desc: "90%+ over 20 questions", ok: s.questions >= 20 && s.accuracy >= 90 },
+    { icon: "⚡", name: "Lightning", desc: "Perfect 3+ questions in ≤ 30s", ok: fastPerfect },
+    { icon: "👑", name: "Master", desc: "Reach level 3", ok: p.level >= 3 }
+  ];
+
+  const box = $("badges");
+  box.innerHTML = "";
+  list.forEach(b => {
+    box.append(el("div", { class: "badge" + (b.ok ? "" : " locked"), title: b.ok ? "Unlocked" : "Locked" },
+      el("span", { class: "b-icon", "aria-hidden": "true" }, b.icon),
+      el("div", {}, el("div", { class: "b-name" }, b.name + (b.ok ? "" : " (locked)")), el("div", { class: "b-desc" }, b.desc))
+    ));
+  });
+  $("badgeCount").textContent = `${list.filter(b => b.ok).length} of ${list.length} unlocked`;
+}
+
+/* ---------- KPI tiles ---------- */
+function renderKpis(h) {
+  const s = summarize(h);
+  const box = $("kpis");
+  box.innerHTML = "";
+
+  const tile = (label, value, sub, extraClass = "") =>
+    el("div", { class: "card " + extraClass },
+      el("div", { class: "kpi-label" }, label),
+      el("div", { class: "kpi-value" }, value),
+      sub ? (sub instanceof Node ? sub : el("div", { class: "kpi-sub" }, sub)) : null);
+
+  box.append(tile("Overall accuracy", s.quizzes ? `${s.accuracy}%` : "—",
+    s.quizzes ? `${s.correct} of ${s.questions} questions correct` : "No quizzes in this view yet", "kpi-hero"));
+
+  // Recent trend: last 5 quizzes vs the 5 before
+  let trend = s.quizzes ? `Across ${nQuizzes(s.quizzes)}` : null;
+  if (h.length >= 6) {
+    const recent = h.slice(-5), prev = h.slice(-10, -5);
+    const avg = arr => arr.reduce((a, e) => a + pctOf(e), 0) / arr.length;
+    const d = Math.round(avg(recent) - avg(prev));
+    trend = el("div", { class: "kpi-sub" },
+      el("span", { class: d > 0 ? "delta-up" : d < 0 ? "delta-down" : "" }, (d > 0 ? "▲ +" : d < 0 ? "▼ " : "■ ") + d + " pts"),
+      " last 5 vs previous " + prev.length);
+  }
+
+  box.append(
+    tile("Quizzes taken", s.quizzes, s.last ? `Last: ${fmtDateTime(s.last.date)}` : null),
+    tile("Average score", s.quizzes ? `${s.avg}%` : "—", trend),
+    tile("Best score", s.quizzes ? `${s.best}%` : "—", s.quizzes ? plural(s.perfect, "perfect quiz", "perfect quizzes") : null),
+    tile("Questions answered", s.questions, s.quizzes ? `${s.questions - s.correct} wrong or skipped` : null),
+    tile("Total practice time", formatDuration(s.totalSeconds), null),
+    tile("Avg time per quiz", s.quizzes ? formatDuration(s.avgSeconds) : "—",
+      s.questions ? `${formatDuration(s.totalSeconds / s.questions)} per question` : null),
+    tile("Days active", s.daysActive, null),
+    tile("Timed out", h.filter(e => e.timedOut).length, "Quizzes where time ran out")
+  );
+}
+
+/* ---------- line chart: score per quiz ---------- */
+function renderScoreChart(h) {
+  const box = $("scoreChart");
+  box.innerHTML = "";
+  const data = h.slice(-30);
+  if (!data.length) { box.append(emptyState("Take a quiz to see your scores over time.")); return; }
+
+  const W = Math.max(box.clientWidth, 280), H = 230;
+  const m = { t: 14, r: 44, b: 28, l: 40 };
+  const iw = W - m.l - m.r, ih = H - m.t - m.b;
+  const n = data.length;
+  const x = i => m.l + (n === 1 ? iw / 2 : (i * iw) / (n - 1));
+  const y = v => m.t + ih - (v / 100) * ih;
+
+  const svg = svgEl("svg", { width: W, height: H, viewBox: `0 0 ${W} ${H}`, tabindex: 0, role: "img",
+    "aria-label": `Score per quiz, ${n} quizzes. Use left and right arrow keys to read each quiz.` });
+
+  // Gridlines + y ticks
+  [0, 25, 50, 75, 100].forEach(v => {
+    svg.append(svgEl("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), stroke: v === 0 ? "var(--axis)" : "var(--grid)", "stroke-width": 1 }));
+    const t = svgEl("text", { x: m.l - 8, y: y(v) + 4, "text-anchor": "end", class: "tick" });
+    t.textContent = v + "%";
+    svg.append(t);
+  });
+
+  // X labels: first and last quiz dates
+  const xl = (i, anchor) => {
+    const t = svgEl("text", { x: x(i), y: H - 8, "text-anchor": anchor, class: "tick" });
+    t.textContent = fmtDate(data[i].date);
+    svg.append(t);
+  };
+  if (n === 1) xl(0, "middle"); else { xl(0, "start"); xl(n - 1, "end"); }
+
+  // Area wash + line
+  const pts = data.map((e, i) => [x(i), y(pctOf(e))]);
+  if (n > 1) {
+    const line = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+    svg.append(svgEl("path", { d: `${line} L${pts[n - 1][0]},${y(0)} L${pts[0][0]},${y(0)} Z`, fill: "var(--series-wash)" }));
+    svg.append(svgEl("path", { d: line, fill: "none", stroke: "var(--series-1)", "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" }));
+  }
+
+  // Dots (with surface ring)
+  pts.forEach(p => svg.append(svgEl("circle", { cx: p[0], cy: p[1], r: n > 20 ? 3 : 4, fill: "var(--series-1)", stroke: "var(--card)", "stroke-width": 2 })));
+
+  // Direct label on the latest value
+  const end = svgEl("text", { x: pts[n - 1][0] + 10, y: pts[n - 1][1] + 4, class: "end-label" });
+  end.textContent = pctOf(data[n - 1]) + "%";
+  svg.append(end);
+
+  // Crosshair + focus dot
+  const cross = svgEl("line", { y1: m.t, y2: y(0), stroke: "var(--muted)", "stroke-width": 1, visibility: "hidden" });
+  const focusDot = svgEl("circle", { r: 6, fill: "var(--series-1)", stroke: "var(--card)", "stroke-width": 2, visibility: "hidden" });
+  svg.append(cross, focusDot);
+
+  let active = n - 1;
+  const show = (i, clientX, clientY) => {
+    active = i;
+    const e = data[i];
+    cross.setAttribute("x1", pts[i][0]); cross.setAttribute("x2", pts[i][0]);
+    focusDot.setAttribute("cx", pts[i][0]); focusDot.setAttribute("cy", pts[i][1]);
+    cross.setAttribute("visibility", "visible"); focusDot.setAttribute("visibility", "visible");
+    const lines = [`${e.score} / ${e.total} correct`, `${TOPIC_NAMES[e.topic]} · ${fmtDateTime(e.date)}`,
+      `Time: ${formatDuration(e.seconds)}${e.timedOut ? " (timed out)" : ""}`];
+    if (clientX == null) showTipAt(focusDot, pctOf(e) + "%", lines);
+    else showTip(clientX, clientY, pctOf(e) + "%", lines);
+  };
+  const hide = () => { cross.setAttribute("visibility", "hidden"); focusDot.setAttribute("visibility", "hidden"); hideTip(); };
+
+  const hit = svgEl("rect", { x: m.l - 10, y: m.t, width: iw + 20, height: ih, fill: "transparent" });
+  hit.addEventListener("pointermove", ev => {
+    const r = svg.getBoundingClientRect();
+    const px = ev.clientX - r.left;
+    const i = n === 1 ? 0 : Math.max(0, Math.min(n - 1, Math.round(((px - m.l) / iw) * (n - 1))));
+    show(i, ev.clientX, ev.clientY);
+  });
+  hit.addEventListener("pointerleave", hide);
+  svg.append(hit);
+
+  svg.addEventListener("focus", () => show(active));
+  svg.addEventListener("blur", hide);
+  svg.addEventListener("keydown", ev => {
+    if (ev.key === "ArrowLeft") { ev.preventDefault(); show(Math.max(0, active - 1)); }
+    if (ev.key === "ArrowRight") { ev.preventDefault(); show(Math.min(n - 1, active + 1)); }
+  });
+
+  box.append(svg);
+}
+
+/* ---------- bar chart: accuracy by topic ---------- */
+function renderTopicBars(h) {
+  const box = $("topicBars");
+  box.innerHTML = "";
+  topicStats(h).forEach(t => {
+    const name = el("div", { class: "bar-name" }, TOPIC_NAMES[t.topic],
+      el("span", { class: "small muted" }, t.quizzes ? nQuizzes(t.quizzes) : "Not played"));
+    const track = el("div", { class: "bar-track" });
+    if (t.quizzes) {
+      track.append(el("div", { class: "bar", style: `width:${Math.max(t.accuracy, 1)}%` }));
+      track.append(el("span", { class: "bar-value", style: `left:calc(${t.accuracy}% + 6px)` }, t.accuracy + "%"));
+      attachTip(track, t.accuracy + "%", [`${TOPIC_NAMES[t.topic]}: ${t.correct} of ${t.questions} correct`,
+        `Best quiz ${t.best}% · average ${t.avg}%`]);
+    } else {
+      track.append(el("span", { class: "bar-value muted", style: "left:6px;font-weight:400" }, "—"));
+    }
+    box.append(el("div", { class: "bar-row" }, name, track));
+  });
+}
+
+/* ---------- heatmap: activity per day ---------- */
+function renderHeatmap(h) {
+  const box = $("heatmap");
+  box.innerHTML = "";
+  const WEEKS = 20;
+
+  const counts = {};
+  h.forEach(e => { const k = new Date(e.date).toDateString(); counts[k] = (counts[k] || 0) + 1; });
+  const level = c => (c === 0 ? 0 : c === 1 ? 1 : c === 2 ? 2 : c <= 4 ? 3 : 4);
+
+  // Start on the Monday WEEKS-1 weeks before this week's Monday
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const start = new Date(today);
+  start.setDate(today.getDate() - ((today.getDay() + 6) % 7) - (WEEKS - 1) * 7);
+
+  const grid = el("div", { class: "heatmap" });
+  ["Mon", "", "Wed", "", "Fri", "", "Sun"].forEach(d => grid.append(el("div", { class: "heat-label" }, d)));
+
+  for (let i = 0; i < WEEKS * 7; i++) {
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    if (d > today) { grid.append(el("div", { class: "heat-cell future" })); continue; }
+    const c = counts[d.toDateString()] || 0;
+    const cell = el("div", { class: "heat-cell", style: `background:var(--heat-${level(c)})` });
+    attachTip(cell, c ? nQuizzes(c) : "No quizzes", [fmtDay(d)]);
+    grid.append(cell);
+  }
+
+  const legend = el("div", { class: "heat-legend" }, "Less",
+    [0, 1, 2, 3, 4].map(l => el("span", { class: "heat-cell", style: `background:var(--heat-${l})` })), "More");
+  const activeDays = Object.keys(counts).filter(k => new Date(k) >= start).length;
+  box.append(grid, el("div", { class: "heat-foot" }, legend,
+    el("div", { class: "heat-legend" }, `${plural(activeDays, "active day")} in this window`)));
+}
+
+/* ---------- insights ---------- */
+function renderInsights(h) {
+  const box = $("insights");
+  box.innerHTML = "";
+  const item = (icon, title, text) => box.append(el("li", {},
+    el("span", { class: "i-icon", "aria-hidden": "true" }, icon),
+    el("div", {}, el("div", { style: "font-weight:600" }, title), el("div", { class: "muted" }, text))));
+
+  if (!h.length) { box.append(emptyState("Insights appear after your first quiz.")); return; }
+
+  const stats = topicStats(h);
+  const played = stats.filter(t => t.quizzes);
+  const weakest = [...played].sort((a, b) => a.accuracy - b.accuracy)[0];
+  const strongest = [...played].sort((a, b) => b.accuracy - a.accuracy)[0];
+  const unplayed = stats.filter(t => !t.quizzes);
+
+  if (weakest && weakest.accuracy < 80) {
+    item("🎯", `Focus next: ${TOPIC_NAMES[weakest.topic]}`,
+      `${weakest.accuracy}% accuracy over ${plural(weakest.questions, "question")}. A few more rounds here will lift your overall score most.`);
+  } else {
+    item("🚀", "Everything looks strong", "All played topics are at 80% or higher. Try a shorter time limit to push yourself.");
+  }
+  if (strongest && played.length > 1 && strongest !== weakest) {
+    item("🏆", `Strongest topic: ${TOPIC_NAMES[strongest.topic]}`, `${strongest.accuracy}% accuracy, best quiz ${strongest.best}%.`);
+  }
+  if (unplayed.length) {
+    item("🧭", "Not tried yet", unplayed.map(t => TOPIC_NAMES[t.topic]).join(", ") + " — give it a go to unlock All-rounder.");
+  }
+
+  const timedOut = h.filter(e => e.timedOut).length;
+  if (timedOut) item("⏱️", "Watch the clock", `Time ran out on ${nQuizzes(timedOut)}. Try a longer limit or skip hard questions.`);
+
+  const skipped = h.reduce((s, e) => s + (e.answers || []).filter(a => a.skipped).length, 0);
+  if (skipped) item("⏭️", "Skipped questions", `${plural(skipped, "question")} skipped or left unanswered — they count as wrong.`);
+
+  const fastest = [...h].filter(e => e.score === e.total && e.seconds).sort((a, b) => a.seconds - b.seconds)[0];
+  if (fastest) item("⚡", "Fastest perfect quiz", `${TOPIC_NAMES[fastest.topic]} in ${formatDuration(fastest.seconds)} on ${fmtDate(fastest.date)}.`);
+}
+
+/* ---------- tables ---------- */
+function buildTable(headers, rows) {
+  const thead = el("thead", {}, el("tr", {}, headers.map(hd => el("th", { class: hd.num ? "num" : "" }, hd.label))));
+  const tbody = el("tbody", {}, rows.map(r => el("tr", {}, r.map((c, i) =>
+    el("td", { class: (headers[i].num ? "num " : "") + (headers[i].wrap ? "wrap" : "") }, c)))));
+  return el("table", {}, thead, tbody);
+}
+
+function renderTopicTable(h) {
+  const box = $("topicTable");
+  box.innerHTML = "";
+  const rows = topicStats(h).map(t => [
+    TOPIC_NAMES[t.topic],
+    t.quizzes,
+    t.questions,
+    t.correct,
+    t.quizzes ? t.accuracy + "%" : "—",
+    t.quizzes ? t.best + "%" : "—",
+    t.quizzes ? formatDuration(t.avgSeconds) : "—",
+    t.last ? fmtDate(t.last.date) : "—",
+    statusPill(statusFor(t.accuracy, t.quizzes > 0))
+  ]);
+  box.append(buildTable([
+    { label: "Topic" }, { label: "Quizzes", num: true }, { label: "Questions", num: true }, { label: "Correct", num: true },
+    { label: "Accuracy", num: true }, { label: "Best", num: true }, { label: "Avg time", num: true },
+    { label: "Last played" }, { label: "Status" }
+  ], rows));
+}
+
+function renderHistoryTable(h) {
+  const box = $("historyTable");
+  const more = $("historyMore");
+  box.innerHTML = "";
+  more.innerHTML = "";
+  if (!h.length) { $("historyMeta").textContent = "Newest first."; box.append(emptyState("No quizzes in this view yet.")); return; }
+
+  const LIMIT = 10;
+  const all = [...h].reverse();
+  const shown = historyExpanded ? all : all.slice(0, LIMIT);
+  $("historyMeta").textContent = `Newest first · showing ${shown.length} of ${all.length}.`;
+
+  const rows = shown.map(e => {
+    const notes = [];
+    if (e.score === e.total) notes.push("Perfect");
+    if (e.timedOut) notes.push("Timed out");
+    const skipped = (e.answers || []).filter(a => a.skipped).length;
+    if (skipped) notes.push(`${skipped} skipped`);
+    if (e.reviewed) notes.push(`${e.reviewed} marked`);
+    return [fmtDateTime(e.date), TOPIC_NAMES[e.topic], `${e.score} / ${e.total}`, pctOf(e) + "%",
+      formatDuration(e.seconds), notes.join(" · ") || "—"];
+  });
+  box.append(buildTable([
+    { label: "Date" }, { label: "Topic" }, { label: "Score", num: true }, { label: "%", num: true },
+    { label: "Time", num: true }, { label: "Notes" }
+  ], rows));
+
+  if (all.length > LIMIT) {
+    more.append(el("button", { class: "btn btn-secondary btn-small", onclick: () => { historyExpanded = !historyExpanded; renderHistoryTable(h); } },
+      historyExpanded ? "Show fewer" : `Show all ${all.length}`));
+  }
+}
+
+function renderMissed(h) {
+  const box = $("missedTable");
+  box.innerHTML = "";
+  const agg = {};
+  h.forEach(e => (e.answers || []).forEach(a => {
+    const k = e.topic + "|" + a.q;
+    agg[k] = agg[k] || { q: a.q, topic: e.topic, attempts: 0, missed: 0 };
+    agg[k].attempts++;
+    if (!a.correct) agg[k].missed++;
+  }));
+  const rows = Object.values(agg).filter(r => r.missed > 0)
+    .sort((a, b) => b.missed - a.missed || b.missed / b.attempts - a.missed / a.attempts)
+    .slice(0, 8);
+  if (!rows.length) {
+    box.append(emptyState(h.length ? "No missed questions in this view — nice work! 🎉" : "No quizzes in this view yet."));
+    return;
+  }
+  box.append(buildTable([
+    { label: "Question", wrap: true }, { label: "Topic" }, { label: "Missed", num: true }, { label: "Miss rate", num: true }
+  ], rows.map(r => [r.q, TOPIC_NAMES[r.topic], `${r.missed} / ${r.attempts}`, Math.round((r.missed / r.attempts) * 100) + "%"])));
+}
+
+/* ---------- filters ---------- */
+function setupFilter(id, key) {
+  $(id).querySelectorAll("button").forEach(btn => {
+    btn.onclick = () => {
+      dashFilter[key] = btn.dataset.value;
+      $(id).querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b === btn ? "true" : "false"));
+      historyExpanded = false;
+      updateDashboardProgress();
+    };
+  });
+}
+setupFilter("rangeFilter", "range");
+setupFilter("topicFilter", "topic");
+
+/* Re-draw the line chart to fit its card on resize */
+let resizeTimer;
+window.addEventListener("resize", () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    if (currentUser) renderScoreChart(filterHistory(getProgress(currentUser.username).history));
+  }, 150);
+});
 
 /* Initialize (runs after every element and function above exists) */
 populateLoginUsers();
