@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MathLearn – Modern UI Base</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Modern UI Styles -->
+  <style>
+    :root {
+      --bg: #050816;
+      --card: #0b1120;
+      --accent: #3b82f6;
+      --accent2: #22c55e;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --danger: #f87171;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.7);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Inter", sans-serif;
+    }
+
+    body {
+      background: radial-gradient(circle at top, #1e293b 0, #020617 45%, #000 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    .app {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      backdrop-filter: blur(18px);
+      margin-bottom: 26px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.7);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .logo-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 0, #3b82f6, #22c55e);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      color: #0b1120;
+    }
+
+    .logo-text {
+      font-weight: 600;
+      letter-spacing: 0.03em;
+      font-size: 18px;
+    }
+
+    /* Sections */
+    section {
+      margin-bottom: 24px;
+      padding: 22px 20px;
+      border-radius: var(--radius-lg);
+      background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(15, 23, 42, 0.8));
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      box-shadow: var(--shadow-soft);
+    }
+
+    section h2 {
+      font-size: 20px;
+      margin-bottom: 6px;
+    }
+
+    section .subheading {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 18px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      border: 1px solid rgba(55, 65, 81, 0.8);
+      font-size: 13px;
+    }
+
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .card-meta {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    /* Forms */
+    label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin: 8px 0 4px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .status {
+      font-size: 12px;
+      margin-top: 8px;
+      min-height: 16px;
+    }
+    .status.ok  { color: var(--accent2); }
+    .status.err { color: var(--danger); }
+
+    /* Buttons */
+    .btn {
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 13px;
+      border: none;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: 0.2s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #0b1120;
+      font-weight: 600;
+      box-shadow: 0 10px 25px rgba(37, 99, 235, 0.6);
+    }
+
+    .btn-secondary {
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.8);
+    }
+
+    /* Dashboard */
+    .user-head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: #0b1120;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #dashProgress {
+      font-size: 12px;
+      margin-top: 10px;
+      line-height: 1.6;
+    }
+
+    /* Quiz */
+    .quiz-top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    #quizQuestion {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .option {
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .option:hover {
+      border-color: var(--accent);
+      background: rgba(59, 130, 246, 0.12);
+    }
+
+    #reviewList {
+      margin: 6px 0 0 18px;
+      font-size: 12px;
+    }
+
+    /* Footer */
+    footer {
+      margin-top: 24px;
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app">
+
+    <!-- HEADER -->
+    <header>
+      <div class="logo">
+        <div class="logo-icon">∑</div>
+        <div class="logo-text">MathLearn</div>
+      </div>
+      <span style="font-size:12px;color:var(--muted);">Modern UI Base</span>
+    </header>
+
+    <!-- ACCOUNTS -->
+    <section id="accounts">
+      <h2>Accounts</h2>
+      <div class="subheading">Create an account or log in with your PIN or backup PIN.</div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="card-title">Create account</div>
+          <div class="card-meta">Both PINs must be exactly 4 digits.</div>
+
+          <label for="newUsername">Username</label>
+          <input id="newUsername" autocomplete="off" />
+
+          <label for="newPin">PIN</label>
+          <input id="newPin" type="password" inputmode="numeric" maxlength="4" />
+
+          <label for="newBackupPin">Backup PIN</label>
+          <input id="newBackupPin" type="password" inputmode="numeric" maxlength="4" />
+
+          <div class="row">
+            <button class="btn btn-primary" onclick="createAccount()">Create account</button>
+          </div>
+          <div id="createStatus" class="status"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Log in</div>
+          <div class="card-meta">Enter either your PIN or your backup PIN.</div>
+
+          <label for="loginUser">Account</label>
+          <select id="loginUser"></select>
+
+          <label for="loginPin">PIN</label>
+          <input id="loginPin" type="password" inputmode="numeric" maxlength="4" />
+
+          <label for="loginBackupPin">Backup PIN</label>
+          <input id="loginBackupPin" type="password" inputmode="numeric" maxlength="4" />
+
+          <div class="row">
+            <button class="btn btn-primary" onclick="login()">Log in</button>
+          </div>
+          <div id="loginStatus" class="status"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" style="display:none;">
+      <h2>Dashboard</h2>
+      <div class="subheading">Your progress and quizzes.</div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="user-head">
+            <div id="dashAvatar" class="avatar"></div>
+            <div>
+              <div id="dashName" class="card-title"></div>
+              <div id="dashTag" class="card-meta"></div>
+            </div>
+          </div>
+          <p id="dashProgress"></p>
+          <div class="row">
+            <button class="btn btn-secondary" onclick="logout()">Log out</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Start a quiz</div>
+
+          <label for="quizTopic">Topic</label>
+          <select id="quizTopic">
+            <option value="algebra">Algebra</option>
+            <option value="geometry">Geometry</option>
+            <option value="calculus">Calculus</option>
+          </select>
+
+          <label for="quizCount">Number of questions</label>
+          <select id="quizCount">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3" selected>3</option>
+          </select>
+
+          <label for="quizTime">Time limit (minutes)</label>
+          <select id="quizTime">
+            <option value="1">1</option>
+            <option value="2" selected>2</option>
+            <option value="5">5</option>
+          </select>
+
+          <div class="row">
+            <button class="btn btn-primary" onclick="startQuiz()">Start quiz</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Active quiz -->
+      <div id="quizBox" class="card" style="display:none; margin-top:16px;">
+        <div class="quiz-top">
+          <span id="quizProgress"></span>
+          <span id="quizTimer"></span>
+        </div>
+        <div id="quizQuestion"></div>
+        <div id="quizOptions"></div>
+        <div class="row">
+          <button class="btn btn-secondary" onclick="markForReview()">Mark for review</button>
+          <button class="btn btn-secondary" onclick="nextQuestion()">Skip</button>
+          <button class="btn btn-secondary" onclick="endQuiz()">End quiz</button>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="quizResults" class="card" style="display:none; margin-top:16px;">
+        <div class="card-title">Results</div>
+        <p id="quizScore"></p>
+      </div>
+
+      <!-- Marked for review -->
+      <div id="reviewBox" class="card" style="display:none; margin-top:16px;">
+        <div class="card-title">Marked for review</div>
+        <ul id="reviewList"></ul>
+      </div>
+    </section>
+
+    <footer>
+      <span>MathLearn</span>
+      <span>Progress is saved in this browser.</span>
+    </footer>
+  </div>
+
+<script>
+/* ---------------------------------------------------------
+   CELL 2 — ACCOUNT SYSTEM (PIN + BACKUP PIN)
+   --------------------------------------------------------- */
+
+let accounts = JSON.parse(localStorage.getItem("mathlearn_accounts") || "[]");
+let currentUser = null;
+
+const PIN_PATTERN = /^\d{4}$/;
+
+/* Save accounts to localStorage */
+function saveAccounts() {
+  localStorage.setItem("mathlearn_accounts", JSON.stringify(accounts));
+  populateLoginUsers();
+}
+
+/* Load account list into dropdown */
+function populateLoginUsers() {
+  const sel = document.getElementById("loginUser");
+  sel.innerHTML = "";
+
+  if (accounts.length === 0) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = "No accounts yet";
+    sel.appendChild(opt);
+    return;
+  }
+
+  accounts.forEach(acc => {
+    const opt = document.createElement("option");
+    opt.value = acc.username;
+    opt.textContent = acc.username;
+    sel.appendChild(opt);
+  });
+}
+
+/* Create a new account */
+function createAccount() {
+  const username = document.getElementById("newUsername").value.trim();
+  const pin = document.getElementById("newPin").value.trim();
+  const backupPin = document.getElementById("newBackupPin").value.trim();
+  const status = document.getElementById("createStatus");
+
+  if (!username || !PIN_PATTERN.test(pin) || !PIN_PATTERN.test(backupPin)) {
+    status.textContent = "Enter username, 4-digit PIN, and 4-digit backup PIN.";
+    status.className = "status err";
+    return;
+  }
+
+  if (accounts.some(a => a.username.toLowerCase() === username.toLowerCase())) {
+    status.textContent = "Username already exists.";
+    status.className = "status err";
+    return;
+  }
+
+  accounts.push({ username, pin, backupPin });
+  saveAccounts();
+
+  status.textContent = "Account created successfully.";
+  status.className = "status ok";
+
+  document.getElementById("newUsername").value = "";
+  document.getElementById("newPin").value = "";
+  document.getElementById("newBackupPin").value = "";
+
+  // Preselect the new account in the login form
+  document.getElementById("loginUser").value = username;
+}
+
+/* Login using PIN or backup PIN */
+function login() {
+  const username = document.getElementById("loginUser").value;
+  const pin = document.getElementById("loginPin").value.trim();
+  const backupPin = document.getElementById("loginBackupPin").value.trim();
+  const status = document.getElementById("loginStatus");
+
+  const acc = accounts.find(a => a.username === username);
+  if (!acc) {
+    status.textContent = "No such account.";
+    status.className = "status err";
+    return;
+  }
+
+  if ((pin && pin === acc.pin) || (backupPin && backupPin === acc.backupPin)) {
+    currentUser = acc;
+    status.textContent = "";
+    showDashboard();
+  } else {
+    status.textContent = "Incorrect PIN or backup PIN.";
+    status.className = "status err";
+  }
+}
+
+/* Logout */
+function logout() {
+  stopQuiz();
+  currentUser = null;
+  document.getElementById("dashboard").style.display = "none";
+  document.getElementById("accounts").style.display = "block";
+
+  document.getElementById("quizResults").style.display = "none";
+  document.getElementById("reviewBox").style.display = "none";
+
+  document.getElementById("loginPin").value = "";
+  document.getElementById("loginBackupPin").value = "";
+  document.getElementById("loginStatus").textContent = "";
+}
+</script>
+
+<script>
+/* ---------------------------------------------------------
+   CELL 3 — SAVED PROGRESS ENGINE (PER USER)
+   --------------------------------------------------------- */
+
+function defaultProgress() {
+  return {
+    totalQuizzes: 0,
+    correctAnswers: 0,
+    totalQuestions: 0,
+    accuracy: 0,
+    streak: 0,
+    lastQuizDate: null,
+    weakAreas: [],
+    level: 0
+  };
+}
+
+/* Load progress for a specific user */
+function getProgress(username) {
+  const data = JSON.parse(localStorage.getItem("mathlearn_progress_" + username) || "null");
+  // Merge with defaults so older saves missing newer fields still work
+  return Object.assign(defaultProgress(), data || {});
+}
+
+/* Save progress for a specific user */
+function saveProgress(username, progress) {
+  localStorage.setItem("mathlearn_progress_" + username, JSON.stringify(progress));
+}
+
+/* Apply progress updates after each quiz */
+function applyQuizProgress(score, totalQuestions, topic) {
+  if (!currentUser || totalQuestions === 0) return;
+
+  const username = currentUser.username;
+  const p = getProgress(username);
+
+  // Update totals
+  p.totalQuizzes++;
+  p.correctAnswers += score;
+  p.totalQuestions += totalQuestions;
+
+  // Accuracy across every question ever answered
+  p.accuracy = Math.round((p.correctAnswers / p.totalQuestions) * 100);
+
+  // Streak: +1 for consecutive days, reset to 1 after a missed day
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  if (p.lastQuizDate === today.toDateString()) {
+    // Already counted today
+  } else if (p.lastQuizDate === yesterday.toDateString()) {
+    p.streak++;
+  } else {
+    p.streak = 1;
+  }
+  p.lastQuizDate = today.toDateString();
+
+  // Weak areas: add on a poor score, remove once the topic is passed
+  if (score < totalQuestions / 2) {
+    if (!p.weakAreas.includes(topic)) p.weakAreas.push(topic);
+  } else {
+    p.weakAreas = p.weakAreas.filter(t => t !== topic);
+  }
+
+  // Leveling system
+  if (p.accuracy > 70 && p.totalQuizzes >= 5) p.level = Math.max(p.level, 1);
+  if (p.accuracy > 80 && p.totalQuizzes >= 10) p.level = Math.max(p.level, 2);
+  if (p.accuracy > 90 && p.totalQuizzes >= 20) p.level = Math.max(p.level, 3);
+
+  saveProgress(username, p);
+  updateDashboardProgress();
+}
+</script>
+
+<script>
+/* ---------------------------------------------------------
+   CELL 4 — QUIZ ENGINE (RANDOMIZED + TIMER + REVIEW)
+   --------------------------------------------------------- */
+
+/* QUIZ BANK — multiple topics */
+const quizBank = {
+  algebra: [
+    { q: "Solve: x² + 5x + 6 = 0", options: ["x=-2,-3", "x=2,3", "x=-1,-6", "No real roots"], answer: 0 },
+    { q: "Derivative of x²?", options: ["x", "2x", "x²/2", "2"], answer: 1 },
+    { q: "Simplify: 2(x+3)", options: ["2x+3", "2x+6", "x+6", "6x"], answer: 1 }
+  ],
+  geometry: [
+    { q: "Area of a circle?", options: ["2πr", "πr²", "πr", "r²"], answer: 1 },
+    { q: "Sum of angles in triangle?", options: ["90°", "180°", "360°", "270°"], answer: 1 },
+    { q: "A square has 4 equal…", options: ["Angles", "Sides", "Diagonals", "Curves"], answer: 1 }
+  ],
+  calculus: [
+    { q: "Limit of sin(x)/x as x→0?", options: ["0", "1", "∞", "Doesn't exist"], answer: 1 },
+    { q: "Derivative of ln(x)?", options: ["1/x", "x", "ln(x)", "x²"], answer: 0 },
+    { q: "Integral of 1 dx?", options: ["x", "1", "x²", "0"], answer: 0 }
+  ]
+};
+
+/* QUIZ STATE */
+let quiz = [];
+let quizTopic = null;
+let quizActive = false;
+let current = 0;
+let score = 0;
+let reviewList = [];
+let timer;
+let timeLeft = 0;
+
+/* Unbiased Fisher–Yates shuffle */
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* Start Quiz */
+function startQuiz() {
+  if (!currentUser) {
+    alert("Please log in first.");
+    return;
+  }
+
+  // Reset state
+  current = 0;
+  score = 0;
+  reviewList = [];
+  document.getElementById("reviewBox").style.display = "none";
+  document.getElementById("reviewList").innerHTML = "";
+
+  // Read settings (topic is locked in for the whole quiz)
+  quizTopic = document.getElementById("quizTopic").value;
+  const count = parseInt(document.getElementById("quizCount").value, 10);
+  const minutes = parseInt(document.getElementById("quizTime").value, 10);
+
+  // Randomize questions
+  quiz = shuffle(quizBank[quizTopic]).slice(0, count);
+  quizActive = true;
+
+  // Timer
+  timeLeft = minutes * 60;
+  startTimer();
+
+  // Show quiz box
+  document.getElementById("quizBox").style.display = "block";
+  document.getElementById("quizResults").style.display = "none";
+
+  loadQuestion();
+}
+
+function renderTimer() {
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  document.getElementById("quizTimer").textContent =
+    `Time left: ${m}:${s.toString().padStart(2, "0")}`;
+}
+
+/* Timer countdown */
+function startTimer() {
+  clearInterval(timer);
+  renderTimer();
+  timer = setInterval(() => {
+    timeLeft--;
+    renderTimer();
+    if (timeLeft <= 0) endQuiz();
+  }, 1000);
+}
+
+/* Stop the quiz without recording a result (e.g. on logout) */
+function stopQuiz() {
+  clearInterval(timer);
+  quizActive = false;
+  document.getElementById("quizBox").style.display = "none";
+}
+
+/* Load question */
+function loadQuestion() {
+  const q = quiz[current];
+
+  document.getElementById("quizQuestion").textContent = q.q;
+  document.getElementById("quizProgress").textContent =
+    `Question ${current + 1} of ${quiz.length}`;
+
+  const optionsDiv = document.getElementById("quizOptions");
+  optionsDiv.innerHTML = "";
+
+  q.options.forEach((opt, index) => {
+    const btn = document.createElement("div");
+    btn.className = "option";
+    btn.textContent = opt;
+    btn.onclick = () => selectOption(index);
+    optionsDiv.appendChild(btn);
+  });
+}
+
+/* Select answer */
+function selectOption(index) {
+  if (!quizActive) return;
+  if (index === quiz[current].answer) score++;
+  nextQuestion();
+}
+
+/* Next question */
+function nextQuestion() {
+  if (!quizActive) return;
+  current++;
+  if (current < quiz.length) {
+    loadQuestion();
+  } else {
+    endQuiz();
+  }
+}
+
+/* Mark question for review */
+function markForReview() {
+  if (!quizActive) return;
+
+  const entry = `Q${current + 1}: ${quiz[current].q}`;
+  if (reviewList.includes(entry)) return;
+  reviewList.push(entry);
+
+  const list = document.getElementById("reviewList");
+  const li = document.createElement("li");
+  li.textContent = entry;
+  list.appendChild(li);
+  document.getElementById("reviewBox").style.display = "block";
+}
+
+/* End quiz */
+function endQuiz() {
+  if (!quizActive) return; // guard against double-ending (timer + last answer)
+  stopQuiz();
+
+  document.getElementById("quizResults").style.display = "block";
+  document.getElementById("quizScore").innerHTML =
+    `You scored <strong>${score}</strong> out of <strong>${quiz.length}</strong>.`;
+
+  // Save progress (from Cell 3)
+  applyQuizProgress(score, quiz.length, quizTopic);
+}
+</script>
+
+<script>
+/* ---------------------------------------------------------
+   CELL 5 — DASHBOARD INTEGRATION (UI + PROGRESS DISPLAY)
+   --------------------------------------------------------- */
+
+/* Build dashboard UI when user logs in */
+function showDashboard() {
+  document.getElementById("dashboard").style.display = "block";
+  document.getElementById("accounts").style.display = "none";
+
+  // Basic user info
+  document.getElementById("dashName").textContent = currentUser.username;
+  document.getElementById("dashAvatar").textContent =
+    currentUser.username.charAt(0).toUpperCase();
+
+  // Load progress
+  updateDashboardProgress();
+}
+
+/* Update dashboard with saved progress */
+function updateDashboardProgress() {
+  if (!currentUser) return;
+
+  const p = getProgress(currentUser.username);
+
+  // Tag under username
+  document.getElementById("dashTag").textContent =
+    `Level ${p.level} • Accuracy ${p.accuracy}% • Streak ${p.streak} days`;
+
+  // Detailed progress section
+  document.getElementById("dashProgress").innerHTML = `
+    <strong>Total quizzes:</strong> ${p.totalQuizzes}<br>
+    <strong>Correct answers:</strong> ${p.correctAnswers} / ${p.totalQuestions}<br>
+    <strong>Accuracy:</strong> ${p.accuracy}%<br>
+    <strong>Streak:</strong> ${p.streak} days<br>
+    <strong>Level:</strong> ${p.level}<br>
+    <strong>Weak areas:</strong> ${p.weakAreas.join(", ") || "None"}
+  `;
+}
+
+/* Initialize (runs after every element and function above exists) */
+populateLoginUsers();
+</script>
+</body>
+</html>
