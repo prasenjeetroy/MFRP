@@ -37,6 +37,7 @@
       --critical: #d03b3b;
       --delta-up: #34d399;
       --delta-down: #f87171;
+      --star: #fab219;
     }
 
     * {
@@ -51,6 +52,8 @@
       color: var(--text);
       min-height: 100vh;
     }
+
+    body.modal-open { overflow: hidden; }
 
     .app {
       max-width: 1240px;
@@ -118,13 +121,18 @@
       margin-bottom: 18px;
     }
 
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 28px 0 4px;
+    }
+    .section-sub { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+
     .grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       gap: 16px;
     }
-
-    .stack > * + * { margin-top: 16px; }
 
     /* Cards */
     .card {
@@ -222,10 +230,13 @@
       box-shadow: 0 12px 28px rgba(15, 23, 42, 0.8);
     }
 
-    /* ---------- Dashboard: profile ---------- */
+    .muted { color: var(--muted); }
+    .small { font-size: 11px; }
+
+    /* ---------- Profile ---------- */
     .profile {
       display: grid;
-      grid-template-columns: minmax(220px, 1.2fr) minmax(220px, 1.4fr) minmax(160px, 0.8fr) auto;
+      grid-template-columns: minmax(200px, 1.1fr) minmax(220px, 1.6fr) minmax(110px, 0.6fr) minmax(110px, 0.6fr) auto;
       gap: 20px;
       align-items: center;
     }
@@ -276,15 +287,79 @@
       height: 100%;
       background: var(--series-1);
       border-radius: 999px;
+      transition: width 0.6s ease;
     }
 
-    .muted { color: var(--muted); }
-    .small { font-size: 11px; }
+    /* ---------- Worlds & level map ---------- */
+    .worlds {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 16px;
+    }
+
+    .world {
+      border-top: 3px solid var(--world);
+      display: flex;
+      flex-direction: column;
+    }
+
+    .world-head { display: flex; align-items: center; gap: 12px; }
+    .world-icon {
+      width: 44px;
+      height: 44px;
+      flex: none;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      background: color-mix(in srgb, var(--world) 22%, transparent);
+    }
+    .world-name { font-size: 15px; font-weight: 700; }
+
+    .path { display: flex; align-items: flex-start; margin: 16px 0 12px; }
+    .node-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 44px; flex: none; }
+    .node {
+      width: 40px;
+      height: 40px;
+      border-radius: 999px;
+      border: 2px solid var(--axis);
+      background: #0f172a;
+      color: var(--text);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .node:hover:not(:disabled) { transform: scale(1.08); }
+    .node.boss { border-radius: 12px; }
+    .node.cleared { background: var(--world); border-color: var(--world); color: #0b1120; }
+    .node.current { border-color: var(--world); animation: pulse 1.8s infinite; }
+    .node:disabled { opacity: 0.45; cursor: not-allowed; }
+    .n-stars { font-size: 10px; color: var(--star); letter-spacing: 1px; min-height: 12px; }
+    .n-stars .off { color: var(--axis); }
+    .link { flex: 1; min-width: 6px; height: 2px; margin-top: 20px; background: var(--axis); }
+    .link.done { background: var(--world); }
+
+    .world-foot {
+      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    @keyframes pulse {
+      0%   { box-shadow: 0 0 0 0 color-mix(in srgb, var(--world) 65%, transparent); }
+      70%  { box-shadow: 0 0 0 10px transparent; }
+      100% { box-shadow: 0 0 0 0 transparent; }
+    }
 
     /* Achievements */
     .badges {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
       gap: 10px;
     }
     .badge {
@@ -300,54 +375,139 @@
     .badge .b-desc { font-size: 11px; color: var(--muted); }
     .badge.locked { opacity: 0.45; filter: grayscale(1); }
 
-    /* ---------- Practice / quiz panel ---------- */
-    .practice {
-      display: grid;
-      grid-template-columns: minmax(220px, 300px) 1fr;
-      gap: 16px;
+    /* ---------- Quiz modal ---------- */
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 40px 16px;
+      overflow-y: auto;
+      background: rgba(2, 6, 23, 0.8);
+      backdrop-filter: blur(6px);
+    }
+    .modal.open { display: flex; }
+    .modal-card {
+      width: 100%;
+      max-width: 660px;
+      background: var(--card);
+      border: 1px solid rgba(148, 163, 184, 0.3);
+      border-top: 4px solid var(--world, var(--accent));
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
     }
 
-    .quiz-top {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: var(--muted);
-      margin-bottom: 10px;
+    .quiz-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .quiz-head .title { font-weight: 700; font-size: 15px; }
+    .timer-pill {
+      font-variant-numeric: tabular-nums;
+      font-size: 13px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.35);
+      white-space: nowrap;
     }
+    .timer-pill.low { border-color: var(--critical); color: #fca5a5; }
+
+    .q-progress { height: 6px; border-radius: 999px; background: var(--meter-track); overflow: hidden; margin-bottom: 6px; }
+    .q-progress > div { height: 100%; background: var(--world, var(--series-1)); transition: width 0.3s ease; }
 
     #quizQuestion {
-      font-size: 17px;
+      font-size: 19px;
       font-weight: 600;
-      margin-bottom: 12px;
+      margin: 18px 0 14px;
+      line-height: 1.4;
     }
 
     .option {
-      padding: 10px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      text-align: left;
+      padding: 12px 14px;
       margin-bottom: 8px;
-      border-radius: 8px;
+      border-radius: 10px;
       border: 1px solid rgba(148, 163, 184, 0.35);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text);
+      font-size: 15px;
       cursor: pointer;
       transition: 0.15s;
     }
-
-    .option:hover, .option:focus-visible {
+    .option:hover:not(:disabled), .option:focus-visible {
       border-color: var(--accent);
       background: rgba(59, 130, 246, 0.12);
       outline: none;
     }
+    .option:disabled { cursor: default; }
+    .option.correct { border-color: var(--good); background: rgba(12, 163, 12, 0.18); }
+    .option.wrong { border-color: var(--critical); background: rgba(208, 59, 59, 0.18); }
+    .option .mark { font-weight: 700; font-size: 13px; }
 
-    #reviewList {
-      margin: 6px 0 0 18px;
+    .result-hero { text-align: center; padding: 6px 0 4px; }
+    .stars { font-size: 46px; letter-spacing: 8px; margin: 4px 0; }
+    .stars .star { display: inline-block; color: var(--axis); }
+    .stars .star.on { color: var(--star); animation: pop 0.5s ease both; }
+    .stars .star.on:nth-child(2) { animation-delay: 0.25s; }
+    .stars .star.on:nth-child(3) { animation-delay: 0.5s; }
+    @keyframes pop {
+      0%   { transform: scale(0) rotate(-40deg); opacity: 0; }
+      70%  { transform: scale(1.35) rotate(8deg); opacity: 1; }
+      100% { transform: scale(1) rotate(0); opacity: 1; }
+    }
+    .result-title { font-size: 22px; font-weight: 700; }
+    .xp-box {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin: 14px 0 6px;
+    }
+    .chip {
       font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+    .chip strong { font-size: 13px; }
+    .banner {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(59, 130, 246, 0.12);
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      font-size: 13px;
+      text-align: center;
     }
 
-    .answer-list { list-style: none; margin-top: 12px; }
+    .answer-list { list-style: none; margin-top: 14px; }
     .answer-list li {
       display: flex;
       gap: 10px;
       padding: 8px 0;
       border-top: 1px solid var(--grid);
       font-size: 12px;
+    }
+    #reviewList { margin: 6px 0 0 18px; font-size: 12px; }
+
+    .confetti {
+      position: fixed;
+      top: -14px;
+      width: 8px;
+      height: 14px;
+      z-index: 60;
+      pointer-events: none;
+      border-radius: 2px;
+      animation: fall linear forwards;
+    }
+    @keyframes fall { to { transform: translateY(110vh) rotate(760deg); } }
+
+    @media (prefers-reduced-motion: reduce) {
+      .node.current, .stars .star.on { animation: none; }
     }
 
     /* ---------- Filters ---------- */
@@ -356,11 +516,13 @@
       flex-wrap: wrap;
       gap: 14px 22px;
       align-items: center;
-      margin: 26px 0 16px;
+      margin: 10px 0 16px;
     }
     .filter-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .filter-group select { width: auto; padding: 6px 10px; border-radius: 999px; font-size: 12px; }
     .seg {
       display: inline-flex;
+      flex-wrap: wrap;
       border: 1px solid rgba(148, 163, 184, 0.35);
       border-radius: 999px;
       overflow: hidden;
@@ -386,7 +548,6 @@
     .kpis {
       display: grid;
       grid-template-columns: minmax(220px, 1.3fr) repeat(4, minmax(140px, 1fr));
-      grid-auto-rows: auto;
       gap: 12px;
     }
     .kpi-hero { grid-row: span 2; display: flex; flex-direction: column; justify-content: center; }
@@ -411,11 +572,11 @@
     .tick { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
     .end-label { fill: var(--text); font-size: 12px; font-weight: 600; }
 
-    /* Topic bars */
-    .bars { display: flex; flex-direction: column; gap: 16px; padding-top: 6px; }
+    /* Subject bars */
+    .bars { display: flex; flex-direction: column; gap: 12px; padding-top: 6px; }
     .bar-row {
       display: grid;
-      grid-template-columns: 86px 1fr;
+      grid-template-columns: 104px 1fr;
       align-items: center;
       gap: 10px;
     }
@@ -485,6 +646,7 @@
     .status-icon {
       width: 16px;
       height: 16px;
+      flex: none;
       border-radius: 999px;
       display: inline-flex;
       align-items: center;
@@ -506,11 +668,13 @@
     td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
     td.wrap { white-space: normal; min-width: 200px; }
     tbody tr:hover { background: rgba(148, 163, 184, 0.05); }
+    .t-stars { color: var(--star); letter-spacing: 1px; }
+    .t-stars .off { color: var(--axis); }
 
     /* Tooltip */
     #tip {
       position: fixed;
-      z-index: 50;
+      z-index: 70;
       pointer-events: none;
       background: #111a2e;
       border: 1px solid rgba(148, 163, 184, 0.35);
@@ -543,10 +707,13 @@
     }
     @media (max-width: 640px) {
       section { padding: 18px 14px; }
-      .profile { grid-template-columns: 1fr; }
-      .practice { grid-template-columns: 1fr; }
+      .profile { grid-template-columns: 1fr 1fr; }
+      .profile > :first-child, .profile > :nth-child(2), .profile > :last-child { grid-column: span 2; }
+      .worlds { grid-template-columns: 1fr; }
       .kpi-hero .kpi-value { font-size: 48px; }
       header { border-radius: 18px; }
+      .modal { padding: 16px 10px; }
+      .modal-card { padding: 18px 14px; }
     }
   </style>
 </head>
@@ -612,7 +779,7 @@
     <!-- DASHBOARD -->
     <section id="dashboard" style="display:none;">
 
-      <!-- Profile: level, streak, actions (all-time, not filtered) -->
+      <!-- Profile: rank, XP, stars, levels (all-time) -->
       <div class="card profile">
         <div class="user-head">
           <div id="dashAvatar" class="avatar"></div>
@@ -623,16 +790,22 @@
         </div>
 
         <div>
-          <div class="mini-label">Level</div>
-          <div class="big-inline" id="levelValue"></div>
-          <div class="meter" role="progressbar" aria-label="Progress to next level" id="levelMeter"><div></div></div>
-          <div class="small muted" id="levelNext"></div>
+          <div class="mini-label">Rank</div>
+          <div class="big-inline" id="rankValue"></div>
+          <div class="meter" role="progressbar" aria-label="XP to next rank" aria-valuemin="0" aria-valuemax="100" id="rankMeter"><div></div></div>
+          <div class="small muted" id="rankNext"></div>
         </div>
 
         <div>
-          <div class="mini-label">Streak</div>
-          <div class="big-inline" id="streakValue"></div>
-          <div class="small muted" id="streakBest"></div>
+          <div class="mini-label">Stars</div>
+          <div class="big-inline" id="starsValue"></div>
+          <div class="small muted" id="starsSub"></div>
+        </div>
+
+        <div>
+          <div class="mini-label">Levels cleared</div>
+          <div class="big-inline" id="levelsValue"></div>
+          <div class="small muted" id="levelsSub"></div>
         </div>
 
         <div class="row" style="margin:0;justify-content:flex-end;">
@@ -641,74 +814,10 @@
         </div>
       </div>
 
-      <!-- Practice -->
-      <div class="practice" style="margin-top:16px;">
-        <div class="card">
-          <div class="card-title">Start a quiz</div>
-          <div class="card-meta">Results are added to your dashboard.</div>
-
-          <label for="quizTopic">Topic</label>
-          <select id="quizTopic">
-            <option value="algebra">Algebra</option>
-            <option value="geometry">Geometry</option>
-            <option value="calculus">Calculus</option>
-          </select>
-
-          <label for="quizCount">Number of questions</label>
-          <select id="quizCount">
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3" selected>3</option>
-          </select>
-
-          <label for="quizTime">Time limit (minutes)</label>
-          <select id="quizTime">
-            <option value="1">1</option>
-            <option value="2" selected>2</option>
-            <option value="5">5</option>
-          </select>
-
-          <div class="row">
-            <button class="btn btn-primary" onclick="startQuiz()">Start quiz</button>
-          </div>
-        </div>
-
-        <div class="card" id="quizPanel">
-          <!-- Idle -->
-          <div id="quizIdle">
-            <div class="card-title">Quiz</div>
-            <div class="empty">Choose a topic and press <strong>Start quiz</strong>.</div>
-          </div>
-
-          <!-- Active quiz -->
-          <div id="quizBox" style="display:none;">
-            <div class="quiz-top">
-              <span id="quizProgress"></span>
-              <span id="quizTimer"></span>
-            </div>
-            <div id="quizQuestion"></div>
-            <div id="quizOptions"></div>
-            <div class="row">
-              <button class="btn btn-secondary btn-small" onclick="markForReview()">Mark for review</button>
-              <button class="btn btn-secondary btn-small" onclick="nextQuestion()">Skip</button>
-              <button class="btn btn-secondary btn-small" onclick="endQuiz()">End quiz</button>
-            </div>
-          </div>
-
-          <!-- Results -->
-          <div id="quizResults" style="display:none;">
-            <div class="card-title">Results</div>
-            <p id="quizScore"></p>
-            <ul class="answer-list" id="quizAnswers"></ul>
-          </div>
-
-          <!-- Marked for review -->
-          <div id="reviewBox" style="display:none; margin-top:14px;">
-            <div class="card-title">Marked for review</div>
-            <ul id="reviewList"></ul>
-          </div>
-        </div>
-      </div>
+      <!-- Worlds: one per subject, 5 levels each -->
+      <div class="section-title">Choose your world</div>
+      <div class="section-sub">Each subject has 5 levels. Score 4 of 6 to clear a level and unlock the next. Beat the 👑 Boss level to conquer the world.</div>
+      <div class="worlds" id="worlds"></div>
 
       <!-- Achievements -->
       <div class="card" style="margin-top:16px;">
@@ -717,7 +826,10 @@
         <div class="badges" id="badges"></div>
       </div>
 
-      <!-- Filters: scope everything below -->
+      <!-- Results dashboard -->
+      <div class="section-title">Your results</div>
+      <div class="section-sub">Everything below follows these filters.</div>
+
       <div class="filters" role="group" aria-label="Dashboard filters">
         <div class="filter-group">
           <span class="small muted">Period</span>
@@ -729,13 +841,8 @@
           </div>
         </div>
         <div class="filter-group">
-          <span class="small muted">Topic</span>
-          <div class="seg" id="topicFilter">
-            <button data-value="all" aria-pressed="true">All</button>
-            <button data-value="algebra">Algebra</button>
-            <button data-value="geometry">Geometry</button>
-            <button data-value="calculus">Calculus</button>
-          </div>
+          <label for="subjectFilter" class="small muted" style="margin:0;">Subject</label>
+          <select id="subjectFilter"></select>
         </div>
         <span id="legacyNote"></span>
       </div>
@@ -751,7 +858,7 @@
           <div class="chart-box" id="scoreChart"></div>
         </div>
         <div class="card">
-          <div class="card-title">Accuracy by topic</div>
+          <div class="card-title">Accuracy by subject</div>
           <div class="card-meta">Share of questions answered correctly.</div>
           <div class="bars" id="topicBars"></div>
         </div>
@@ -772,8 +879,8 @@
 
       <!-- Tables -->
       <div class="card" style="margin-top:16px;">
-        <div class="card-title">Topic breakdown</div>
-        <div class="card-meta">Status: ✓ Strong ≥ 80% · ▲ Improving 50–79% · ! Needs work &lt; 50%.</div>
+        <div class="card-title">Subject breakdown</div>
+        <div class="card-meta">Levels and stars are all-time. Status: ✓ Strong ≥ 80% · ▲ Improving 50–79% · ! Needs work &lt; 50%.</div>
         <div class="table-wrap" id="topicTable"></div>
       </div>
 
@@ -796,6 +903,49 @@
       <span>MathLearn</span>
       <span>Progress is saved in this browser.</span>
     </footer>
+  </div>
+
+  <!-- QUIZ MODAL -->
+  <div class="modal" id="quizModal" role="dialog" aria-modal="true" aria-labelledby="quizTitle">
+    <div class="modal-card" id="quizCard">
+
+      <!-- Active quiz -->
+      <div id="quizBox" style="display:none;">
+        <div class="quiz-head">
+          <div class="title" id="quizTitle"></div>
+          <span class="timer-pill" id="quizTimer"></span>
+        </div>
+        <div class="q-progress"><div id="quizBar"></div></div>
+        <div class="small muted" id="quizProgress"></div>
+        <div id="quizQuestion"></div>
+        <div id="quizOptions"></div>
+        <div class="row">
+          <button class="btn btn-secondary btn-small" onclick="markForReview()">Mark for review</button>
+          <button class="btn btn-secondary btn-small" onclick="nextQuestion()">Skip</button>
+          <button class="btn btn-secondary btn-small" onclick="quitQuiz()">Quit level</button>
+        </div>
+      </div>
+
+      <!-- Results -->
+      <div id="quizResults" style="display:none;">
+        <div class="result-hero">
+          <div class="small muted" id="resultLevel"></div>
+          <div class="stars" id="resultStars" aria-hidden="true"></div>
+          <div class="result-title" id="resultTitle"></div>
+          <p class="muted" id="quizScore" style="margin-top:6px;"></p>
+          <div class="xp-box" id="resultXp"></div>
+          <div id="resultBanners"></div>
+        </div>
+        <div class="row" id="resultButtons" style="justify-content:center;"></div>
+        <ul class="answer-list" id="quizAnswers"></ul>
+      </div>
+
+      <!-- Marked for review -->
+      <div id="reviewBox" style="display:none; margin-top:14px;">
+        <div class="card-title">Marked for review</div>
+        <ul id="reviewList"></ul>
+      </div>
+    </div>
   </div>
 
   <div id="tip" role="tooltip"></div>
@@ -896,13 +1046,10 @@ function login() {
 
 /* Logout */
 function logout() {
-  stopQuiz();
+  closeQuiz();
   currentUser = null;
   document.getElementById("dashboard").style.display = "none";
   document.getElementById("accounts").style.display = "block";
-
-  showQuizPanel("idle");
-  document.getElementById("reviewBox").style.display = "none";
 
   document.getElementById("loginPin").value = "";
   document.getElementById("loginBackupPin").value = "";
@@ -913,16 +1060,30 @@ function logout() {
 <script>
 /* ---------------------------------------------------------
    CELL 3 — SAVED PROGRESS ENGINE (PER USER)
+   XP, ranks, per-subject levels and stars
    --------------------------------------------------------- */
 
-const TOPICS = ["algebra", "geometry", "calculus"];
-const TOPIC_NAMES = { algebra: "Algebra", geometry: "Geometry", calculus: "Calculus" };
-const LEVELS = [
-  { level: 1, accuracy: 70, quizzes: 5 },
-  { level: 2, accuracy: 80, quizzes: 10 },
-  { level: 3, accuracy: 90, quizzes: 20 }
+const LEVEL_INFO = [
+  { name: "Warm-up",    icon: "🌱" },
+  { name: "Explorer",   icon: "🧭" },
+  { name: "Challenger", icon: "⚔️" },
+  { name: "Expert",     icon: "💎" },
+  { name: "Boss",       icon: "👑" }
+];
+const LEVELS_PER_SUBJECT = LEVEL_INFO.length;
+
+const RANKS = [
+  { name: "Novice",         xp: 0,    icon: "🐣" },
+  { name: "Apprentice",     xp: 150,  icon: "📘" },
+  { name: "Problem Solver", xp: 400,  icon: "🧠" },
+  { name: "Mathlete",       xp: 800,  icon: "🏅" },
+  { name: "Wizard",         xp: 1500, icon: "🧙" },
+  { name: "Grandmaster",    xp: 2500, icon: "🏆" },
+  { name: "Legend",         xp: 4000, icon: "🌟" }
 ];
 const MAX_HISTORY = 500;
+
+const levelKey = (subject, level) => `${subject}-${level}`;
 
 function defaultProgress() {
   return {
@@ -930,11 +1091,8 @@ function defaultProgress() {
     correctAnswers: 0,
     totalQuestions: 0,
     accuracy: 0,
-    streak: 0,
-    bestStreak: 0,
-    lastQuizDate: null,
-    weakAreas: [],
-    level: 0,
+    xp: 0,
+    levels: {},   // "algebra-2": { stars, bestPct, cleared, plays }
     history: []
   };
 }
@@ -945,7 +1103,9 @@ function getProgress(username) {
   // Merge with defaults so older saves missing newer fields still work
   const p = Object.assign(defaultProgress(), data || {});
   if (!Array.isArray(p.history)) p.history = [];
-  p.bestStreak = Math.max(p.bestStreak || 0, p.streak);
+  if (!p.levels || typeof p.levels !== "object") p.levels = {};
+  // Fields from older versions that are no longer used
+  ["streak", "bestStreak", "lastQuizDate", "weakAreas", "level"].forEach(k => delete p[k]);
   return p;
 }
 
@@ -954,64 +1114,90 @@ function saveProgress(username, progress) {
   localStorage.setItem("mathlearn_progress_" + username, JSON.stringify(progress));
 }
 
-/* Streak only counts if the last quiz was today or yesterday */
-function currentStreak(p) {
-  if (!p.lastQuizDate) return 0;
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-  return (p.lastQuizDate === today.toDateString() || p.lastQuizDate === yesterday.toDateString())
-    ? p.streak : 0;
+function levelRecord(p, subject, level) {
+  return p.levels[levelKey(subject, level)] || { stars: 0, bestPct: 0, cleared: false, plays: 0 };
 }
 
-/* Apply progress updates after each quiz */
+function isUnlocked(p, subject, level) {
+  return level === 1 || levelRecord(p, subject, level - 1).cleared;
+}
+
+function rankIndex(xp) {
+  let i = 0;
+  RANKS.forEach((r, idx) => { if (xp >= r.xp) i = idx; });
+  return i;
+}
+
+/* 6/6 → 3★, 5/6 → 2★, 4/6 → 1★, otherwise 0 (not cleared) */
+function starsFor(score, total) {
+  const pct = total ? score / total : 0;
+  if (pct === 1) return 3;
+  if (pct >= 0.8) return 2;
+  if (pct >= 0.65) return 1;
+  return 0;
+}
+
+function totals(p) {
+  let stars = 0, cleared = 0, threeStar = 0;
+  Object.values(p.levels).forEach(r => {
+    stars += r.stars;
+    if (r.cleared) cleared++;
+    if (r.stars === 3) threeStar++;
+  });
+  return { stars, cleared, threeStar };
+}
+
+/* Apply progress updates after each quiz; returns what happened for the results screen */
 function applyQuizProgress(score, totalQuestions, topic, details = {}) {
-  if (!currentUser || totalQuestions === 0) return;
+  if (!currentUser || totalQuestions === 0) return null;
 
   const username = currentUser.username;
   const p = getProgress(username);
+  const level = details.level || 1;
 
   // Update totals
   p.totalQuizzes++;
   p.correctAnswers += score;
   p.totalQuestions += totalQuestions;
-
-  // Accuracy across every question ever answered
   p.accuracy = Math.round((p.correctAnswers / p.totalQuestions) * 100);
 
-  // Streak: +1 for consecutive days, reset to 1 after a missed day
-  const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
+  // Stars & clearing
+  const stars = starsFor(score, totalQuestions);
+  const passed = stars > 0;
+  const rec = levelRecord(p, topic, level);
+  const newlyCleared = passed && !rec.cleared;
+  const prevBestStars = rec.stars;
+  rec.plays++;
+  rec.stars = Math.max(rec.stars, stars);
+  rec.bestPct = Math.max(rec.bestPct, Math.round((score / totalQuestions) * 100));
+  rec.cleared = rec.cleared || passed;
+  p.levels[levelKey(topic, level)] = rec;
 
-  if (p.lastQuizDate === today.toDateString()) {
-    // Already counted today
-  } else if (p.lastQuizDate === yesterday.toDateString()) {
-    p.streak++;
-  } else {
-    p.streak = 1;
+  // XP: harder levels are worth more
+  const xpParts = [];
+  if (score) xpParts.push({ label: `${score} correct`, xp: score * 10 * level });
+  if (passed) xpParts.push({ label: "Level clear", xp: 20 * level });
+  if (stars === 3) xpParts.push({ label: "Perfect", xp: 25 });
+  if (passed && details.timeLeft > 0) {
+    const speed = Math.floor(details.timeLeft / 10);
+    if (speed) xpParts.push({ label: "Speed bonus", xp: speed });
   }
-  p.lastQuizDate = today.toDateString();
-  p.bestStreak = Math.max(p.bestStreak, p.streak);
+  const xp = xpParts.reduce((s, x) => s + x.xp, 0);
 
-  // Weak areas: add on a poor score, remove once the topic is passed
-  if (score < totalQuestions / 2) {
-    if (!p.weakAreas.includes(topic)) p.weakAreas.push(topic);
-  } else {
-    p.weakAreas = p.weakAreas.filter(t => t !== topic);
-  }
-
-  // Leveling system
-  LEVELS.forEach(l => {
-    if (p.accuracy > l.accuracy && p.totalQuizzes >= l.quizzes) p.level = Math.max(p.level, l.level);
-  });
+  const rankBefore = rankIndex(p.xp);
+  p.xp += xp;
+  const rankAfter = rankIndex(p.xp);
 
   // Detailed history for the dashboard
   p.history.push({
-    date: today.toISOString(),
+    date: new Date().toISOString(),
     topic,
+    level,
     score,
     total: totalQuestions,
+    stars,
+    passed,
+    xp,
     seconds: details.seconds || 0,
     timedOut: !!details.timedOut,
     reviewed: details.reviewed || 0,
@@ -1021,12 +1207,21 @@ function applyQuizProgress(score, totalQuestions, topic, details = {}) {
 
   saveProgress(username, p);
   updateDashboardProgress();
+
+  return {
+    stars, passed, xp, xpParts, newlyCleared,
+    newBestStars: stars > prevBestStars && prevBestStars > 0,
+    unlockedNext: newlyCleared && level < LEVELS_PER_SUBJECT ? level + 1 : null,
+    worldComplete: newlyCleared && level === LEVELS_PER_SUBJECT,
+    rankUp: rankAfter > rankBefore ? RANKS[rankAfter] : null,
+    totalXp: p.xp
+  };
 }
 
 /* Wipe the current user's progress */
 function resetProgress() {
   if (!currentUser) return;
-  if (!confirm("Delete all quiz results and progress for " + currentUser.username + "? This can't be undone.")) return;
+  if (!confirm("Delete all quiz results, XP, stars and unlocked levels for " + currentUser.username + "? This can't be undone.")) return;
   localStorage.removeItem("mathlearn_progress_" + currentUser.username);
   updateDashboardProgress();
 }
@@ -1034,32 +1229,297 @@ function resetProgress() {
 
 <script>
 /* ---------------------------------------------------------
-   CELL 4 — QUIZ ENGINE (RANDOMIZED + TIMER + REVIEW)
+   CELL 4 — QUESTION BANK + QUIZ ENGINE
+   6 subjects × 5 levels × 6 questions = 180 questions.
+   Each question: [question, correct answer, wrong, wrong, wrong]
+   (options are shuffled every time a level is played)
    --------------------------------------------------------- */
 
-/* QUIZ BANK — multiple topics */
-const quizBank = {
-  algebra: [
-    { q: "Solve: x² + 5x + 6 = 0", options: ["x=-2,-3", "x=2,3", "x=-1,-6", "No real roots"], answer: 0 },
-    { q: "Derivative of x²?", options: ["x", "2x", "x²/2", "2"], answer: 1 },
-    { q: "Simplify: 2(x+3)", options: ["2x+3", "2x+6", "x+6", "6x"], answer: 1 }
-  ],
-  geometry: [
-    { q: "Area of a circle?", options: ["2πr", "πr²", "πr", "r²"], answer: 1 },
-    { q: "Sum of angles in triangle?", options: ["90°", "180°", "360°", "270°"], answer: 1 },
-    { q: "A square has 4 equal…", options: ["Angles", "Sides", "Diagonals", "Curves"], answer: 1 }
-  ],
-  calculus: [
-    { q: "Limit of sin(x)/x as x→0?", options: ["0", "1", "∞", "Doesn't exist"], answer: 1 },
-    { q: "Derivative of ln(x)?", options: ["1/x", "x", "ln(x)", "x²"], answer: 0 },
-    { q: "Integral of 1 dx?", options: ["x", "1", "x²", "0"], answer: 0 }
-  ]
-};
+const SUBJECTS = [
+  {
+    id: "arithmetic", name: "Arithmetic", world: "Number Island", icon: "🔢", color: "#3987e5",
+    levels: [
+      [ // 1 · Addition & subtraction
+        ["47 + 38 = ?", "85", "75", "84", "95"],
+        ["120 − 57 = ?", "63", "73", "67", "53"],
+        ["999 + 1 = ?", "1000", "9910", "1001", "990"],
+        ["250 − 125 = ?", "125", "135", "115", "175"],
+        ["Which number is 15 more than 86?", "101", "91", "111", "100"],
+        ["306 − 199 = ?", "107", "117", "113", "97"]
+      ],
+      [ // 2 · Multiplication & division
+        ["7 × 8 = ?", "56", "54", "64", "48"],
+        ["144 ÷ 12 = ?", "12", "14", "11", "13"],
+        ["25 × 4 = ?", "100", "90", "125", "80"],
+        ["81 ÷ 9 = ?", "9", "8", "7", "11"],
+        ["13 × 6 = ?", "78", "68", "76", "84"],
+        ["What is the remainder of 29 ÷ 4?", "1", "2", "3", "0"]
+      ],
+      [ // 3 · Fractions
+        ["1/2 + 1/4 = ?", "3/4", "2/6", "1/6", "2/4"],
+        ["Simplify 12/16", "3/4", "2/3", "4/5", "5/8"],
+        ["2/3 × 3/5 = ?", "2/5", "6/8", "5/8", "1/3"],
+        ["3/4 − 1/3 = ?", "5/12", "1/4", "1/2", "2/7"],
+        ["Which fraction is the largest?", "5/6", "3/4", "2/3", "7/12"],
+        ["1 ÷ 1/4 = ?", "4", "1/4", "2", "0.4"]
+      ],
+      [ // 4 · Decimals & percentages
+        ["0.3 + 0.45 = ?", "0.75", "0.48", "0.345", "0.7"],
+        ["25% of 80 = ?", "20", "25", "16", "32"],
+        ["Write 3/8 as a decimal", "0.375", "0.38", "0.83", "0.35"],
+        ["A $40 shirt is 15% off. What is the sale price?", "$34", "$25", "$36", "$34.50"],
+        ["1.2 × 0.5 = ?", "0.6", "6", "0.06", "1.7"],
+        ["Increase 50 by 20%", "60", "70", "52", "55"]
+      ],
+      [ // 5 · Boss: order of operations & mixed skills
+        ["8 + 2 × 5 = ?", "18", "50", "20", "15"],
+        ["(3 + 5)² ÷ 4 = ?", "16", "8", "64", "32"],
+        ["2³ + 4 × 3 − 6 = ?", "14", "30", "18", "12"],
+        ["What is 15% of 15% of 400?", "9", "60", "90", "2.25"],
+        ["√144 + √81 = ?", "21", "15", "225", "25"],
+        ["Least common multiple of 6 and 8?", "24", "48", "12", "2"]
+      ]
+    ]
+  },
+  {
+    id: "algebra", name: "Algebra", world: "Variable Valley", icon: "🧩", color: "#d95926",
+    levels: [
+      [ // 1 · Expressions
+        ["Simplify: 3x + 5x", "8x", "15x", "8x²", "35x"],
+        ["Evaluate 2a + 3 when a = 4", "11", "9", "14", "10"],
+        ["Simplify: 2(x + 3)", "2x + 6", "2x + 3", "x + 6", "6x"],
+        ["Simplify: 7y − 2y + y", "6y", "4y", "5y", "8y"],
+        ["Which is a like term of 4x²?", "−9x²", "4x", "4y²", "x³"],
+        ["Evaluate x² − 1 when x = 5", "24", "9", "26", "16"]
+      ],
+      [ // 2 · Linear equations
+        ["Solve: x + 7 = 12", "x = 5", "x = 19", "x = −5", "x = 7"],
+        ["Solve: 3x = 27", "x = 9", "x = 24", "x = 30", "x = 81"],
+        ["Solve: 2x − 5 = 11", "x = 8", "x = 3", "x = 6", "x = 16"],
+        ["Solve: x / 4 = 6", "x = 24", "x = 1.5", "x = 10", "x = 2"],
+        ["Solve: 5x + 2 = 3x + 10", "x = 4", "x = 6", "x = 2", "x = 1.5"],
+        ["Slope of the line y = 3x − 2?", "3", "−2", "2", "−3"]
+      ],
+      [ // 3 · Inequalities & exponents
+        ["Solve: x + 4 > 9", "x > 5", "x < 5", "x > 13", "x ≥ 5"],
+        ["Solve: −2x < 8", "x > −4", "x < −4", "x > 4", "x < 4"],
+        ["Simplify: x³ · x⁴", "x⁷", "x¹²", "2x⁷", "x"],
+        ["Simplify: (2x)²", "4x²", "2x²", "4x", "2x⁴"],
+        ["What is 5⁰?", "1", "0", "5", "Undefined"],
+        ["Simplify: y⁸ ÷ y²", "y⁶", "y⁴", "y¹⁰", "y¹⁶"]
+      ],
+      [ // 4 · Factoring & quadratics
+        ["Solve: x² + 5x + 6 = 0", "x = −2, −3", "x = 2, 3", "x = −1, −6", "No real roots"],
+        ["Factor: x² − 9", "(x − 3)(x + 3)", "(x − 3)²", "(x − 9)(x + 1)", "(x + 3)²"],
+        ["Expand: (x + 2)(x + 4)", "x² + 6x + 8", "x² + 8x + 6", "x² + 6x + 6", "x² + 8"],
+        ["Factor: x² + 7x + 10", "(x + 2)(x + 5)", "(x + 1)(x + 10)", "(x + 3)(x + 4)", "(x − 2)(x − 5)"],
+        ["Solve: x² = 49", "x = ±7", "x = 7", "x = 24.5", "x = ±49"],
+        ["Discriminant of x² − 4x + 4?", "0", "−8", "8", "32"]
+      ],
+      [ // 5 · Boss: systems & functions
+        ["Solve: x + y = 10 and x − y = 2", "x = 6, y = 4", "x = 4, y = 6", "x = 5, y = 5", "x = 8, y = 2"],
+        ["If f(x) = 2x² − 3, what is f(−2)?", "5", "−11", "11", "−5"],
+        ["Vertex of y = (x − 3)² + 1?", "(3, 1)", "(−3, 1)", "(1, 3)", "(3, −1)"],
+        ["Solve: 2x + y = 7 and y = x + 1", "x = 2, y = 3", "x = 3, y = 1", "x = 1, y = 2", "x = 3, y = 4"],
+        ["If f(x) = 3x + 1, what is f⁻¹(10)?", "3", "31", "1/3", "11"],
+        ["Sum of the roots of x² − 7x + 12 = 0?", "7", "12", "−7", "−12"]
+      ]
+    ]
+  },
+  {
+    id: "geometry", name: "Geometry", world: "Shape Kingdom", icon: "📐", color: "#199e70",
+    levels: [
+      [ // 1 · Shapes & angles
+        ["How many sides does a hexagon have?", "6", "5", "7", "8"],
+        ["A right angle measures…", "90°", "180°", "45°", "360°"],
+        ["Sum of the angles in a triangle?", "180°", "90°", "360°", "270°"],
+        ["An angle of 120° is…", "Obtuse", "Acute", "Right", "Reflex"],
+        ["A quadrilateral with 4 equal sides and 4 right angles is a…", "Square", "Rhombus", "Trapezium", "Kite"],
+        ["Complementary angles add up to…", "90°", "180°", "360°", "45°"]
+      ],
+      [ // 2 · Perimeter & area
+        ["Area of a rectangle 8 × 5?", "40", "26", "13", "45"],
+        ["Perimeter of a square with side 7?", "28", "49", "14", "21"],
+        ["Area of a triangle with base 10 and height 6?", "30", "60", "16", "36"],
+        ["Formula for the area of a circle?", "πr²", "2πr", "πd", "r²"],
+        ["Perimeter of a rectangle 9 × 4?", "26", "36", "13", "22"],
+        ["Area of a parallelogram with base 12 and height 5?", "60", "30", "34", "17"]
+      ],
+      [ // 3 · Triangles & Pythagoras
+        ["Hypotenuse of a right triangle with legs 3 and 4?", "5", "7", "6", "25"],
+        ["Hypotenuse of a right triangle with legs 5 and 12?", "13", "17", "15", "11"],
+        ["Each angle of an equilateral triangle?", "60°", "90°", "45°", "180°"],
+        ["Two angles of a triangle are 50° and 60°. The third is…", "70°", "80°", "90°", "110°"],
+        ["A triangle with sides 6, 8 and 10 is…", "Right-angled", "Equilateral", "Obtuse", "Isosceles"],
+        ["Right triangle: hypotenuse 10, one leg 6. Other leg?", "8", "4", "16", "√136"]
+      ],
+      [ // 4 · Circles
+        ["Circumference of a circle with radius 5?", "10π", "25π", "5π", "20π"],
+        ["Area of a circle with radius 3?", "9π", "6π", "3π", "18π"],
+        ["The diameter is 14. What is the radius?", "7", "28", "14π", "3.5"],
+        ["An angle inscribed in a semicircle is…", "90°", "180°", "60°", "45°"],
+        ["A full turn measures…", "360°", "180°", "270°", "400°"],
+        ["Area of a circle with diameter 10?", "25π", "100π", "10π", "20π"]
+      ],
+      [ // 5 · Boss: volume & coordinates
+        ["Volume of a cube with side 4?", "64", "16", "48", "12"],
+        ["Volume of a cylinder with r = 2 and h = 5?", "20π", "10π", "40π", "25π"],
+        ["Distance between (0, 0) and (6, 8)?", "10", "14", "48", "7"],
+        ["Midpoint of (2, 4) and (8, 10)?", "(5, 7)", "(6, 6)", "(10, 14)", "(3, 3)"],
+        ["Volume of a sphere with r = 3?", "36π", "27π", "12π", "108π"],
+        ["Sum of the interior angles of a pentagon?", "540°", "360°", "720°", "450°"]
+      ]
+    ]
+  },
+  {
+    id: "trigonometry", name: "Trigonometry", world: "Triangle Peaks", icon: "🔺", color: "#c98500",
+    levels: [
+      [ // 1 · SOH CAH TOA
+        ["sin θ = ?", "Opposite / Hypotenuse", "Adjacent / Hypotenuse", "Opposite / Adjacent", "Hypotenuse / Opposite"],
+        ["cos θ = ?", "Adjacent / Hypotenuse", "Opposite / Hypotenuse", "Opposite / Adjacent", "Adjacent / Opposite"],
+        ["tan θ = ?", "Opposite / Adjacent", "Adjacent / Opposite", "Opposite / Hypotenuse", "Hypotenuse / Adjacent"],
+        ["In a 3-4-5 triangle, sin of the angle opposite the side 3?", "3/5", "4/5", "3/4", "5/3"],
+        ["In a 3-4-5 triangle, tan of the angle opposite the side 4?", "4/3", "3/4", "4/5", "3/5"],
+        ["The longest side of a right triangle is the…", "Hypotenuse", "Adjacent", "Opposite", "Median"]
+      ],
+      [ // 2 · Special angles
+        ["sin 30° = ?", "1/2", "√3/2", "1", "√2/2"],
+        ["cos 60° = ?", "1/2", "√3/2", "0", "1"],
+        ["tan 45° = ?", "1", "0", "√3", "1/√3"],
+        ["sin 90° = ?", "1", "0", "1/2", "Undefined"],
+        ["cos 0° = ?", "1", "0", "−1", "1/2"],
+        ["tan 60° = ?", "√3", "1/√3", "1", "√3/2"]
+      ],
+      [ // 3 · Radians & the unit circle
+        ["180° in radians?", "π", "2π", "π/2", "π/4"],
+        ["π/3 radians in degrees?", "60°", "30°", "45°", "120°"],
+        ["cos π = ?", "−1", "1", "0", "π"],
+        ["sin(3π/2) = ?", "−1", "1", "0", "1/2"],
+        ["In which quadrant is 210°?", "Third", "Second", "Fourth", "First"],
+        ["Period of y = sin x?", "2π", "π", "π/2", "4π"]
+      ],
+      [ // 4 · Identities
+        ["sin²θ + cos²θ = ?", "1", "0", "2", "tan θ"],
+        ["tan θ is equal to…", "sin θ / cos θ", "cos θ / sin θ", "1 / sin θ", "sin θ · cos θ"],
+        ["sin 2θ = ?", "2 sin θ cos θ", "2 sin θ", "sin²θ − cos²θ", "cos²θ − sin²θ"],
+        ["1 + tan²θ = ?", "sec²θ", "csc²θ", "cot²θ", "1"],
+        ["cos(−θ) = ?", "cos θ", "−cos θ", "sin θ", "−sin θ"],
+        ["sin(90° − θ) = ?", "cos θ", "sin θ", "−cos θ", "tan θ"]
+      ],
+      [ // 5 · Boss: equations & graphs
+        ["Solve sin x = 1/2 for 0° ≤ x < 180°", "30° and 150°", "30° only", "60° and 120°", "30° and 330°"],
+        ["Amplitude of y = 3 sin 2x?", "3", "2", "6", "1/2"],
+        ["Period of y = cos 2x?", "π", "2π", "4π", "π/2"],
+        ["Law of cosines: c² = ?", "a² + b² − 2ab cos C", "a² + b² + 2ab cos C", "a² − b² − 2ab cos C", "a² + b²"],
+        ["cos 2θ = ?", "cos²θ − sin²θ", "2 cos θ", "2 sin θ cos θ", "1 + 2 sin²θ"],
+        ["Range of y = sin x?", "−1 ≤ y ≤ 1", "0 ≤ y ≤ 1", "All real numbers", "−π ≤ y ≤ π"]
+      ]
+    ]
+  },
+  {
+    id: "statistics", name: "Statistics & Probability", world: "Dice Desert", icon: "🎲", color: "#d55181",
+    levels: [
+      [ // 1 · Averages
+        ["Mean of 2, 4, 6, 8?", "5", "4", "6", "20"],
+        ["Median of 3, 7, 9, 1, 5?", "5", "7", "9", "3"],
+        ["Mode of 2, 3, 3, 5, 7?", "3", "2", "5", "4"],
+        ["Median of 4, 8, 10, 12?", "9", "8", "10", "8.5"],
+        ["Mean of 10, 20, 30?", "20", "30", "60", "15"],
+        ["Range of 5, 12, 3, 9?", "9", "12", "7", "4"]
+      ],
+      [ // 2 · Working with data
+        ["Which average is most affected by an outlier?", "Mean", "Median", "Mode", "None of them"],
+        ["The mean of 5 numbers is 8. What is their sum?", "40", "13", "8", "45"],
+        ["Mode of 2, 2, 4, 4, 4, 9?", "4", "2", "9", "3"],
+        ["Scores 70, 80, 90 and x have a mean of 85. x = ?", "100", "95", "85", "90"],
+        ["A frequency table shows…", "How often each value occurs", "Only the mean", "Only the largest value", "The order data was collected"],
+        ["Interquartile range = ?", "Q3 − Q1", "Max − Min", "Q2 − Q1", "Mean − Median"]
+      ],
+      [ // 3 · Basic probability
+        ["Probability of heads on a fair coin?", "1/2", "1", "1/4", "0"],
+        ["Probability of rolling a 6 on a fair die?", "1/6", "1/3", "6", "1/2"],
+        ["Probability of rolling an even number on a fair die?", "1/2", "1/3", "1/6", "2/3"],
+        ["A bag has 3 red and 7 blue balls. P(red)?", "3/10", "3/7", "7/10", "1/3"],
+        ["If P(rain) = 0.3, what is P(no rain)?", "0.7", "0.3", "1.3", "0"],
+        ["Probability of an impossible event?", "0", "1", "1/2", "−1"]
+      ],
+      [ // 4 · Counting & combinations
+        ["5! = ?", "120", "25", "60", "720"],
+        ["How many ways to arrange the letters of CAT?", "6", "3", "9", "27"],
+        ["How many ways to choose 2 from 5 (5C2)?", "10", "20", "25", "7"],
+        ["Two fair coins are flipped. P(both heads)?", "1/4", "1/2", "1/3", "3/4"],
+        ["Outfits from 3 shirts and 4 pairs of pants?", "12", "7", "34", "81"],
+        ["Two fair dice are rolled. P(sum = 7)?", "1/6", "1/12", "7/36", "1/36"]
+      ],
+      [ // 5 · Boss: expected value & distributions
+        ["Expected value of one fair die roll?", "3.5", "3", "4", "6"],
+        ["A and B are mutually exclusive, P(A) = 0.2, P(B) = 0.5. P(A or B)?", "0.7", "0.1", "0.3", "0.6"],
+        ["A and B are independent, P(A) = 0.5, P(B) = 0.4. P(A and B)?", "0.2", "0.9", "0.1", "0.45"],
+        ["In a normal distribution, about what share lies within 1 SD of the mean?", "68%", "95%", "50%", "99.7%"],
+        ["Standard deviation of 5, 5, 5, 5?", "0", "5", "1", "25"],
+        ["Ways to pick a president and a vice-president from 6 people?", "30", "15", "36", "12"]
+      ]
+    ]
+  },
+  {
+    id: "calculus", name: "Calculus", world: "Infinity Space", icon: "🚀", color: "#9085e9",
+    levels: [
+      [ // 1 · Limits
+        ["lim x→2 of (x + 3)?", "5", "2", "3", "6"],
+        ["lim x→0 of sin(x)/x?", "1", "0", "∞", "Doesn't exist"],
+        ["lim x→∞ of 1/x?", "0", "1", "∞", "−1"],
+        ["lim x→3 of (x² − 9)/(x − 3)?", "6", "0", "3", "9"],
+        ["lim x→0 of (1 + x)^(1/x)?", "e", "1", "0", "∞"],
+        ["lim x→∞ of (3x + 1)/(x − 2)?", "3", "1", "−1/2", "∞"]
+      ],
+      [ // 2 · Derivative basics
+        ["d/dx of x²?", "2x", "x", "x²/2", "2"],
+        ["d/dx of 5x?", "5", "5x", "x", "0"],
+        ["d/dx of the constant 7?", "0", "7", "1", "7x"],
+        ["d/dx of x⁵?", "5x⁴", "x⁴", "5x⁵", "4x⁵"],
+        ["d/dx of 3x² + 2x?", "6x + 2", "3x + 2", "6x² + 2", "6x"],
+        ["d/dx of √x?", "1/(2√x)", "2√x", "√x/2", "1/√x"]
+      ],
+      [ // 3 · Differentiation rules
+        ["d/dx of sin x?", "cos x", "−cos x", "sin x", "−sin x"],
+        ["d/dx of eˣ?", "eˣ", "x·eˣ⁻¹", "1", "e"],
+        ["d/dx of ln x?", "1/x", "x", "ln x", "eˣ"],
+        ["d/dx of (2x + 1)³?", "6(2x + 1)²", "3(2x + 1)²", "(2x + 1)²", "6(2x + 1)³"],
+        ["d/dx of x·sin x?", "sin x + x cos x", "cos x", "x cos x", "sin x − x cos x"],
+        ["d/dx of cos(3x)?", "−3 sin(3x)", "3 sin(3x)", "−sin(3x)", "sin(3x)"]
+      ],
+      [ // 4 · Integrals
+        ["∫ 1 dx = ?", "x + C", "1 + C", "x² + C", "C"],
+        ["∫ 2x dx = ?", "x² + C", "2x² + C", "2 + C", "x + C"],
+        ["∫ x² dx = ?", "x³/3 + C", "2x + C", "x³ + C", "3x³ + C"],
+        ["∫ cos x dx = ?", "sin x + C", "−sin x + C", "cos x + C", "−cos x + C"],
+        ["∫ from 0 to 2 of x dx = ?", "2", "4", "1", "0"],
+        ["∫ 1/x dx = ?", "ln|x| + C", "−1/x² + C", "x + C", "eˣ + C"]
+      ],
+      [ // 5 · Boss: applications
+        ["Slope of y = x³ at x = 2?", "12", "8", "6", "4"],
+        ["y = x² − 6x + 1 has a critical point at x = ?", "3", "−3", "6", "1"],
+        ["Area under y = 3x² from x = 0 to x = 2?", "8", "12", "6", "4"],
+        ["Position s(t) = t² + 4t. Velocity at t = 3?", "10", "21", "6", "13"],
+        ["f(x) = −x² + 4x reaches its maximum at x = ?", "2", "4", "−2", "0"],
+        ["d/dx of e^(2x)?", "2e^(2x)", "e^(2x)", "2x·e^(2x)", "e^(2x)/2"]
+      ]
+    ]
+  }
+];
+
+const SUBJECT = Object.fromEntries(SUBJECTS.map(s => [s.id, s]));
+const subjectName = id => (SUBJECT[id] ? SUBJECT[id].name : id);
+
+/* Time limit per level (seconds) — the higher the level, the less time */
+const LEVEL_TIME = [180, 160, 140, 120, 100];
 
 /* QUIZ STATE */
 let quiz = [];
 let quizTopic = null;
+let quizLevel = 1;
 let quizActive = false;
+let answering = false;
 let quizAnswers = [];
 let quizStartedAt = 0;
 let current = 0;
@@ -1078,52 +1538,78 @@ function shuffle(arr) {
   return a;
 }
 
-/* Show one state of the quiz panel: idle | active | results */
+/* Show one state of the quiz modal: active | results */
 function showQuizPanel(state) {
-  document.getElementById("quizIdle").style.display = state === "idle" ? "block" : "none";
   document.getElementById("quizBox").style.display = state === "active" ? "block" : "none";
   document.getElementById("quizResults").style.display = state === "results" ? "block" : "none";
 }
 
-/* Start Quiz */
-function startQuiz() {
+function openModal() {
+  document.getElementById("quizModal").classList.add("open");
+  document.body.classList.add("modal-open");
+}
+
+/* Close the modal; an unfinished attempt is not recorded */
+function closeQuiz() {
+  stopQuiz();
+  document.getElementById("quizModal").classList.remove("open");
+  document.body.classList.remove("modal-open");
+}
+
+function quitQuiz() {
+  if (quizActive && !confirm("Quit this level? This attempt won't be saved.")) return;
+  closeQuiz();
+}
+
+/* Start a level of a subject */
+function startLevel(subjectId, level) {
   if (!currentUser) {
     alert("Please log in first.");
     return;
   }
+  const subject = SUBJECT[subjectId];
+  if (!subject || !isUnlocked(getProgress(currentUser.username), subjectId, level)) return;
 
   // Reset state
   current = 0;
   score = 0;
   reviewList = [];
   quizAnswers = [];
+  answering = false;
   document.getElementById("reviewBox").style.display = "none";
   document.getElementById("reviewList").innerHTML = "";
 
-  // Read settings (topic is locked in for the whole quiz)
-  quizTopic = document.getElementById("quizTopic").value;
-  const count = parseInt(document.getElementById("quizCount").value, 10);
-  const minutes = parseInt(document.getElementById("quizTime").value, 10);
+  quizTopic = subjectId;
+  quizLevel = level;
 
-  // Randomize questions
-  quiz = shuffle(quizBank[quizTopic]).slice(0, count);
+  // Shuffle questions and their options
+  quiz = shuffle(subject.levels[level - 1]).map(([q, correct, ...wrong]) => {
+    const options = shuffle([correct, ...wrong]);
+    return { q, options, answer: options.indexOf(correct) };
+  });
   quizActive = true;
   quizStartedAt = Date.now();
 
+  const info = LEVEL_INFO[level - 1];
+  document.getElementById("quizCard").style.setProperty("--world", subject.color);
+  document.getElementById("quizTitle").textContent =
+    `${subject.icon} ${subject.name} · Level ${level} ${info.icon} ${info.name}`;
+
   // Timer
-  timeLeft = minutes * 60;
+  timeLeft = LEVEL_TIME[level - 1];
   startTimer();
 
   showQuizPanel("active");
+  openModal();
   loadQuestion();
-  document.getElementById("quizPanel").scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function renderTimer() {
   const m = Math.floor(timeLeft / 60);
   const s = timeLeft % 60;
-  document.getElementById("quizTimer").textContent =
-    `Time left: ${m}:${s.toString().padStart(2, "0")}`;
+  const pill = document.getElementById("quizTimer");
+  pill.textContent = `⏱ ${m}:${s.toString().padStart(2, "0")}`;
+  pill.classList.toggle("low", timeLeft <= 15);
 }
 
 /* Timer countdown */
@@ -1137,11 +1623,11 @@ function startTimer() {
   }, 1000);
 }
 
-/* Stop the quiz without recording a result (e.g. on logout) */
+/* Stop the quiz without recording a result */
 function stopQuiz() {
   clearInterval(timer);
   quizActive = false;
-  document.getElementById("quizBox").style.display = "none";
+  answering = false;
 }
 
 /* Load question */
@@ -1150,20 +1636,20 @@ function loadQuestion() {
 
   document.getElementById("quizQuestion").textContent = q.q;
   document.getElementById("quizProgress").textContent =
-    `Question ${current + 1} of ${quiz.length}`;
+    `Question ${current + 1} of ${quiz.length} · ${score} correct so far`;
+  document.getElementById("quizBar").style.width = (current / quiz.length) * 100 + "%";
 
   const optionsDiv = document.getElementById("quizOptions");
   optionsDiv.innerHTML = "";
 
   q.options.forEach((opt, index) => {
-    const btn = document.createElement("div");
+    const btn = document.createElement("button");
     btn.className = "option";
-    btn.textContent = opt;
-    btn.tabIndex = 0;
+    btn.append(document.createTextNode(opt), el("span", { class: "mark" }));
     btn.onclick = () => selectOption(index);
-    btn.onkeydown = e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); selectOption(index); } };
     optionsDiv.appendChild(btn);
   });
+  optionsDiv.firstElementChild.focus({ preventScroll: true });
 }
 
 /* Record the answer (or null for skipped) for the current question */
@@ -1172,6 +1658,7 @@ function recordAnswer(chosen) {
   const correct = chosen === q.answer;
   if (correct) score++;
   quizAnswers.push({ q: q.q, options: q.options, chosen, answer: q.answer, correct });
+  return correct;
 }
 
 function advance() {
@@ -1183,16 +1670,34 @@ function advance() {
   }
 }
 
-/* Select answer */
+/* Select answer: show right/wrong, then move on */
 function selectOption(index) {
-  if (!quizActive) return;
-  recordAnswer(index);
-  advance();
+  if (!quizActive || answering) return;
+  answering = true;
+  const correct = recordAnswer(index);
+
+  const buttons = document.querySelectorAll("#quizOptions .option");
+  buttons.forEach(b => (b.disabled = true));
+  const right = buttons[quiz[current].answer];
+  right.classList.add("correct");
+  right.querySelector(".mark").textContent = "✓ Correct";
+  if (!correct) {
+    buttons[index].classList.add("wrong");
+    buttons[index].querySelector(".mark").textContent = "✕ Your answer";
+  }
+  document.getElementById("quizProgress").textContent =
+    `Question ${current + 1} of ${quiz.length} · ${score} correct so far`;
+
+  setTimeout(() => {
+    if (!quizActive) return; // time ran out or quiz closed meanwhile
+    answering = false;
+    advance();
+  }, correct ? 650 : 1300);
 }
 
 /* Next question (skip) */
 function nextQuestion() {
-  if (!quizActive) return;
+  if (!quizActive || answering) return;
   recordAnswer(null);
   advance();
 }
@@ -1215,6 +1720,7 @@ function markForReview() {
 /* End quiz */
 function endQuiz(timedOut = false) {
   if (!quizActive) return; // guard against double-ending (timer + last answer)
+  const left = Math.max(timeLeft, 0);
   stopQuiz();
 
   // Questions never reached count as unanswered
@@ -1224,18 +1730,73 @@ function endQuiz(timedOut = false) {
   }
 
   const seconds = Math.round((Date.now() - quizStartedAt) / 1000);
+  const outcome = applyQuizProgress(score, quiz.length, quizTopic, {
+    level: quizLevel,
+    seconds,
+    timeLeft: timedOut ? 0 : left,
+    timedOut,
+    reviewed: reviewList.length,
+    answers: quizAnswers.map(a => ({ q: a.q, correct: a.correct, skipped: a.chosen === null }))
+  });
+
+  renderResults(outcome, seconds, timedOut);
+}
+
+/* Results screen: stars, XP, unlocks, per-question review */
+function renderResults(o, seconds, timedOut) {
+  showQuizPanel("results");
+  const subject = SUBJECT[quizTopic];
+  const info = LEVEL_INFO[quizLevel - 1];
   const pct = Math.round((score / quiz.length) * 100);
 
-  showQuizPanel("results");
-  document.getElementById("quizScore").innerHTML =
-    `You scored <strong>${score}</strong> out of <strong>${quiz.length}</strong> (${pct}%) in ${formatDuration(seconds)}` +
-    (timedOut ? " — time ran out." : ".");
+  document.getElementById("resultLevel").textContent =
+    `${subject.icon} ${subject.world} · Level ${quizLevel} ${info.icon} ${info.name}`;
+
+  const starsBox = document.getElementById("resultStars");
+  starsBox.innerHTML = "";
+  for (let i = 0; i < 3; i++) starsBox.append(el("span", { class: "star" + (i < o.stars ? " on" : "") }, "★"));
+
+  const titles = ["So close!", "Level cleared!", "Great job!", "Perfect!"];
+  document.getElementById("resultTitle").textContent =
+    (o.stars === 0 ? "😮 " : o.stars === 3 ? "🎉 " : "✅ ") + titles[o.stars] + ` (${o.stars} of 3 stars)`;
+
+  document.getElementById("quizScore").textContent =
+    `You scored ${score} out of ${quiz.length} (${pct}%) in ${formatDuration(seconds)}` +
+    (timedOut ? " — time ran out." : ".") +
+    (o.passed ? "" : " Get 4 of 6 right to clear this level.");
+
+  const xpBox = document.getElementById("resultXp");
+  xpBox.innerHTML = "";
+  xpBox.append(el("span", { class: "chip" }, el("strong", {}, `+${o.xp} XP`)));
+  o.xpParts.forEach(x => xpBox.append(el("span", { class: "chip muted" }, `${x.label} +${x.xp}`)));
+
+  const banners = document.getElementById("resultBanners");
+  banners.innerHTML = "";
+  const banner = text => banners.append(el("div", { class: "banner" }, text));
+  if (o.rankUp) banner(`${o.rankUp.icon} Rank up! You are now a ${o.rankUp.name}.`);
+  if (o.unlockedNext) {
+    const next = LEVEL_INFO[o.unlockedNext - 1];
+    banner(`🔓 Level ${o.unlockedNext} ${next.icon} ${next.name} unlocked!`);
+  }
+  if (o.worldComplete) banner(`🏆 You beat the Boss and conquered ${subject.world}!`);
+  if (o.newBestStars) banner("⭐ New best for this level!");
+
+  // Buttons
+  const btns = document.getElementById("resultButtons");
+  btns.innerHTML = "";
+  if (o.passed && quizLevel < LEVELS_PER_SUBJECT) {
+    btns.append(el("button", { class: "btn btn-primary", onclick: () => startLevel(quizTopic, quizLevel + 1) },
+      `Next: Level ${quizLevel + 1} ▶`));
+  }
+  btns.append(el("button", { class: "btn " + (o.passed ? "btn-secondary" : "btn-primary"), onclick: () => startLevel(quizTopic, quizLevel) },
+    o.stars === 3 ? "Play again" : "Retry for more stars"));
+  btns.append(el("button", { class: "btn btn-secondary", onclick: closeQuiz }, "Back to worlds"));
 
   // Per-question breakdown
   const list = document.getElementById("quizAnswers");
   list.innerHTML = "";
   quizAnswers.forEach((a, i) => {
-    const icon = el("span", { class: "status-icon " + (a.correct ? "s-good" : "s-critical") }, a.correct ? "✓" : "✕");
+    const icon = el("span", { class: "status-icon " + (a.correct ? "s-good" : "s-critical"), "aria-label": a.correct ? "Correct" : "Wrong" }, a.correct ? "✓" : "✕");
     const yours = a.chosen === null ? "Not answered" : a.options[a.chosen];
     const detail = a.correct
       ? el("div", { class: "muted" }, "Your answer: " + yours)
@@ -1243,19 +1804,30 @@ function endQuiz(timedOut = false) {
     list.appendChild(el("li", {}, icon, el("div", {}, el("div", {}, `Q${i + 1}. ${a.q}`), detail)));
   });
 
-  // Save progress (from Cell 3)
-  applyQuizProgress(score, quiz.length, quizTopic, {
-    seconds,
-    timedOut,
-    reviewed: reviewList.length,
-    answers: quizAnswers.map(a => ({ q: a.q, correct: a.correct, skipped: a.chosen === null }))
-  });
+  if (o.passed) celebrate(o.stars);
+  btns.firstElementChild.focus({ preventScroll: true });
+}
+
+/* Confetti burst on clearing a level */
+function celebrate(stars) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const colors = ["#3987e5", "#d95926", "#199e70", "#fab219", "#d55181", "#9085e9"];
+  const count = 40 + stars * 25;
+  for (let i = 0; i < count; i++) {
+    const c = el("div", { class: "confetti" });
+    c.style.left = Math.random() * 100 + "vw";
+    c.style.background = colors[i % colors.length];
+    c.style.animationDuration = 1.8 + Math.random() * 1.6 + "s";
+    c.style.animationDelay = Math.random() * 0.4 + "s";
+    document.body.append(c);
+    setTimeout(() => c.remove(), 4000);
+  }
 }
 </script>
 
 <script>
 /* ---------------------------------------------------------
-   CELL 5 — DASHBOARD (STATS, CHARTS, INSIGHTS, TABLES)
+   CELL 5 — DASHBOARD (WORLDS, STATS, CHARTS, TABLES)
    --------------------------------------------------------- */
 
 const dashFilter = { range: "all", topic: "all" };
@@ -1285,6 +1857,8 @@ function svgEl(tag, attrs = {}) {
 const pctOf = e => (e.total ? Math.round((e.score / e.total) * 100) : 0);
 const plural = (n, word, many = word + "s") => `${n} ${n === 1 ? word : many}`;
 const nQuizzes = n => plural(n, "quiz", "quizzes");
+const starText = (n, max = 3) => "★".repeat(n) + "☆".repeat(Math.max(max - n, 0));
+const levelLabel = lvl => (lvl ? `L${lvl} ${LEVEL_INFO[lvl - 1].name}` : "—");
 
 function formatDuration(sec) {
   sec = Math.round(sec || 0);
@@ -1334,7 +1908,7 @@ function showTipAt(node, value, lines) {
 function hideTip() { $("tip").style.display = "none"; }
 
 function attachTip(node, value, lines) {
-  node.tabIndex = 0;
+  if (node.tabIndex < 0) node.tabIndex = 0;
   node.setAttribute("aria-label", [value, ...lines].join(", "));
   node.onpointermove = e => showTip(e.clientX, e.clientY, value, lines);
   node.onpointerleave = hideTip;
@@ -1356,30 +1930,39 @@ function filterHistory(history) {
 }
 
 function summarize(h) {
-  const quizzes = h.length;
+  const count = h.length;
   const questions = h.reduce((s, e) => s + e.total, 0);
   const correct = h.reduce((s, e) => s + e.score, 0);
   const pcts = h.map(pctOf);
   const totalSeconds = h.reduce((s, e) => s + (e.seconds || 0), 0);
   return {
-    quizzes,
+    quizzes: count,
     questions,
     correct,
     accuracy: questions ? Math.round((correct / questions) * 100) : 0,
-    best: quizzes ? Math.max(...pcts) : 0,
-    avg: quizzes ? Math.round(pcts.reduce((a, b) => a + b, 0) / quizzes) : 0,
+    best: count ? Math.max(...pcts) : 0,
+    avg: count ? Math.round(pcts.reduce((a, b) => a + b, 0) / count) : 0,
     perfect: pcts.filter(x => x === 100).length,
+    xp: h.reduce((s, e) => s + (e.xp || 0), 0),
+    passed: h.filter(e => e.passed).length,
     totalSeconds,
-    avgSeconds: quizzes ? totalSeconds / quizzes : 0,
-    daysActive: new Set(h.map(e => new Date(e.date).toDateString())).size,
-    last: quizzes ? h[quizzes - 1] : null
+    avgSeconds: count ? totalSeconds / count : 0,
+    last: count ? h[count - 1] : null
   };
 }
 
-function topicStats(h) {
-  return TOPICS
-    .filter(t => dashFilter.topic === "all" || dashFilter.topic === t)
-    .map(t => ({ topic: t, ...summarize(h.filter(e => e.topic === t)) }));
+function subjectStats(h) {
+  return SUBJECTS
+    .filter(s => dashFilter.topic === "all" || dashFilter.topic === s.id)
+    .map(s => ({ topic: s.id, ...summarize(h.filter(e => e.topic === s.id)) }));
+}
+
+/* Next level to play in a subject (null when the world is complete) */
+function nextLevel(p, subjectId) {
+  for (let l = 1; l <= LEVELS_PER_SUBJECT; l++) {
+    if (!levelRecord(p, subjectId, l).cleared) return l;
+  }
+  return null;
 }
 
 /* ---------- dashboard entry points ---------- */
@@ -1394,7 +1977,6 @@ function showDashboard() {
   document.getElementById("dashAvatar").textContent =
     currentUser.username.charAt(0).toUpperCase();
 
-  showQuizPanel("idle");
   historyExpanded = false;
 
   // Load progress
@@ -1409,19 +1991,20 @@ function updateDashboardProgress() {
   const h = filterHistory(p.history);
 
   renderProfile(p);
+  renderWorlds(p);
   renderAchievements(p);
 
   const untracked = p.totalQuizzes - p.history.length;
   $("legacyNote").textContent = untracked > 0
-    ? `${plural(untracked, "earlier quiz", "earlier quizzes")} saved before detailed results count toward level and streak only.`
+    ? `${plural(untracked, "earlier quiz", "earlier quizzes")} saved before detailed results aren't shown here.`
     : "";
 
   renderKpis(h);
   renderScoreChart(h);
   renderTopicBars(h);
   renderHeatmap(h);
-  renderInsights(h);
-  renderTopicTable(h);
+  renderInsights(h, p);
+  renderTopicTable(h, p);
   renderHistoryTable(h);
   renderMissed(h);
 }
@@ -1431,55 +2014,122 @@ function refreshDashboardAfterQuiz() {
   updateDashboardProgress();
 }
 
-/* ---------- profile: level & streak ---------- */
+/* ---------- profile: rank, XP, stars, levels ---------- */
 function renderProfile(p) {
-  const streak = currentStreak(p);
+  const t = totals(p);
+  const maxLevels = SUBJECTS.length * LEVELS_PER_SUBJECT;
+  const ri = rankIndex(p.xp);
+  const rank = RANKS[ri];
+  const next = RANKS[ri + 1];
 
-  $("dashTag").textContent =
-    `Level ${p.level} • Accuracy ${p.accuracy}% • Streak ${plural(streak, "day")}`;
+  $("dashTag").textContent = `${rank.icon} ${rank.name} • ${p.xp} XP • ${t.stars} ★`;
+  $("rankValue").textContent = `${rank.icon} ${rank.name}`;
 
-  $("levelValue").textContent = `Level ${p.level}`;
-  const next = LEVELS.find(l => l.level > p.level);
-  const fill = $("levelMeter").firstElementChild;
-  if (!next) {
-    fill.style.width = "100%";
-    $("levelNext").textContent = "Top level reached — keep your accuracy above 90%.";
+  const fill = $("rankMeter").firstElementChild;
+  let pct = 100;
+  if (next) {
+    pct = Math.round(((p.xp - rank.xp) / (next.xp - rank.xp)) * 100);
+    $("rankNext").textContent = `${p.xp} XP · ${next.xp - p.xp} XP to ${next.icon} ${next.name}`;
   } else {
-    // Progress = average of the two requirements
-    const qPart = Math.min(p.totalQuizzes / next.quizzes, 1);
-    const aPart = Math.min(p.accuracy / (next.accuracy + 1), 1);
-    fill.style.width = Math.round(((qPart + aPart) / 2) * 100) + "%";
-    const needQ = Math.max(next.quizzes - p.totalQuizzes, 0);
-    const parts = [];
-    if (needQ) parts.push(plural(needQ, "more quiz", "more quizzes"));
-    if (p.accuracy <= next.accuracy) parts.push(`accuracy above ${next.accuracy}% (now ${p.accuracy}%)`);
-    $("levelNext").textContent = `Next: Level ${next.level} — ` + (parts.join(" and ") || "almost there");
+    $("rankNext").textContent = `${p.xp} XP · Top rank reached!`;
   }
-  $("levelMeter").setAttribute("aria-valuenow", parseInt(fill.style.width, 10));
+  fill.style.width = pct + "%";
+  $("rankMeter").setAttribute("aria-valuenow", pct);
 
-  $("streakValue").textContent = `🔥 ${plural(streak, "day")}`;
-  $("streakBest").textContent = `Best: ${plural(p.bestStreak, "day")}` +
-    (p.lastQuizDate ? ` · Last quiz ${fmtDate(p.lastQuizDate)}` : "");
+  $("starsValue").textContent = `⭐ ${t.stars}`;
+  $("starsSub").textContent = `of ${maxLevels * 3} · ${t.threeStar} perfect levels`;
+  $("levelsValue").textContent = `🔓 ${t.cleared}`;
+  $("levelsSub").textContent = `of ${maxLevels} levels`;
+}
+
+/* ---------- worlds: level map per subject ---------- */
+function renderWorlds(p) {
+  const box = $("worlds");
+  box.innerHTML = "";
+
+  SUBJECTS.forEach(s => {
+    const next = nextLevel(p, s.id);
+    let cleared = 0, stars = 0;
+    const path = el("div", { class: "path" });
+
+    for (let l = 1; l <= LEVELS_PER_SUBJECT; l++) {
+      const rec = levelRecord(p, s.id, l);
+      const unlocked = isUnlocked(p, s.id, l);
+      const info = LEVEL_INFO[l - 1];
+      if (rec.cleared) cleared++;
+      stars += rec.stars;
+
+      const cls = ["node"];
+      if (l === LEVELS_PER_SUBJECT) cls.push("boss");
+      if (rec.cleared) cls.push("cleared");
+      else if (l === next) cls.push("current");
+
+      const node = el("button", { class: cls.join(" "), onclick: () => startLevel(s.id, l) },
+        unlocked ? (l === LEVELS_PER_SUBJECT ? "👑" : String(l)) : "🔒");
+      node.disabled = !unlocked;
+      const tipLines = unlocked
+        ? [`${info.icon} ${info.name} · ${LEVEL_TIME[l - 1]}s timer`,
+           rec.plays ? `Best ${rec.bestPct}% · ${starText(rec.stars)} · played ${rec.plays}×` : "Not played yet"]
+        : [`${info.icon} ${info.name}`, `Clear Level ${l - 1} to unlock`];
+      attachTip(node, `Level ${l}`, tipLines);
+
+      const starsEl = el("div", { class: "n-stars", "aria-hidden": "true" });
+      if (rec.plays) {
+        starsEl.append("★".repeat(rec.stars), el("span", { class: "off" }, "★".repeat(3 - rec.stars)));
+      }
+
+      path.append(el("div", { class: "node-wrap" }, node, starsEl));
+      if (l < LEVELS_PER_SUBJECT) path.append(el("div", { class: "link" + (rec.cleared ? " done" : "") }));
+    }
+
+    const foot = el("div", { class: "world-foot" });
+    if (next) {
+      const info = LEVEL_INFO[next - 1];
+      foot.append(
+        el("div", { class: "small muted" }, `Next: Level ${next} ${info.icon} ${info.name}`),
+        el("button", { class: "btn btn-primary btn-small", onclick: () => startLevel(s.id, next) },
+          cleared ? "Continue ▶" : "Start ▶"));
+    } else {
+      foot.append(
+        el("div", { class: "small" }, "🏆 World conquered!"),
+        el("button", { class: "btn btn-secondary btn-small", onclick: () => startLevel(s.id, LEVELS_PER_SUBJECT) }, "Replay Boss"));
+    }
+
+    box.append(el("div", { class: "card world", style: `--world:${s.color}` },
+      el("div", { class: "world-head" },
+        el("div", { class: "world-icon", "aria-hidden": "true" }, s.icon),
+        el("div", {},
+          el("div", { class: "world-name" }, s.world),
+          el("div", { class: "small muted" }, `${s.name} · ${cleared}/${LEVELS_PER_SUBJECT} levels · ${stars}/${LEVELS_PER_SUBJECT * 3} ★`))),
+      path,
+      foot));
+  });
 }
 
 /* ---------- achievements (all-time) ---------- */
 function renderAchievements(p) {
   const h = p.history;
-  const s = summarize(h);
-  const topicsPlayed = new Set(h.map(e => e.topic)).size;
-  const fastPerfect = h.some(e => e.score === e.total && e.total >= 3 && e.seconds && e.seconds <= 30);
+  const t = totals(p);
+  const subjectsPlayed = new Set(h.map(e => e.topic).filter(id => SUBJECT[id])).size;
+  const bossCleared = SUBJECTS.some(s => levelRecord(p, s.id, LEVELS_PER_SUBJECT).cleared);
+  const worldDone = SUBJECTS.some(s => nextLevel(p, s.id) === null);
+  const allDone = SUBJECTS.every(s => nextLevel(p, s.id) === null);
+  const fastPerfect = h.some(e => e.score === e.total && e.total >= 6 && e.seconds && e.seconds <= 45);
+  const maxLevels = SUBJECTS.length * LEVELS_PER_SUBJECT;
 
   const list = [
     { icon: "🎯", name: "First steps", desc: "Finish your first quiz", ok: p.totalQuizzes >= 1 },
-    { icon: "💯", name: "Perfect score", desc: "Get 100% on a quiz", ok: s.perfect >= 1 },
-    { icon: "🔥", name: "On fire", desc: "3-day streak", ok: p.bestStreak >= 3 },
-    { icon: "📅", name: "Week warrior", desc: "7-day streak", ok: p.bestStreak >= 7 },
-    { icon: "📚", name: "Dedicated", desc: "Finish 10 quizzes", ok: p.totalQuizzes >= 10 },
-    { icon: "🏃", name: "Marathon", desc: "Finish 25 quizzes", ok: p.totalQuizzes >= 25 },
-    { icon: "🧭", name: "All-rounder", desc: "Try every topic", ok: topicsPlayed === TOPICS.length },
-    { icon: "🏹", name: "Sharpshooter", desc: "90%+ over 20 questions", ok: s.questions >= 20 && s.accuracy >= 90 },
-    { icon: "⚡", name: "Lightning", desc: "Perfect 3+ questions in ≤ 30s", ok: fastPerfect },
-    { icon: "👑", name: "Master", desc: "Reach level 3", ok: p.level >= 3 }
+    { icon: "🔓", name: "Level up", desc: "Clear your first level", ok: t.cleared >= 1 },
+    { icon: "💯", name: "Perfect score", desc: "Get 3 stars on a level", ok: t.threeStar >= 1 },
+    { icon: "🧭", name: "Explorer", desc: "Play every world", ok: subjectsPlayed === SUBJECTS.length },
+    { icon: "👑", name: "Boss slayer", desc: "Beat any Boss level", ok: bossCleared },
+    { icon: "🌍", name: "Conqueror", desc: "Clear all 5 levels of a world", ok: worldDone },
+    { icon: "⚡", name: "Lightning", desc: "Perfect level in ≤ 45s", ok: fastPerfect },
+    { icon: "⭐", name: "Star collector", desc: "Earn 30 stars", ok: t.stars >= 30 },
+    { icon: "💎", name: "Perfectionist", desc: "3 stars on 10 levels", ok: t.threeStar >= 10 },
+    { icon: "🏆", name: "Grandmaster", desc: "Reach 2500 XP", ok: p.xp >= 2500 },
+    { icon: "🌌", name: "Completionist", desc: `Clear all ${maxLevels} levels`, ok: allDone },
+    { icon: "🌟", name: "Legend", desc: `All ${maxLevels * 3} stars`, ok: t.stars >= maxLevels * 3 }
   ];
 
   const box = $("badges");
@@ -1520,15 +2170,15 @@ function renderKpis(h) {
   }
 
   box.append(
-    tile("Quizzes taken", s.quizzes, s.last ? `Last: ${fmtDateTime(s.last.date)}` : null),
+    tile("Quizzes played", s.quizzes, s.last ? `Last: ${fmtDateTime(s.last.date)}` : null),
     tile("Average score", s.quizzes ? `${s.avg}%` : "—", trend),
     tile("Best score", s.quizzes ? `${s.best}%` : "—", s.quizzes ? plural(s.perfect, "perfect quiz", "perfect quizzes") : null),
     tile("Questions answered", s.questions, s.quizzes ? `${s.questions - s.correct} wrong or skipped` : null),
+    tile("XP earned", s.xp, s.quizzes ? `${Math.round(s.xp / s.quizzes)} XP per quiz` : null),
+    tile("Levels passed", s.passed, s.quizzes ? `${Math.round((s.passed / s.quizzes) * 100)}% of attempts` : null),
     tile("Total practice time", formatDuration(s.totalSeconds), null),
     tile("Avg time per quiz", s.quizzes ? formatDuration(s.avgSeconds) : "—",
-      s.questions ? `${formatDuration(s.totalSeconds / s.questions)} per question` : null),
-    tile("Days active", s.daysActive, null),
-    tile("Timed out", h.filter(e => e.timedOut).length, "Quizzes where time ran out")
+      s.questions ? `${formatDuration(s.totalSeconds / s.questions)} per question` : null)
   );
 }
 
@@ -1537,7 +2187,7 @@ function renderScoreChart(h) {
   const box = $("scoreChart");
   box.innerHTML = "";
   const data = h.slice(-30);
-  if (!data.length) { box.append(emptyState("Take a quiz to see your scores over time.")); return; }
+  if (!data.length) { box.append(emptyState("Play a level to see your scores over time.")); return; }
 
   const W = Math.max(box.clientWidth, 280), H = 230;
   const m = { t: 14, r: 44, b: 28, l: 40 };
@@ -1593,8 +2243,11 @@ function renderScoreChart(h) {
     cross.setAttribute("x1", pts[i][0]); cross.setAttribute("x2", pts[i][0]);
     focusDot.setAttribute("cx", pts[i][0]); focusDot.setAttribute("cy", pts[i][1]);
     cross.setAttribute("visibility", "visible"); focusDot.setAttribute("visibility", "visible");
-    const lines = [`${e.score} / ${e.total} correct`, `${TOPIC_NAMES[e.topic]} · ${fmtDateTime(e.date)}`,
-      `Time: ${formatDuration(e.seconds)}${e.timedOut ? " (timed out)" : ""}`];
+    const lines = [
+      `${e.score} / ${e.total} correct` + (e.level ? ` · ${starText(e.stars || 0)}` : ""),
+      `${subjectName(e.topic)} ${e.level ? "· " + levelLabel(e.level) : ""}`,
+      `${fmtDateTime(e.date)} · ${formatDuration(e.seconds)}${e.timedOut ? " (timed out)" : ""}`
+    ];
     if (clientX == null) showTipAt(focusDot, pctOf(e) + "%", lines);
     else showTip(clientX, clientY, pctOf(e) + "%", lines);
   };
@@ -1620,18 +2273,18 @@ function renderScoreChart(h) {
   box.append(svg);
 }
 
-/* ---------- bar chart: accuracy by topic ---------- */
+/* ---------- bar chart: accuracy by subject ---------- */
 function renderTopicBars(h) {
   const box = $("topicBars");
   box.innerHTML = "";
-  topicStats(h).forEach(t => {
-    const name = el("div", { class: "bar-name" }, TOPIC_NAMES[t.topic],
+  subjectStats(h).forEach(t => {
+    const name = el("div", { class: "bar-name" }, subjectName(t.topic).replace(" & Probability", " & Prob."),
       el("span", { class: "small muted" }, t.quizzes ? nQuizzes(t.quizzes) : "Not played"));
     const track = el("div", { class: "bar-track" });
     if (t.quizzes) {
       track.append(el("div", { class: "bar", style: `width:${Math.max(t.accuracy, 1)}%` }));
       track.append(el("span", { class: "bar-value", style: `left:calc(${t.accuracy}% + 6px)` }, t.accuracy + "%"));
-      attachTip(track, t.accuracy + "%", [`${TOPIC_NAMES[t.topic]}: ${t.correct} of ${t.questions} correct`,
+      attachTip(track, t.accuracy + "%", [`${subjectName(t.topic)}: ${t.correct} of ${t.questions} correct`,
         `Best quiz ${t.best}% · average ${t.avg}%`]);
     } else {
       track.append(el("span", { class: "bar-value muted", style: "left:6px;font-weight:400" }, "—"));
@@ -1675,42 +2328,54 @@ function renderHeatmap(h) {
 }
 
 /* ---------- insights ---------- */
-function renderInsights(h) {
+function renderInsights(h, p) {
   const box = $("insights");
   box.innerHTML = "";
   const item = (icon, title, text) => box.append(el("li", {},
     el("span", { class: "i-icon", "aria-hidden": "true" }, icon),
     el("div", {}, el("div", { style: "font-weight:600" }, title), el("div", { class: "muted" }, text))));
 
-  if (!h.length) { box.append(emptyState("Insights appear after your first quiz.")); return; }
+  // Next adventure (always shown, from all-time progress)
+  const candidates = SUBJECTS
+    .filter(s => dashFilter.topic === "all" || dashFilter.topic === s.id)
+    .map(s => ({ s, next: nextLevel(p, s.id) }))
+    .filter(c => c.next);
+  if (candidates.length) {
+    // Prefer the world you've progressed furthest in, so you can finish it
+    const pick = candidates.sort((a, b) => b.next - a.next)[0];
+    const info = LEVEL_INFO[pick.next - 1];
+    item("🗺️", `Next up: ${pick.s.world} · Level ${pick.next}`,
+      `${pick.s.name} ${info.icon} ${info.name} — ${LEVEL_TIME[pick.next - 1]}s on the clock.`);
+  } else {
+    item("🌌", "Every level in view cleared", "Replay levels to collect any missing stars.");
+  }
 
-  const stats = topicStats(h);
+  if (!h.length) { box.append(emptyState("More insights appear after you play.")); return; }
+
+  const stats = subjectStats(h);
   const played = stats.filter(t => t.quizzes);
   const weakest = [...played].sort((a, b) => a.accuracy - b.accuracy)[0];
   const strongest = [...played].sort((a, b) => b.accuracy - a.accuracy)[0];
   const unplayed = stats.filter(t => !t.quizzes);
 
   if (weakest && weakest.accuracy < 80) {
-    item("🎯", `Focus next: ${TOPIC_NAMES[weakest.topic]}`,
-      `${weakest.accuracy}% accuracy over ${plural(weakest.questions, "question")}. A few more rounds here will lift your overall score most.`);
+    item("🎯", `Focus: ${subjectName(weakest.topic)}`,
+      `${weakest.accuracy}% accuracy over ${plural(weakest.questions, "question")}. Replaying these levels will lift your score most.`);
   } else {
-    item("🚀", "Everything looks strong", "All played topics are at 80% or higher. Try a shorter time limit to push yourself.");
+    item("🚀", "Everything looks strong", "All played subjects are at 80% or higher. Push on to the Boss levels!");
   }
   if (strongest && played.length > 1 && strongest !== weakest) {
-    item("🏆", `Strongest topic: ${TOPIC_NAMES[strongest.topic]}`, `${strongest.accuracy}% accuracy, best quiz ${strongest.best}%.`);
+    item("🏆", `Strongest: ${subjectName(strongest.topic)}`, `${strongest.accuracy}% accuracy, best quiz ${strongest.best}%.`);
   }
   if (unplayed.length) {
-    item("🧭", "Not tried yet", unplayed.map(t => TOPIC_NAMES[t.topic]).join(", ") + " — give it a go to unlock All-rounder.");
+    item("🧭", "Worlds not explored yet", unplayed.map(t => SUBJECT[t.topic].world).join(", ") + ".");
   }
 
   const timedOut = h.filter(e => e.timedOut).length;
-  if (timedOut) item("⏱️", "Watch the clock", `Time ran out on ${nQuizzes(timedOut)}. Try a longer limit or skip hard questions.`);
-
-  const skipped = h.reduce((s, e) => s + (e.answers || []).filter(a => a.skipped).length, 0);
-  if (skipped) item("⏭️", "Skipped questions", `${plural(skipped, "question")} skipped or left unanswered — they count as wrong.`);
+  if (timedOut) item("⏱️", "Watch the clock", `Time ran out on ${nQuizzes(timedOut)}. Skip hard questions and come back stronger.`);
 
   const fastest = [...h].filter(e => e.score === e.total && e.seconds).sort((a, b) => a.seconds - b.seconds)[0];
-  if (fastest) item("⚡", "Fastest perfect quiz", `${TOPIC_NAMES[fastest.topic]} in ${formatDuration(fastest.seconds)} on ${fmtDate(fastest.date)}.`);
+  if (fastest) item("⚡", "Fastest perfect quiz", `${subjectName(fastest.topic)} ${levelLabel(fastest.level)} in ${formatDuration(fastest.seconds)}.`);
 }
 
 /* ---------- tables ---------- */
@@ -1721,22 +2386,30 @@ function buildTable(headers, rows) {
   return el("table", {}, thead, tbody);
 }
 
-function renderTopicTable(h) {
+function renderTopicTable(h, p) {
   const box = $("topicTable");
   box.innerHTML = "";
-  const rows = topicStats(h).map(t => [
-    TOPIC_NAMES[t.topic],
-    t.quizzes,
-    t.questions,
-    t.correct,
-    t.quizzes ? t.accuracy + "%" : "—",
-    t.quizzes ? t.best + "%" : "—",
-    t.quizzes ? formatDuration(t.avgSeconds) : "—",
-    t.last ? fmtDate(t.last.date) : "—",
-    statusPill(statusFor(t.accuracy, t.quizzes > 0))
-  ]);
+  const rows = subjectStats(h).map(t => {
+    let cleared = 0, stars = 0;
+    for (let l = 1; l <= LEVELS_PER_SUBJECT; l++) {
+      const r = levelRecord(p, t.topic, l);
+      if (r.cleared) cleared++;
+      stars += r.stars;
+    }
+    return [
+      `${SUBJECT[t.topic].icon} ${subjectName(t.topic)}`,
+      `${cleared} / ${LEVELS_PER_SUBJECT}`,
+      el("span", { class: "t-stars" }, `${stars} / ${LEVELS_PER_SUBJECT * 3} ★`),
+      t.quizzes,
+      t.quizzes ? t.accuracy + "%" : "—",
+      t.quizzes ? t.best + "%" : "—",
+      t.quizzes ? formatDuration(t.avgSeconds) : "—",
+      t.last ? fmtDate(t.last.date) : "—",
+      statusPill(statusFor(t.accuracy, t.quizzes > 0))
+    ];
+  });
   box.append(buildTable([
-    { label: "Topic" }, { label: "Quizzes", num: true }, { label: "Questions", num: true }, { label: "Correct", num: true },
+    { label: "Subject" }, { label: "Levels", num: true }, { label: "Stars", num: true }, { label: "Quizzes", num: true },
     { label: "Accuracy", num: true }, { label: "Best", num: true }, { label: "Avg time", num: true },
     { label: "Last played" }, { label: "Status" }
   ], rows));
@@ -1756,17 +2429,26 @@ function renderHistoryTable(h) {
 
   const rows = shown.map(e => {
     const notes = [];
-    if (e.score === e.total) notes.push("Perfect");
     if (e.timedOut) notes.push("Timed out");
     const skipped = (e.answers || []).filter(a => a.skipped).length;
     if (skipped) notes.push(`${skipped} skipped`);
     if (e.reviewed) notes.push(`${e.reviewed} marked`);
-    return [fmtDateTime(e.date), TOPIC_NAMES[e.topic], `${e.score} / ${e.total}`, pctOf(e) + "%",
-      formatDuration(e.seconds), notes.join(" · ") || "—"];
+    return [
+      fmtDateTime(e.date),
+      subjectName(e.topic),
+      levelLabel(e.level),
+      `${e.score} / ${e.total}`,
+      pctOf(e) + "%",
+      e.level ? el("span", { class: "t-stars", "aria-label": `${e.stars} of 3 stars` },
+        "★".repeat(e.stars || 0), el("span", { class: "off" }, "★".repeat(3 - (e.stars || 0)))) : "—",
+      e.xp ? `+${e.xp}` : "—",
+      formatDuration(e.seconds),
+      notes.join(" · ") || "—"
+    ];
   });
   box.append(buildTable([
-    { label: "Date" }, { label: "Topic" }, { label: "Score", num: true }, { label: "%", num: true },
-    { label: "Time", num: true }, { label: "Notes" }
+    { label: "Date" }, { label: "Subject" }, { label: "Level" }, { label: "Score", num: true }, { label: "%", num: true },
+    { label: "Stars" }, { label: "XP", num: true }, { label: "Time", num: true }, { label: "Notes" }
   ], rows));
 
   if (all.length > LIMIT) {
@@ -1793,23 +2475,28 @@ function renderMissed(h) {
     return;
   }
   box.append(buildTable([
-    { label: "Question", wrap: true }, { label: "Topic" }, { label: "Missed", num: true }, { label: "Miss rate", num: true }
-  ], rows.map(r => [r.q, TOPIC_NAMES[r.topic], `${r.missed} / ${r.attempts}`, Math.round((r.missed / r.attempts) * 100) + "%"])));
+    { label: "Question", wrap: true }, { label: "Subject" }, { label: "Missed", num: true }, { label: "Miss rate", num: true }
+  ], rows.map(r => [r.q, subjectName(r.topic), `${r.missed} / ${r.attempts}`, Math.round((r.missed / r.attempts) * 100) + "%"])));
 }
 
 /* ---------- filters ---------- */
-function setupFilter(id, key) {
-  $(id).querySelectorAll("button").forEach(btn => {
-    btn.onclick = () => {
-      dashFilter[key] = btn.dataset.value;
-      $(id).querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b === btn ? "true" : "false"));
-      historyExpanded = false;
-      updateDashboardProgress();
-    };
-  });
-}
-setupFilter("rangeFilter", "range");
-setupFilter("topicFilter", "topic");
+$("rangeFilter").querySelectorAll("button").forEach(btn => {
+  btn.onclick = () => {
+    dashFilter.range = btn.dataset.value;
+    $("rangeFilter").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", b === btn ? "true" : "false"));
+    historyExpanded = false;
+    updateDashboardProgress();
+  };
+});
+
+const subjectSelect = $("subjectFilter");
+subjectSelect.append(el("option", { value: "all" }, "All subjects"),
+  ...SUBJECTS.map(s => el("option", { value: s.id }, `${s.icon} ${s.name}`)));
+subjectSelect.onchange = () => {
+  dashFilter.topic = subjectSelect.value;
+  historyExpanded = false;
+  updateDashboardProgress();
+};
 
 /* Re-draw the line chart to fit its card on resize */
 let resizeTimer;
