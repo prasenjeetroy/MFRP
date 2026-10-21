@@ -171,7 +171,7 @@
       margin: 8px 0 4px;
     }
 
-    input, select {
+    input, select, textarea {
       width: 100%;
       padding: 8px 10px;
       border-radius: 8px;
@@ -180,6 +180,10 @@
       color: var(--text);
       font-size: 13px;
     }
+
+    textarea { resize: vertical; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; line-height: 1.4; }
+    input[type="file"] { padding: 6px; font-size: 12px; }
+    .steps { margin: 4px 0 12px 18px; font-size: 13px; line-height: 1.7; }
 
     .row {
       display: flex;
@@ -773,6 +777,22 @@
           </div>
           <div id="loginStatus" class="status"></div>
         </div>
+
+        <div class="card">
+          <div class="card-title">📲 Bring progress from another device</div>
+          <div class="card-meta">On the other device, log in and press <strong>Move progress</strong>. Then load that file or paste its code here.</div>
+
+          <label for="importFile">Progress file</label>
+          <input id="importFile" type="file" accept=".json,.txt,application/json,text/plain" />
+
+          <label for="importCode">…or paste the transfer code</label>
+          <textarea id="importCode" rows="3" placeholder="MLP1…" spellcheck="false"></textarea>
+
+          <div class="row">
+            <button class="btn btn-primary" onclick="importProgress()">Load progress</button>
+          </div>
+          <div id="importStatus" class="status"></div>
+        </div>
       </div>
     </section>
 
@@ -809,6 +829,7 @@
         </div>
 
         <div class="row" style="margin:0;justify-content:flex-end;">
+          <button class="btn btn-primary btn-small" onclick="openTransfer()">📲 Move progress</button>
           <button class="btn btn-secondary btn-small" onclick="resetProgress()">Reset progress</button>
           <button class="btn btn-secondary btn-small" onclick="logout()">Log out</button>
         </div>
@@ -948,6 +969,30 @@
     </div>
   </div>
 
+  <!-- TRANSFER MODAL -->
+  <div class="modal" id="transferModal" role="dialog" aria-modal="true" aria-labelledby="transferTitle">
+    <div class="modal-card">
+      <div class="quiz-head">
+        <div class="title" id="transferTitle">📲 Move your progress to another device</div>
+        <button class="btn btn-secondary btn-small" onclick="closeTransfer()">Close</button>
+      </div>
+      <ol class="steps">
+        <li>Download your progress file (or copy the transfer code).</li>
+        <li>Send it to your other device — email, chat, cloud drive or USB.</li>
+        <li>On the other device, open MathLearn and use <strong>Bring progress from another device</strong> on the login screen.</li>
+      </ol>
+      <div class="row">
+        <button class="btn btn-primary" onclick="downloadProgress()">⬇ Download progress file</button>
+        <button class="btn btn-secondary" onclick="copyTransferCode()">📋 Copy transfer code</button>
+      </div>
+      <label for="exportCode">Transfer code</label>
+      <textarea id="exportCode" rows="4" readonly spellcheck="false"></textarea>
+      <div class="small muted" id="exportInfo" style="margin-top:6px;"></div>
+      <div class="small muted" style="margin-top:4px;">Keep it private: it includes your PINs so you can log in on the other device.</div>
+      <div id="transferStatus" class="status"></div>
+    </div>
+  </div>
+
   <div id="tip" role="tooltip"></div>
 
 <script>
@@ -1047,6 +1092,7 @@ function login() {
 /* Logout */
 function logout() {
   closeQuiz();
+  closeTransfer();
   currentUser = null;
   document.getElementById("dashboard").style.display = "none";
   document.getElementById("accounts").style.display = "block";
@@ -2505,6 +2551,245 @@ window.addEventListener("resize", () => {
   resizeTimer = setTimeout(() => {
     if (currentUser) renderScoreChart(filterHistory(getProgress(currentUser.username).history));
   }, 150);
+});
+
+/* ---------------------------------------------------------
+   CELL 6 — MOVE PROGRESS BETWEEN DEVICES (FILE OR CODE)
+   Progress lives in each browser's localStorage, so it is
+   carried across as a file / code and merged on arrival.
+   --------------------------------------------------------- */
+
+const TRANSFER_PLAIN = "MLP1:";   // base64 JSON
+const TRANSFER_ZIP = "MLP1Z:";    // deflate-raw compressed, then base64
+
+function bytesToB64(bytes) {
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) s += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(s);
+}
+function b64ToBytes(b64) {
+  const s = atob(b64);
+  const out = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
+  return out;
+}
+async function pipeBytes(bytes, stream) {
+  return new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(stream)).arrayBuffer());
+}
+
+function buildTransfer() {
+  return {
+    app: "mathlearn",
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    account: { username: currentUser.username, pin: currentUser.pin, backupPin: currentUser.backupPin },
+    progress: getProgress(currentUser.username)
+  };
+}
+
+async function encodeTransfer(obj) {
+  const bytes = new TextEncoder().encode(JSON.stringify(obj));
+  if (typeof CompressionStream === "function") {
+    try { return TRANSFER_ZIP + bytesToB64(await pipeBytes(bytes, new CompressionStream("deflate-raw"))); } catch (e) { /* fall back */ }
+  }
+  return TRANSFER_PLAIN + bytesToB64(bytes);
+}
+
+const friendlyError = msg => Object.assign(new Error(msg), { friendly: true });
+
+async function decodeTransfer(text) {
+  text = text.trim();
+  if (text.startsWith("{")) return JSON.parse(text); // progress file
+  const code = text.replace(/\s+/g, "");
+  if (code.startsWith(TRANSFER_ZIP)) {
+    if (typeof DecompressionStream !== "function") throw friendlyError("This browser can't read transfer codes. Use the progress file instead.");
+    const bytes = await pipeBytes(b64ToBytes(code.slice(TRANSFER_ZIP.length)), new DecompressionStream("deflate-raw"));
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+  if (code.startsWith(TRANSFER_PLAIN)) {
+    return JSON.parse(new TextDecoder().decode(b64ToBytes(code.slice(TRANSFER_PLAIN.length))));
+  }
+  throw friendlyError("That doesn't look like a MathLearn progress file or code.");
+}
+
+/* ---------- send ---------- */
+async function openTransfer() {
+  if (!currentUser) return;
+  $("transferStatus").textContent = "";
+  $("exportCode").value = "Preparing…";
+  $("transferModal").classList.add("open");
+  document.body.classList.add("modal-open");
+
+  const p = getProgress(currentUser.username);
+  const t = totals(p);
+  $("exportInfo").textContent =
+    `Includes ${nQuizzes(p.history.length)}, ${p.xp} XP, ${t.stars} stars and ${plural(t.cleared, "cleared level")}.`;
+  $("exportCode").value = await encodeTransfer(buildTransfer());
+}
+
+function closeTransfer() {
+  $("transferModal").classList.remove("open");
+  if (!$("quizModal").classList.contains("open")) document.body.classList.remove("modal-open");
+}
+
+function transferStatus(text, ok = true) {
+  $("transferStatus").textContent = text;
+  $("transferStatus").className = "status " + (ok ? "ok" : "err");
+}
+
+function downloadProgress() {
+  if (!currentUser) return;
+  const blob = new Blob([JSON.stringify(buildTransfer(), null, 1)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const safe = currentUser.username.replace(/[^a-z0-9_-]+/gi, "_") || "player";
+  const a = el("a", { href: url, download: `mathlearn-progress-${safe}-${new Date().toISOString().slice(0, 10)}.json` });
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  transferStatus("Progress file downloaded. Send it to your other device.");
+}
+
+async function copyTransferCode() {
+  const box = $("exportCode");
+  try {
+    await navigator.clipboard.writeText(box.value);
+  } catch (e) {
+    box.select();
+    document.execCommand("copy");
+  }
+  transferStatus("Transfer code copied. Paste it on your other device.");
+}
+
+/* ---------- receive ---------- */
+function cleanProgress(raw) {
+  const num = v => (Number.isFinite(+v) && +v > 0 ? +v : 0);
+  const p = defaultProgress();
+  raw = raw && typeof raw === "object" ? raw : {};
+  p.totalQuizzes = num(raw.totalQuizzes);
+  p.correctAnswers = num(raw.correctAnswers);
+  p.totalQuestions = num(raw.totalQuestions);
+  p.xp = num(raw.xp);
+
+  p.history = (Array.isArray(raw.history) ? raw.history : [])
+    .filter(e => e && typeof e.topic === "string" && !isNaN(new Date(e.date)))
+    .map(e => {
+      const entry = {
+        date: new Date(e.date).toISOString(),
+        topic: e.topic,
+        score: num(e.score),
+        total: Math.max(num(e.total), num(e.score)),
+        stars: Math.min(num(e.stars), 3),
+        passed: !!e.passed,
+        xp: num(e.xp),
+        seconds: num(e.seconds),
+        timedOut: !!e.timedOut,
+        reviewed: num(e.reviewed),
+        answers: (Array.isArray(e.answers) ? e.answers : [])
+          .filter(a => a && typeof a.q === "string")
+          .map(a => ({ q: a.q, correct: !!a.correct, skipped: !!a.skipped }))
+      };
+      if (num(e.level)) entry.level = Math.min(Math.round(num(e.level)), LEVELS_PER_SUBJECT);
+      return entry;
+    });
+
+  if (raw.levels && typeof raw.levels === "object") {
+    Object.entries(raw.levels).forEach(([k, r]) => {
+      if (!/^[a-z]+-[1-9]$/.test(k) || !r || typeof r !== "object") return;
+      p.levels[k] = { stars: Math.min(num(r.stars), 3), bestPct: Math.min(num(r.bestPct), 100), cleared: !!r.cleared, plays: num(r.plays) };
+    });
+  }
+  p.accuracy = p.totalQuestions ? Math.round((p.correctAnswers / p.totalQuestions) * 100) : 0;
+  return p;
+}
+
+/* Combine two progress records; quizzes present in both are counted once */
+function mergeProgress(a, b) {
+  const key = e => `${e.date}|${e.topic}|${e.level || 0}|${e.score}/${e.total}`;
+  const byKey = new Map(a.history.map(e => [key(e), e]));
+  const dup = [];
+  let added = 0;
+  b.history.forEach(e => {
+    if (byKey.has(key(e))) dup.push(e);
+    else { byKey.set(key(e), e); added++; }
+  });
+  const dupSum = f => dup.reduce((s, e) => s + f(e), 0);
+
+  const m = defaultProgress();
+  m.history = [...byKey.values()].sort((x, y) => new Date(x.date) - new Date(y.date)).slice(-MAX_HISTORY);
+  m.totalQuizzes = Math.max(a.totalQuizzes + b.totalQuizzes - dup.length, m.history.length);
+  m.correctAnswers = Math.max(a.correctAnswers + b.correctAnswers - dupSum(e => e.score), 0);
+  m.totalQuestions = Math.max(a.totalQuestions + b.totalQuestions - dupSum(e => e.total), m.correctAnswers);
+  m.accuracy = m.totalQuestions ? Math.round((m.correctAnswers / m.totalQuestions) * 100) : 0;
+  m.xp = Math.max(a.xp + b.xp - dupSum(e => e.xp || 0), a.xp, b.xp);
+
+  const dupPlays = {};
+  dup.forEach(e => { if (e.level) { const k = levelKey(e.topic, e.level); dupPlays[k] = (dupPlays[k] || 0) + 1; } });
+  new Set([...Object.keys(a.levels), ...Object.keys(b.levels)]).forEach(k => {
+    const ra = a.levels[k] || { stars: 0, bestPct: 0, cleared: false, plays: 0 };
+    const rb = b.levels[k] || { stars: 0, bestPct: 0, cleared: false, plays: 0 };
+    m.levels[k] = {
+      stars: Math.max(ra.stars, rb.stars),
+      bestPct: Math.max(ra.bestPct, rb.bestPct),
+      cleared: ra.cleared || rb.cleared,
+      plays: Math.max(ra.plays + rb.plays - (dupPlays[k] || 0), ra.plays, rb.plays)
+    };
+  });
+  return { merged: m, added };
+}
+
+async function importProgress() {
+  const status = $("importStatus");
+  const fail = text => { status.textContent = text; status.className = "status err"; };
+  status.textContent = "Loading…";
+  status.className = "status";
+
+  const file = $("importFile").files[0];
+  const text = file ? await file.text() : $("importCode").value.trim();
+  if (!text) return fail("Choose a progress file or paste a transfer code.");
+
+  let data;
+  try {
+    data = await decodeTransfer(text);
+  } catch (e) {
+    return fail(e.friendly ? e.message : "That file or code is damaged or incomplete — try copying it again.");
+  }
+  if (!data || data.app !== "mathlearn" || !data.account || typeof data.account.username !== "string" ||
+      !data.account.username.trim() || !data.progress) {
+    return fail("That isn't a MathLearn progress file or code.");
+  }
+
+  const name = data.account.username.trim();
+  let acc = accounts.find(a => a.username.toLowerCase() === name.toLowerCase());
+  const isNew = !acc;
+  if (isNew) {
+    const pin = String(data.account.pin || ""), backupPin = String(data.account.backupPin || "");
+    if (!PIN_PATTERN.test(pin) || !PIN_PATTERN.test(backupPin)) return fail("The file doesn't contain valid PINs for this account.");
+    acc = { username: name, pin, backupPin };
+    accounts.push(acc);
+    saveAccounts();
+  }
+
+  const { merged, added } = mergeProgress(getProgress(acc.username), cleanProgress(data.progress));
+  saveProgress(acc.username, merged);
+
+  const t = totals(merged);
+  const summary = `${merged.xp} XP · ${t.stars} ★ · ${plural(t.cleared, "level")} cleared · ${RANKS[rankIndex(merged.xp)].name}`;
+  status.className = "status ok";
+  status.textContent = isNew
+    ? `Account “${acc.username}” added with its progress (${summary}). Log in with the same PIN as on your other device.`
+    : added
+      ? `Added ${nQuizzes(added)} from your other device to “${acc.username}” (${summary}). Log in to continue.`
+      : `“${acc.username}” already had all of this progress (${summary}). Log in to continue.`;
+
+  populateLoginUsers();
+  $("loginUser").value = acc.username;
+  $("importFile").value = "";
+  $("importCode").value = "";
+}
+
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && $("transferModal").classList.contains("open")) closeTransfer();
 });
 
 /* Initialize (runs after every element and function above exists) */
