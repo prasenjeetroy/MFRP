@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Records</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <h1>Student Records</h1>
+    <span id="count" class="badge">0 students</span>
+  </header>
+
+  <main class="layout">
+    <!-- Form card -->
+    <section class="card">
+      <h2 id="form-title">Add Student</h2>
+      <form id="student-form" novalidate>
+        <input type="hidden" id="student-id">
+
+        <label for="name">Full name</label>
+        <input id="name" name="name" type="text" placeholder="e.g. Aarav Sharma" required>
+        <small class="error" data-for="name"></small>
+
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" placeholder="name@example.com" required>
+        <small class="error" data-for="email"></small>
+
+        <label for="age">Age</label>
+        <input id="age" name="age" type="number" min="10" max="100" required>
+        <small class="error" data-for="age"></small>
+
+        <label for="course">Course</label>
+        <select id="course" name="course_id" required></select>
+        <small class="error" data-for="course"></small>
+
+        <div class="actions">
+          <button type="submit" class="btn primary" id="submit-btn">Save</button>
+          <button type="button" class="btn" id="cancel-btn" hidden>Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Table card -->
+    <section class="card">
+      <div class="table-head">
+        <h2>All Students</h2>
+        <input id="search" type="search" placeholder="Search name or email...">
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Name</th><th>Email</th><th>Age</th><th>Course</th><th></th></tr>
+          </thead>
+          <tbody id="student-rows"></tbody>
+        </table>
+        <p id="empty" class="empty" hidden>No students found.</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
