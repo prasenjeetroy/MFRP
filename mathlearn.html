@@ -551,10 +551,9 @@
     /* ---------- KPI tiles ---------- */
     .kpis {
       display: grid;
-      grid-template-columns: minmax(220px, 1.3fr) repeat(4, minmax(140px, 1fr));
+      grid-template-columns: minmax(220px, 1.3fr) repeat(3, minmax(140px, 1fr));
       gap: 12px;
     }
-    .kpis > .card:last-child { grid-column: span 2; }
     .kpi-hero { grid-row: span 2; display: flex; flex-direction: column; justify-content: center; }
     .kpi-hero .kpi-value { font-size: 56px; line-height: 1; margin: 6px 0 8px; }
     .kpi-label { font-size: 12px; color: var(--muted); }
@@ -1133,6 +1132,7 @@ function getProgress(username) {
   if (!p.levels || typeof p.levels !== "object") p.levels = {};
   // Fields from older versions that are no longer used
   ["streak", "bestStreak", "lastQuizDate", "weakAreas", "level"].forEach(k => delete p[k]);
+  p.history.forEach(e => { delete e.seconds; });
   return p;
 }
 
@@ -1225,7 +1225,6 @@ function applyQuizProgress(score, totalQuestions, topic, details = {}) {
     stars,
     passed,
     xp,
-    seconds: details.seconds || 0,
     timedOut: !!details.timedOut,
     reviewed: details.reviewed || 0,
     answers: details.answers || []
@@ -1557,7 +1556,6 @@ let quizLevel = 1;
 let quizActive = false;
 let answering = false;
 let quizAnswers = [];
-let quizStartedAt = 0;
 let current = 0;
 let score = 0;
 let reviewList = [];
@@ -1630,7 +1628,6 @@ function startLevel(subjectId, level) {
     return { q, options, answer: options.indexOf(correct) };
   });
   quizActive = true;
-  quizStartedAt = Date.now();
 
   const info = LEVEL_INFO[level - 1];
   document.getElementById("quizCard").style.setProperty("--world", subject.color);
@@ -1771,21 +1768,19 @@ function endQuiz(timedOut = false) {
     recordAnswer(null);
   }
 
-  const seconds = Math.round((Date.now() - quizStartedAt) / 1000);
   const outcome = applyQuizProgress(score, quiz.length, quizTopic, {
     level: quizLevel,
-    seconds,
     timeLeft: timedOut ? 0 : left,
     timedOut,
     reviewed: reviewList.length,
     answers: quizAnswers.map(a => ({ q: a.q, correct: a.correct, skipped: a.chosen === null }))
   });
 
-  renderResults(outcome, seconds, timedOut);
+  renderResults(outcome, timedOut);
 }
 
 /* Results screen: stars, XP, unlocks, per-question review */
-function renderResults(o, seconds, timedOut) {
+function renderResults(o, timedOut) {
   showQuizPanel("results");
   const subject = SUBJECT[quizTopic];
   const info = LEVEL_INFO[quizLevel - 1];
@@ -1803,7 +1798,7 @@ function renderResults(o, seconds, timedOut) {
     (o.stars === 0 ? "😮 " : o.stars === 3 ? "🎉 " : "✅ ") + titles[o.stars] + ` (${o.stars} of 3 stars)`;
 
   document.getElementById("quizScore").textContent =
-    `You scored ${score} out of ${quiz.length} (${pct}%) in ${formatDuration(seconds)}` +
+    `You scored ${score} out of ${quiz.length} (${pct}%)` +
     (timedOut ? " — time ran out." : ".") +
     (o.passed ? "" : " Get 4 of 6 right to clear this level.");
 
@@ -1902,14 +1897,6 @@ const nQuizzes = n => plural(n, "quiz", "quizzes");
 const starText = (n, max = 3) => "★".repeat(n) + "☆".repeat(Math.max(max - n, 0));
 const levelLabel = lvl => (lvl ? `L${lvl} ${LEVEL_INFO[lvl - 1].name}` : "—");
 
-function formatDuration(sec) {
-  sec = Math.round(sec || 0);
-  if (sec < 60) return `${sec}s`;
-  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
-  if (h) return `${h}h ${m}m`;
-  return `${m}m ${s.toString().padStart(2, "0")}s`;
-}
-
 const fmtDate = d => new Date(d).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 const fmtDateTime = d => new Date(d).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const fmtDay = d => new Date(d).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
@@ -1976,7 +1963,6 @@ function summarize(h) {
   const questions = h.reduce((s, e) => s + e.total, 0);
   const correct = h.reduce((s, e) => s + e.score, 0);
   const pcts = h.map(pctOf);
-  const totalSeconds = h.reduce((s, e) => s + (e.seconds || 0), 0);
   return {
     quizzes: count,
     questions,
@@ -1987,8 +1973,6 @@ function summarize(h) {
     perfect: pcts.filter(x => x === 100).length,
     xp: h.reduce((s, e) => s + (e.xp || 0), 0),
     passed: h.filter(e => e.passed).length,
-    totalSeconds,
-    avgSeconds: count ? totalSeconds / count : 0,
     last: count ? h[count - 1] : null
   };
 }
@@ -2155,7 +2139,7 @@ function renderAchievements(p) {
   const bossCleared = SUBJECTS.some(s => levelRecord(p, s.id, LEVELS_PER_SUBJECT).cleared);
   const worldDone = SUBJECTS.some(s => nextLevel(p, s.id) === null);
   const allDone = SUBJECTS.every(s => nextLevel(p, s.id) === null);
-  const fastPerfect = h.some(e => e.score === e.total && e.total >= 6 && e.seconds && e.seconds <= 45);
+  const bossPerfect = SUBJECTS.some(s => levelRecord(p, s.id, LEVELS_PER_SUBJECT).stars === 3);
   const maxLevels = SUBJECTS.length * LEVELS_PER_SUBJECT;
 
   const list = [
@@ -2165,7 +2149,7 @@ function renderAchievements(p) {
     { icon: "🧭", name: "Explorer", desc: "Play every world", ok: subjectsPlayed === SUBJECTS.length },
     { icon: "👑", name: "Boss slayer", desc: "Beat any Boss level", ok: bossCleared },
     { icon: "🌍", name: "Conqueror", desc: "Clear all 5 levels of a world", ok: worldDone },
-    { icon: "⚡", name: "Lightning", desc: "Perfect level in ≤ 45s", ok: fastPerfect },
+    { icon: "⚡", name: "Boss master", desc: "3 stars on a Boss level", ok: bossPerfect },
     { icon: "⭐", name: "Star collector", desc: "Earn 30 stars", ok: t.stars >= 30 },
     { icon: "💎", name: "Perfectionist", desc: "3 stars on 10 levels", ok: t.threeStar >= 10 },
     { icon: "🏆", name: "Grandmaster", desc: "Reach 2500 XP", ok: p.xp >= 2500 },
@@ -2216,9 +2200,7 @@ function renderKpis(h) {
     tile("Best score", s.quizzes ? `${s.best}%` : "—", s.quizzes ? plural(s.perfect, "perfect quiz", "perfect quizzes") : null),
     tile("Questions answered", s.questions, s.quizzes ? `${s.questions - s.correct} wrong or skipped` : null),
     tile("XP earned", s.xp, s.quizzes ? `${Math.round(s.xp / s.quizzes)} XP per quiz` : null),
-    tile("Levels passed", s.passed, s.quizzes ? `${Math.round((s.passed / s.quizzes) * 100)}% of attempts` : null),
-    tile("Avg time per quiz", s.quizzes ? formatDuration(s.avgSeconds) : "—",
-      s.questions ? `${formatDuration(s.totalSeconds / s.questions)} per question` : null)
+    tile("Levels passed", s.passed, s.quizzes ? `${Math.round((s.passed / s.quizzes) * 100)}% of attempts` : null)
   );
 }
 
@@ -2286,7 +2268,7 @@ function renderScoreChart(h) {
     const lines = [
       `${e.score} / ${e.total} correct` + (e.level ? ` · ${starText(e.stars || 0)}` : ""),
       `${subjectName(e.topic)} ${e.level ? "· " + levelLabel(e.level) : ""}`,
-      `${fmtDateTime(e.date)} · ${formatDuration(e.seconds)}${e.timedOut ? " (timed out)" : ""}`
+      `${fmtDateTime(e.date)}${e.timedOut ? " · time ran out" : ""}`
     ];
     if (clientX == null) showTipAt(focusDot, pctOf(e) + "%", lines);
     else showTip(clientX, clientY, pctOf(e) + "%", lines);
@@ -2380,8 +2362,6 @@ function renderInsights(h, p) {
   const timedOut = h.filter(e => e.timedOut).length;
   if (timedOut) item("⏱️", "Watch the clock", `Time ran out on ${nQuizzes(timedOut)}. Skip hard questions and come back stronger.`);
 
-  const fastest = [...h].filter(e => e.score === e.total && e.seconds).sort((a, b) => a.seconds - b.seconds)[0];
-  if (fastest) item("⚡", "Fastest perfect quiz", `${subjectName(fastest.topic)} ${levelLabel(fastest.level)} in ${formatDuration(fastest.seconds)}.`);
 }
 
 /* ---------- tables ---------- */
@@ -2409,14 +2389,13 @@ function renderTopicTable(h, p) {
       t.quizzes,
       t.quizzes ? t.accuracy + "%" : "—",
       t.quizzes ? t.best + "%" : "—",
-      t.quizzes ? formatDuration(t.avgSeconds) : "—",
       t.last ? fmtDate(t.last.date) : "—",
       statusPill(statusFor(t.accuracy, t.quizzes > 0))
     ];
   });
   box.append(buildTable([
     { label: "Subject" }, { label: "Levels", num: true }, { label: "Stars", num: true }, { label: "Quizzes", num: true },
-    { label: "Accuracy", num: true }, { label: "Best", num: true }, { label: "Avg time", num: true },
+    { label: "Accuracy", num: true }, { label: "Best", num: true },
     { label: "Last played" }, { label: "Status" }
   ], rows));
 }
@@ -2448,13 +2427,12 @@ function renderHistoryTable(h) {
       e.level ? el("span", { class: "t-stars", "aria-label": `${e.stars} of 3 stars` },
         "★".repeat(e.stars || 0), el("span", { class: "off" }, "★".repeat(3 - (e.stars || 0)))) : "—",
       e.xp ? `+${e.xp}` : "—",
-      formatDuration(e.seconds),
       notes.join(" · ") || "—"
     ];
   });
   box.append(buildTable([
     { label: "Date" }, { label: "Subject" }, { label: "Level" }, { label: "Score", num: true }, { label: "%", num: true },
-    { label: "Stars" }, { label: "XP", num: true }, { label: "Time", num: true }, { label: "Notes" }
+    { label: "Stars" }, { label: "XP", num: true }, { label: "Notes" }
   ], rows));
 
   if (all.length > LIMIT) {
@@ -2658,7 +2636,6 @@ function cleanProgress(raw) {
         stars: Math.min(num(e.stars), 3),
         passed: !!e.passed,
         xp: num(e.xp),
-        seconds: num(e.seconds),
         timedOut: !!e.timedOut,
         reviewed: num(e.reviewed),
         answers: (Array.isArray(e.answers) ? e.answers : [])
