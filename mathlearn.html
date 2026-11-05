@@ -8,6 +8,7 @@
   <!-- Modern UI Styles -->
   <style>
     :root {
+      color-scheme: dark;
       --bg: #050816;
       --card: #0b1120;
       --accent: #3b82f6;
@@ -25,11 +26,6 @@
       --meter-track: #172a46;
       --grid: #1f2937;
       --axis: #374151;
-      --heat-0: #161f30;
-      --heat-1: #184f95;
-      --heat-2: #256abf;
-      --heat-3: #3987e5;
-      --heat-4: #86b6ef;
 
       /* Status (always paired with an icon + label) */
       --good: #0ca30c;
@@ -58,7 +54,9 @@
     .app {
       max-width: 1240px;
       margin: 0 auto;
-      padding: 24px 16px 40px;
+      padding-left: max(16px, env(safe-area-inset-left, 0px));
+      padding-right: max(16px, env(safe-area-inset-right, 0px));
+      padding-block: 24px 40px;
     }
 
     /* Header */
@@ -228,6 +226,8 @@
     }
 
     .btn-small { padding: 6px 11px; font-size: 12px; }
+    .btn-danger { background: var(--critical); color: #fff; font-weight: 600; }
+    .confirm-inline { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; }
 
     .btn:hover {
       transform: translateY(-1px);
@@ -554,6 +554,7 @@
       grid-template-columns: minmax(220px, 1.3fr) repeat(4, minmax(140px, 1fr));
       gap: 12px;
     }
+    .kpis > .card:last-child { grid-column: span 2; }
     .kpi-hero { grid-row: span 2; display: flex; flex-direction: column; justify-content: center; }
     .kpi-hero .kpi-value { font-size: 56px; line-height: 1; margin: 6px 0 8px; }
     .kpi-label { font-size: 12px; color: var(--muted); }
@@ -612,28 +613,6 @@
       font-weight: 600;
       white-space: nowrap;
     }
-
-    /* Heatmap */
-    .heatmap {
-      display: grid;
-      grid-auto-flow: column;
-      grid-template-rows: repeat(7, 1fr);
-      gap: 3px;
-      overflow-x: auto;
-      padding-bottom: 4px;
-    }
-    .heat-label { font-size: 10px; color: var(--muted); line-height: 14px; padding-right: 6px; }
-    .heat-cell {
-      width: 14px;
-      height: 14px;
-      border-radius: 3px;
-      background: var(--heat-0);
-    }
-    .heat-cell.future { background: transparent; }
-    .heat-cell:hover, .heat-cell:focus-visible { outline: 1px solid var(--text); outline-offset: 1px; }
-    .heat-legend { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--muted); margin-top: 10px; }
-    .heat-legend .heat-cell { width: 11px; height: 11px; }
-    .heat-foot { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 
     /* Insights */
     .insights { list-style: none; }
@@ -830,7 +809,7 @@
 
         <div class="row" style="margin:0;justify-content:flex-end;">
           <button class="btn btn-primary btn-small" onclick="openTransfer()">📲 Move progress</button>
-          <button class="btn btn-secondary btn-small" onclick="resetProgress()">Reset progress</button>
+          <span id="resetArea"><button class="btn btn-secondary btn-small" onclick="resetProgress()">Reset progress</button></span>
           <button class="btn btn-secondary btn-small" onclick="logout()">Log out</button>
         </div>
       </div>
@@ -885,17 +864,10 @@
         </div>
       </div>
 
-      <div class="charts">
-        <div class="card">
-          <div class="card-title">Activity</div>
-          <div class="card-meta">Quizzes completed per day, last 20 weeks.</div>
-          <div id="heatmap"></div>
-        </div>
-        <div class="card">
-          <div class="card-title">Insights</div>
-          <div class="card-meta">What to work on next.</div>
-          <ul class="insights" id="insights"></ul>
-        </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="card-title">Insights</div>
+        <div class="card-meta">What to work on next.</div>
+        <ul class="insights" id="insights"></ul>
       </div>
 
       <!-- Tables -->
@@ -943,7 +915,7 @@
         <div class="row">
           <button class="btn btn-secondary btn-small" onclick="markForReview()">Mark for review</button>
           <button class="btn btn-secondary btn-small" onclick="nextQuestion()">Skip</button>
-          <button class="btn btn-secondary btn-small" onclick="quitQuiz()">Quit level</button>
+          <span id="quitArea"><button class="btn btn-secondary btn-small" onclick="quitQuiz()">Quit level</button></span>
         </div>
       </div>
 
@@ -1000,14 +972,22 @@
    CELL 2 — ACCOUNT SYSTEM (PIN + BACKUP PIN)
    --------------------------------------------------------- */
 
-let accounts = JSON.parse(localStorage.getItem("mathlearn_accounts") || "[]");
+/* Browser storage can be blocked (private windows, previews); never let that break the page */
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* not saved */ } },
+  remove(k) { try { localStorage.removeItem(k); } catch (e) { /* nothing to remove */ } }
+};
+
+let accounts = [];
+try { accounts = JSON.parse(store.get("mathlearn_accounts") || "[]"); } catch (e) { accounts = []; }
 let currentUser = null;
 
 const PIN_PATTERN = /^\d{4,8}$/;
 
 /* Save accounts to localStorage */
 function saveAccounts() {
-  localStorage.setItem("mathlearn_accounts", JSON.stringify(accounts));
+  store.set("mathlearn_accounts", JSON.stringify(accounts));
   populateLoginUsers();
 }
 
@@ -1145,7 +1125,8 @@ function defaultProgress() {
 
 /* Load progress for a specific user */
 function getProgress(username) {
-  const data = JSON.parse(localStorage.getItem("mathlearn_progress_" + username) || "null");
+  let data = null;
+  try { data = JSON.parse(store.get("mathlearn_progress_" + username) || "null"); } catch (e) { data = null; }
   // Merge with defaults so older saves missing newer fields still work
   const p = Object.assign(defaultProgress(), data || {});
   if (!Array.isArray(p.history)) p.history = [];
@@ -1157,7 +1138,7 @@ function getProgress(username) {
 
 /* Save progress for a specific user */
 function saveProgress(username, progress) {
-  localStorage.setItem("mathlearn_progress_" + username, JSON.stringify(progress));
+  store.set("mathlearn_progress_" + username, JSON.stringify(progress));
 }
 
 function levelRecord(p, subject, level) {
@@ -1264,12 +1245,21 @@ function applyQuizProgress(score, totalQuestions, topic, details = {}) {
   };
 }
 
-/* Wipe the current user's progress */
-function resetProgress() {
-  if (!currentUser) return;
-  if (!confirm("Delete all quiz results, XP, stars and unlocked levels for " + currentUser.username + "? This can't be undone.")) return;
-  localStorage.removeItem("mathlearn_progress_" + currentUser.username);
-  updateDashboardProgress();
+/* Wipe the current user's progress (asks first, inline) */
+function resetProgress(confirming = true) {
+  const area = document.getElementById("resetArea");
+  if (!confirming || !currentUser) {
+    area.replaceChildren(el("button", { class: "btn btn-secondary btn-small", onclick: () => resetProgress() }, "Reset progress"));
+    return;
+  }
+  area.replaceChildren(el("span", { class: "confirm-inline" },
+    el("span", {}, "Delete all results, XP, stars and levels?"),
+    el("button", { class: "btn btn-danger btn-small", onclick: () => {
+      store.remove("mathlearn_progress_" + currentUser.username);
+      resetProgress(false);
+      updateDashboardProgress();
+    } }, "Delete"),
+    el("button", { class: "btn btn-secondary btn-small", onclick: () => resetProgress(false) }, "Cancel")));
 }
 </script>
 
@@ -1602,17 +1592,22 @@ function closeQuiz() {
   document.body.classList.remove("modal-open");
 }
 
-function quitQuiz() {
-  if (quizActive && !confirm("Quit this level? This attempt won't be saved.")) return;
-  closeQuiz();
+function quitQuiz(confirming = true) {
+  const area = document.getElementById("quitArea");
+  if (!confirming) {
+    area.replaceChildren(el("button", { class: "btn btn-secondary btn-small", onclick: () => quitQuiz() }, "Quit level"));
+    return;
+  }
+  if (!quizActive) return closeQuiz();
+  area.replaceChildren(el("span", { class: "confirm-inline" },
+    el("span", {}, "Quit? This attempt won't be saved."),
+    el("button", { class: "btn btn-danger btn-small", onclick: () => { quitQuiz(false); closeQuiz(); } }, "Quit"),
+    el("button", { class: "btn btn-secondary btn-small", onclick: () => quitQuiz(false) }, "Keep playing")));
 }
 
 /* Start a level of a subject */
 function startLevel(subjectId, level) {
-  if (!currentUser) {
-    alert("Please log in first.");
-    return;
-  }
+  if (!currentUser) return;
   const subject = SUBJECT[subjectId];
   if (!subject || !isUnlocked(getProgress(currentUser.username), subjectId, level)) return;
 
@@ -1627,6 +1622,7 @@ function startLevel(subjectId, level) {
 
   quizTopic = subjectId;
   quizLevel = level;
+  quitQuiz(false);
 
   // Shuffle questions and their options
   quiz = shuffle(subject.levels[level - 1]).map(([q, correct, ...wrong]) => {
@@ -2048,7 +2044,6 @@ function updateDashboardProgress() {
   renderKpis(h);
   renderScoreChart(h);
   renderTopicBars(h);
-  renderHeatmap(h);
   renderInsights(h, p);
   renderTopicTable(h, p);
   renderHistoryTable(h);
@@ -2222,7 +2217,6 @@ function renderKpis(h) {
     tile("Questions answered", s.questions, s.quizzes ? `${s.questions - s.correct} wrong or skipped` : null),
     tile("XP earned", s.xp, s.quizzes ? `${Math.round(s.xp / s.quizzes)} XP per quiz` : null),
     tile("Levels passed", s.passed, s.quizzes ? `${Math.round((s.passed / s.quizzes) * 100)}% of attempts` : null),
-    tile("Total practice time", formatDuration(s.totalSeconds), null),
     tile("Avg time per quiz", s.quizzes ? formatDuration(s.avgSeconds) : "—",
       s.questions ? `${formatDuration(s.totalSeconds / s.questions)} per question` : null)
   );
@@ -2337,40 +2331,6 @@ function renderTopicBars(h) {
     }
     box.append(el("div", { class: "bar-row" }, name, track));
   });
-}
-
-/* ---------- heatmap: activity per day ---------- */
-function renderHeatmap(h) {
-  const box = $("heatmap");
-  box.innerHTML = "";
-  const WEEKS = 20;
-
-  const counts = {};
-  h.forEach(e => { const k = new Date(e.date).toDateString(); counts[k] = (counts[k] || 0) + 1; });
-  const level = c => (c === 0 ? 0 : c === 1 ? 1 : c === 2 ? 2 : c <= 4 ? 3 : 4);
-
-  // Start on the Monday WEEKS-1 weeks before this week's Monday
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const start = new Date(today);
-  start.setDate(today.getDate() - ((today.getDay() + 6) % 7) - (WEEKS - 1) * 7);
-
-  const grid = el("div", { class: "heatmap" });
-  ["Mon", "", "Wed", "", "Fri", "", "Sun"].forEach(d => grid.append(el("div", { class: "heat-label" }, d)));
-
-  for (let i = 0; i < WEEKS * 7; i++) {
-    const d = new Date(start); d.setDate(start.getDate() + i);
-    if (d > today) { grid.append(el("div", { class: "heat-cell future" })); continue; }
-    const c = counts[d.toDateString()] || 0;
-    const cell = el("div", { class: "heat-cell", style: `background:var(--heat-${level(c)})` });
-    attachTip(cell, c ? nQuizzes(c) : "No quizzes", [fmtDay(d)]);
-    grid.append(cell);
-  }
-
-  const legend = el("div", { class: "heat-legend" }, "Less",
-    [0, 1, 2, 3, 4].map(l => el("span", { class: "heat-cell", style: `background:var(--heat-${l})` })), "More");
-  const activeDays = Object.keys(counts).filter(k => new Date(k) >= start).length;
-  box.append(grid, el("div", { class: "heat-foot" }, legend,
-    el("div", { class: "heat-legend" }, `${plural(activeDays, "active day")} in this window`)));
 }
 
 /* ---------- insights ---------- */
@@ -2637,12 +2597,28 @@ function transferStatus(text, ok = true) {
   $("transferStatus").className = "status " + (ok ? "ok" : "err");
 }
 
-function downloadProgress() {
+async function downloadProgress() {
   if (!currentUser) return;
-  const blob = new Blob([JSON.stringify(buildTransfer(), null, 1)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
+  const text = JSON.stringify(buildTransfer(), null, 1);
   const safe = currentUser.username.replace(/[^a-z0-9_-]+/gi, "_") || "player";
-  const a = el("a", { href: url, download: `mathlearn-progress-${safe}-${new Date().toISOString().slice(0, 10)}.json` });
+  const filename = `mathlearn-progress-${safe}-${new Date().toISOString().slice(0, 10)}.json`;
+
+  if (window.claude?.use) {
+    // Inside Claude: files are saved through the viewer's own save prompt
+    const downloads = await window.claude.use("downloads");
+    if (!downloads) return transferStatus("Saving files isn't available here. Copy the transfer code instead.", false);
+    try {
+      await downloads.save({ filename, data: text });
+      transferStatus("Progress file saved. Send it to your other device.");
+    } catch (e) {
+      transferStatus(e && e.code === "declined" ? "Not saved. You can copy the transfer code instead." : "The file couldn't be saved. Copy the transfer code instead.", false);
+    }
+    return;
+  }
+
+  const blob = new Blob([text], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = el("a", { href: url, download: filename });
   document.body.append(a);
   a.click();
   a.remove();
