@@ -1,0 +1,952 @@
+<title>MathLearn</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Serif:wght@600&display=swap">
+<style>
+  /* Layout: a calm reading column — a short hero with today's puzzle beside it,
+     then six topic cards; a set opens as one question card at a time.
+     Tokens follow the MFRP design system (light), with a matching dark set. */
+  :root {
+    --paper: #f7f5ef;
+    --surface: #ffffff;
+    --ink: #1b1f24;
+    --ink-muted: #5b6470;
+    --rule: #d9d4c7;
+    --border: #8a8578;
+    --primary: #1f5f8b;
+    --on-primary: #ffffff;
+    --primary-tint: #e3edf4;
+    --accent: #b5521a;
+
+    --serif: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    --sans: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+    --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 16px;
+    --space-4: 32px;
+    --radius-sm: 2px;
+    --radius-md: 6px;
+    --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #15171a;
+      --surface: #1d2024;
+      --ink: #ecebe6;
+      --ink-muted: #a4abb4;
+      --rule: #30343a;
+      --border: #7b828c;
+      --primary: #86b7dc;
+      --on-primary: #10161b;
+      --primary-tint: #1c3242;
+      --accent: #e8955e;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #15171a;
+    --surface: #1d2024;
+    --ink: #ecebe6;
+    --ink-muted: #a4abb4;
+    --rule: #30343a;
+    --border: #7b828c;
+    --primary: #86b7dc;
+    --on-primary: #10161b;
+    --primary-tint: #1c3242;
+    --accent: #e8955e;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font: 400 16px/24px var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  [hidden] { display: none !important; }
+  .wrap {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: var(--space-4) 48px;
+  }
+  h1, h2, h3, p { margin: 0; }
+  h1, h2 { text-wrap: balance; }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+  .label {
+    font: 500 12px/16px var(--mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-muted);
+  }
+  .caption { font-size: 13px; line-height: 18px; color: var(--ink-muted); }
+  .num { font-family: var(--mono); }
+
+  /* ---------- masthead ---------- */
+  .masthead {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--rule);
+  }
+  .brand {
+    font: 600 22px/28px var(--serif);
+    letter-spacing: -0.01em;
+    background: none;
+    border: 0;
+    padding: 0;
+    cursor: pointer;
+  }
+
+  /* ---------- buttons ---------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-height: 40px;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    background: transparent;
+    font-size: 15px;
+    line-height: 20px;
+    cursor: pointer;
+  }
+  .btn:hover { background: var(--primary-tint); }
+  .btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--on-primary);
+    font-weight: 600;
+  }
+  .btn-primary:hover { background: var(--primary); filter: brightness(1.08); }
+  .btn-quiet { border-color: transparent; color: var(--ink-muted); padding-inline: var(--space-2); }
+  .btn-quiet:hover { color: var(--ink); background: transparent; text-decoration: underline; }
+
+  /* ---------- hero ---------- */
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+    gap: var(--space-4);
+    align-items: center;
+    padding-block: 48px var(--space-4);
+  }
+  .hero h1 {
+    font: 600 48px/52px var(--serif);
+    letter-spacing: -0.01em;
+  }
+  .hero .lede { margin-top: var(--space-3); max-width: 36ch; color: var(--ink); }
+  .hero .facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+    margin-top: var(--space-3);
+  }
+
+  /* ---------- question card ---------- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3);
+    min-width: 0;
+  }
+  .qcard { padding: 24px; display: grid; gap: var(--space-3); }
+  .qcard .q-text { font-size: 20px; line-height: 28px; font-weight: 600; }
+  .options { display: grid; gap: var(--space-2); }
+  .opt {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-3);
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 14px;
+    text-align: left;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    font: 400 16px/22px var(--mono);
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .opt:hover:not(:disabled) { border-color: var(--primary); background: var(--primary-tint); }
+  .opt:disabled { cursor: default; }
+  .opt .tag { font: 500 12px/16px var(--mono); letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
+  .opt.tried { color: var(--ink-muted); border-color: var(--rule); }
+  .opt.tried .val { text-decoration: line-through; }
+  .opt.correct { background: var(--primary-tint); border-color: var(--primary); }
+  .opt.correct .tag { color: var(--primary); }
+  .opt.dim { color: var(--ink-muted); border-color: var(--rule); }
+
+  .feedback { min-height: 24px; color: var(--ink-muted); }
+  .why {
+    background: var(--primary-tint);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    display: grid;
+    gap: var(--space-1);
+  }
+  .why .answer { font-family: var(--mono); color: var(--accent); font-weight: 500; }
+  .q-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; justify-content: space-between; }
+
+  .shake { animation: shake 0.3s ease; }
+  @keyframes shake {
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+  }
+  @media (prefers-reduced-motion: reduce) { .shake { animation: none; } .opt { transition: none; } }
+
+  /* ---------- topics ---------- */
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-3); }
+  .section-head h2 { font: 600 28px/34px var(--serif); }
+  .topics {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: var(--space-3);
+  }
+  .topic { display: grid; gap: var(--space-2); align-content: start; }
+  .topic-head { display: flex; align-items: center; gap: 12px; }
+  .glyph {
+    flex: none;
+    min-width: 64px;
+    padding: 6px 8px;
+    text-align: center;
+    font: 500 14px/20px var(--mono);
+    background: var(--primary-tint);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius-md);
+    white-space: nowrap;
+  }
+  .topic-name { font: 600 18px/26px var(--sans); }
+  .sets { list-style: none; margin: 0; padding: 0; }
+  .sets li + li { border-top: 1px solid var(--rule); }
+  .set-row {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+    padding: 10px 4px;
+    background: none;
+    border: 0;
+    border-radius: var(--radius-sm);
+    text-align: left;
+    cursor: pointer;
+  }
+  .set-row:hover { background: var(--primary-tint); }
+  .set-row .n { font: 400 13px/18px var(--mono); color: var(--ink-muted); }
+  .set-row .t { font-size: 15px; line-height: 20px; }
+
+  .dots { display: inline-flex; gap: 4px; align-items: center; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--border); }
+  .dot.on { background: var(--primary); border-color: var(--primary); }
+  .dot.here { outline: 2px solid var(--primary); outline-offset: 1px; }
+
+  /* ---------- practice ---------- */
+  .practice { max-width: 680px; margin: 0 auto; padding-block: var(--space-4) 0; display: grid; gap: var(--space-3); }
+  .practice-head { display: grid; gap: var(--space-1); }
+  .practice-head h1 { font: 600 28px/34px var(--serif); }
+  .practice-meta { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .done-card { padding: 24px; display: grid; gap: var(--space-3); }
+  .done-card h2 { font: 600 28px/34px var(--serif); }
+
+  /* ---------- footer ---------- */
+  footer {
+    margin-top: 48px;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--rule);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+    flex-wrap: wrap;
+  }
+  .confirm { display: inline-flex; gap: var(--space-2); align-items: center; flex-wrap: wrap; }
+
+  @media (max-width: 800px) {
+    .hero { grid-template-columns: 1fr; padding-block: var(--space-4) var(--space-3); }
+    .hero h1 { font-size: 40px; line-height: 44px; }
+  }
+  @media (max-width: 420px) {
+    .qcard, .done-card { padding: var(--space-3); }
+    .qcard .q-text { font-size: 18px; line-height: 26px; }
+  }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <button class="brand" id="brand" type="button">MathLearn</button>
+    <span class="caption">Practice at your own pace</span>
+  </header>
+
+  <main id="view"></main>
+
+  <footer>
+    <span class="caption" id="saveNote">Progress saves in this browser.</span>
+    <span id="resetArea"></span>
+  </footer>
+</div>
+
+<script>
+/* =========================================================
+   QUESTION BANK — 6 topics × 5 sets × 6 questions.
+   Each question: [question, correct, wrong, wrong, wrong, why]
+   ========================================================= */
+const TOPICS = [
+  {
+    id: "arithmetic", name: "Arithmetic", glyph: "7 × 8",
+    sets: [
+      { title: "Adding and subtracting", qs: [
+        ["47 + 38 = ?", "85", "75", "84", "95", "40 + 30 = 70 and 7 + 8 = 15, so 70 + 15 = 85."],
+        ["120 − 57 = ?", "63", "73", "67", "53", "120 − 60 = 60, then add back the extra 3 you took: 63."],
+        ["999 + 1 = ?", "1000", "9910", "1001", "990", "999 is one less than 1000."],
+        ["250 − 125 = ?", "125", "135", "115", "175", "125 is half of 250, so taking it away leaves the other half."],
+        ["Which number is 15 more than 86?", "101", "91", "111", "100", "86 + 14 = 100, and one more makes 101."],
+        ["306 − 199 = ?", "107", "117", "113", "97", "Take away 200 to get 106, then add back the 1 you took too many: 107."]
+      ]},
+      { title: "Multiplying and dividing", qs: [
+        ["7 × 8 = ?", "56", "54", "64", "48", "7 × 8 = 56. A handy pattern: 5, 6, 7, 8 gives 56 = 7 × 8."],
+        ["144 ÷ 12 = ?", "12", "14", "11", "13", "12 × 12 = 144, so 144 ÷ 12 = 12."],
+        ["25 × 4 = ?", "100", "90", "125", "80", "Four quarters make a whole: 4 × 25 = 100."],
+        ["81 ÷ 9 = ?", "9", "8", "7", "11", "9 × 9 = 81."],
+        ["13 × 6 = ?", "78", "68", "76", "84", "10 × 6 = 60 and 3 × 6 = 18, so 60 + 18 = 78."],
+        ["What is the remainder of 29 ÷ 4?", "1", "2", "3", "0", "4 × 7 = 28, and 29 − 28 leaves 1."]
+      ]},
+      { title: "Fractions", qs: [
+        ["1/2 + 1/4 = ?", "3/4", "2/6", "1/6", "2/4", "1/2 is the same as 2/4, and 2/4 + 1/4 = 3/4."],
+        ["Simplify 12/16", "3/4", "2/3", "4/5", "5/8", "Divide top and bottom by 4: 12 ÷ 4 = 3 and 16 ÷ 4 = 4."],
+        ["2/3 × 3/5 = ?", "2/5", "6/8", "5/8", "1/3", "Multiply across to get 6/15, which simplifies to 2/5."],
+        ["3/4 − 1/3 = ?", "5/12", "1/4", "1/2", "2/7", "Use twelfths: 3/4 = 9/12 and 1/3 = 4/12, so 9/12 − 4/12 = 5/12."],
+        ["Which fraction is the largest?", "5/6", "3/4", "2/3", "7/12", "In twelfths: 5/6 = 10/12, 3/4 = 9/12, 2/3 = 8/12 and 7/12 stays 7/12."],
+        ["1 ÷ 1/4 = ?", "4", "1/4", "2", "0.4", "Dividing by 1/4 asks how many quarters fit into 1. Four do."]
+      ]},
+      { title: "Decimals and percentages", qs: [
+        ["0.3 + 0.45 = ?", "0.75", "0.48", "0.345", "0.7", "Line up the decimal points: 0.30 + 0.45 = 0.75."],
+        ["25% of 80 = ?", "20", "25", "16", "32", "25% is one quarter, and 80 ÷ 4 = 20."],
+        ["Write 3/8 as a decimal", "0.375", "0.38", "0.83", "0.35", "1/8 = 0.125, so 3/8 = 3 × 0.125 = 0.375."],
+        ["A $40 shirt is 15% off. What is the sale price?", "$34", "$25", "$36", "$34.50", "15% of 40 is 6, and 40 − 6 = 34."],
+        ["1.2 × 0.5 = ?", "0.6", "6", "0.06", "1.7", "Multiplying by 0.5 halves a number. Half of 1.2 is 0.6."],
+        ["Increase 50 by 20%", "60", "70", "52", "55", "20% of 50 is 10, so 50 + 10 = 60."]
+      ]},
+      { title: "Order of operations", qs: [
+        ["8 + 2 × 5 = ?", "18", "50", "20", "15", "Multiply before adding: 2 × 5 = 10, then 8 + 10 = 18."],
+        ["(3 + 5)² ÷ 4 = ?", "16", "8", "64", "32", "Brackets first give 8. Then 8² = 64, and 64 ÷ 4 = 16."],
+        ["2³ + 4 × 3 − 6 = ?", "14", "30", "18", "12", "Powers and multiplication first: 2³ = 8 and 4 × 3 = 12. Then 8 + 12 − 6 = 14."],
+        ["What is 15% of 15% of 400?", "9", "60", "90", "2.25", "15% of 400 is 60, and 15% of 60 is 9."],
+        ["√144 + √81 = ?", "21", "15", "225", "25", "√144 = 12 and √81 = 9, so 12 + 9 = 21."],
+        ["Least common multiple of 6 and 8?", "24", "48", "12", "2", "Count in 8s: 8, 16, 24. The first one that 6 also divides is 24."]
+      ]}
+    ]
+  },
+  {
+    id: "algebra", name: "Algebra", glyph: "2x + 3",
+    sets: [
+      { title: "Expressions", qs: [
+        ["Simplify: 3x + 5x", "8x", "15x", "8x²", "35x", "Like terms add their numbers: 3 + 5 = 8, so 8x."],
+        ["Evaluate 2a + 3 when a = 4", "11", "9", "14", "10", "2 × 4 = 8, and 8 + 3 = 11."],
+        ["Simplify: 2(x + 3)", "2x + 6", "2x + 3", "x + 6", "6x", "Multiply 2 by each term inside the bracket: 2·x + 2·3."],
+        ["Simplify: 7y − 2y + y", "6y", "4y", "5y", "8y", "Work with the numbers in front: 7 − 2 + 1 = 6, so 6y."],
+        ["Which is a like term of 4x²?", "−9x²", "4x", "4y²", "x³", "Like terms share the same letter and power, here x². The number in front can be anything."],
+        ["Evaluate x² − 1 when x = 5", "24", "9", "26", "16", "5² = 25, and 25 − 1 = 24."]
+      ]},
+      { title: "Linear equations", qs: [
+        ["Solve: x + 7 = 12", "x = 5", "x = 19", "x = −5", "x = 7", "Subtract 7 from both sides: x = 12 − 7 = 5."],
+        ["Solve: 3x = 27", "x = 9", "x = 24", "x = 30", "x = 81", "Divide both sides by 3: x = 9."],
+        ["Solve: 2x − 5 = 11", "x = 8", "x = 3", "x = 6", "x = 16", "Add 5 to both sides to get 2x = 16, then divide by 2: x = 8."],
+        ["Solve: x / 4 = 6", "x = 24", "x = 1.5", "x = 10", "x = 2", "Multiply both sides by 4: x = 24."],
+        ["Solve: 5x + 2 = 3x + 10", "x = 4", "x = 6", "x = 2", "x = 1.5", "Subtract 3x to get 2x + 2 = 10. Subtract 2 to get 2x = 8, so x = 4."],
+        ["Slope of the line y = 3x − 2?", "3", "−2", "2", "−3", "In y = mx + b the slope is m, the number multiplying x."]
+      ]},
+      { title: "Inequalities and exponents", qs: [
+        ["Solve: x + 4 > 9", "x > 5", "x < 5", "x > 13", "x ≥ 5", "Subtract 4 from both sides, just as you would in an equation."],
+        ["Solve: −2x < 8", "x > −4", "x < −4", "x > 4", "x < 4", "Divide both sides by −2. Dividing by a negative number flips the sign, so x > −4."],
+        ["Simplify: x³ · x⁴", "x⁷", "x¹²", "2x⁷", "x", "Multiplying powers of the same base adds the exponents: 3 + 4 = 7."],
+        ["Simplify: (2x)²", "4x²", "2x²", "4x", "2x⁴", "Square both parts: 2² · x² = 4x²."],
+        ["What is 5⁰?", "1", "0", "5", "Undefined", "Any non-zero number to the power 0 equals 1."],
+        ["Simplify: y⁸ ÷ y²", "y⁶", "y⁴", "y¹⁰", "y¹⁶", "Dividing powers of the same base subtracts the exponents: 8 − 2 = 6."]
+      ]},
+      { title: "Factoring and quadratics", qs: [
+        ["Solve: x² + 5x + 6 = 0", "x = −2, −3", "x = 2, 3", "x = −1, −6", "No real roots", "It factors as (x + 2)(x + 3) = 0, so x = −2 or x = −3."],
+        ["Factor: x² − 9", "(x − 3)(x + 3)", "(x − 3)²", "(x − 9)(x + 1)", "(x + 3)²", "This is a difference of squares: a² − b² = (a − b)(a + b), with b = 3."],
+        ["Expand: (x + 2)(x + 4)", "x² + 6x + 8", "x² + 8x + 6", "x² + 6x + 6", "x² + 8", "Multiply every pair: x·x + 4x + 2x + 2·4 = x² + 6x + 8."],
+        ["Factor: x² + 7x + 10", "(x + 2)(x + 5)", "(x + 1)(x + 10)", "(x + 3)(x + 4)", "(x − 2)(x − 5)", "Look for two numbers that multiply to 10 and add to 7: 2 and 5."],
+        ["Solve: x² = 49", "x = ±7", "x = 7", "x = 24.5", "x = ±49", "Both 7² and (−7)² equal 49."],
+        ["Discriminant of x² − 4x + 4?", "0", "−8", "8", "32", "b² − 4ac = (−4)² − 4·1·4 = 16 − 16 = 0, so there is exactly one root."]
+      ]},
+      { title: "Systems and functions", qs: [
+        ["Solve: x + y = 10 and x − y = 2", "x = 6, y = 4", "x = 4, y = 6", "x = 5, y = 5", "x = 8, y = 2", "Add the two equations: 2x = 12, so x = 6 and then y = 4."],
+        ["If f(x) = 2x² − 3, what is f(−2)?", "5", "−11", "11", "−5", "(−2)² = 4, then 2 × 4 = 8, and 8 − 3 = 5."],
+        ["Vertex of y = (x − 3)² + 1?", "(3, 1)", "(−3, 1)", "(1, 3)", "(3, −1)", "y = (x − h)² + k has its vertex at (h, k)."],
+        ["Solve: 2x + y = 7 and y = x + 1", "x = 2, y = 3", "x = 3, y = 1", "x = 1, y = 2", "x = 3, y = 4", "Substitute y: 2x + x + 1 = 7, so 3x = 6, x = 2 and y = 3."],
+        ["If f(x) = 3x + 1, what is f⁻¹(10)?", "3", "31", "1/3", "11", "Find the x that gives 10: 3x + 1 = 10, so 3x = 9 and x = 3."],
+        ["Sum of the roots of x² − 7x + 12 = 0?", "7", "12", "−7", "−12", "It factors as (x − 3)(x − 4). The roots are 3 and 4, which add to 7."]
+      ]}
+    ]
+  },
+  {
+    id: "geometry", name: "Geometry", glyph: "πr²",
+    sets: [
+      { title: "Shapes and angles", qs: [
+        ["How many sides does a hexagon have?", "6", "5", "7", "8", "Hex means six."],
+        ["A right angle measures…", "90°", "180°", "45°", "360°", "A right angle is a quarter turn: 360° ÷ 4 = 90°."],
+        ["Sum of the angles in a triangle?", "180°", "90°", "360°", "270°", "The three angles of any triangle add up to 180°."],
+        ["An angle of 120° is…", "Obtuse", "Acute", "Right", "Reflex", "Obtuse angles are bigger than 90° and smaller than 180°."],
+        ["A quadrilateral with 4 equal sides and 4 right angles is a…", "Square", "Rhombus", "Trapezium", "Kite", "A rhombus also has 4 equal sides, but only a square has 4 right angles too."],
+        ["Complementary angles add up to…", "90°", "180°", "360°", "45°", "Complementary angles add to 90°. Supplementary angles add to 180°."]
+      ]},
+      { title: "Perimeter and area", qs: [
+        ["Area of a rectangle 8 × 5?", "40", "26", "13", "45", "Area of a rectangle is length × width: 8 × 5 = 40."],
+        ["Perimeter of a square with side 7?", "28", "49", "14", "21", "Four equal sides: 4 × 7 = 28."],
+        ["Area of a triangle with base 10 and height 6?", "30", "60", "16", "36", "Area = ½ × base × height = ½ × 10 × 6 = 30."],
+        ["Formula for the area of a circle?", "πr²", "2πr", "πd", "r²", "Area is π times the radius squared. 2πr is the distance around, the circumference."],
+        ["Perimeter of a rectangle 9 × 4?", "26", "36", "13", "22", "Add all four sides: 2 × (9 + 4) = 26."],
+        ["Area of a parallelogram with base 12 and height 5?", "60", "30", "34", "17", "Area = base × height = 12 × 5 = 60."]
+      ]},
+      { title: "Triangles and Pythagoras", qs: [
+        ["Hypotenuse of a right triangle with legs 3 and 4?", "5", "7", "6", "25", "3² + 4² = 9 + 16 = 25, and √25 = 5."],
+        ["Hypotenuse of a right triangle with legs 5 and 12?", "13", "17", "15", "11", "5² + 12² = 25 + 144 = 169, and √169 = 13."],
+        ["Each angle of an equilateral triangle?", "60°", "90°", "45°", "180°", "Three equal angles share 180°: 180 ÷ 3 = 60."],
+        ["Two angles of a triangle are 50° and 60°. The third is…", "70°", "80°", "90°", "110°", "180 − 50 − 60 = 70."],
+        ["A triangle with sides 6, 8 and 10 is…", "Right-angled", "Equilateral", "Obtuse", "Isosceles", "6² + 8² = 36 + 64 = 100 = 10², so Pythagoras holds and there is a right angle."],
+        ["Right triangle: hypotenuse 10, one leg 6. Other leg?", "8", "4", "16", "√136", "10² − 6² = 100 − 36 = 64, and √64 = 8."]
+      ]},
+      { title: "Circles", qs: [
+        ["Circumference of a circle with radius 5?", "10π", "25π", "5π", "20π", "Circumference = 2πr = 2 × π × 5 = 10π."],
+        ["Area of a circle with radius 3?", "9π", "6π", "3π", "18π", "Area = πr² = π × 3² = 9π."],
+        ["The diameter is 14. What is the radius?", "7", "28", "14π", "3.5", "The radius is half the diameter."],
+        ["An angle inscribed in a semicircle is…", "90°", "180°", "60°", "45°", "Thales' theorem: an angle drawn from the two ends of a diameter to the circle is always 90°."],
+        ["A full turn measures…", "360°", "180°", "270°", "400°", "A full turn is 360°."],
+        ["Area of a circle with diameter 10?", "25π", "100π", "10π", "20π", "The radius is 5, so the area is π × 5² = 25π."]
+      ]},
+      { title: "Volume and coordinates", qs: [
+        ["Volume of a cube with side 4?", "64", "16", "48", "12", "4 × 4 × 4 = 64."],
+        ["Volume of a cylinder with r = 2 and h = 5?", "20π", "10π", "40π", "25π", "V = πr²h = π × 4 × 5 = 20π."],
+        ["Distance between (0, 0) and (6, 8)?", "10", "14", "48", "7", "Use Pythagoras: √(6² + 8²) = √100 = 10."],
+        ["Midpoint of (2, 4) and (8, 10)?", "(5, 7)", "(6, 6)", "(10, 14)", "(3, 3)", "Average each coordinate: ((2 + 8) ÷ 2, (4 + 10) ÷ 2) = (5, 7)."],
+        ["Volume of a sphere with r = 3?", "36π", "27π", "12π", "108π", "V = 4/3 πr³ = 4/3 × π × 27 = 36π."],
+        ["Sum of the interior angles of a pentagon?", "540°", "360°", "720°", "450°", "(n − 2) × 180° with n = 5 gives 3 × 180° = 540°."]
+      ]}
+    ]
+  },
+  {
+    id: "trigonometry", name: "Trigonometry", glyph: "sin θ",
+    sets: [
+      { title: "Sine, cosine and tangent", qs: [
+        ["sin θ = ?", "Opposite / Hypotenuse", "Adjacent / Hypotenuse", "Opposite / Adjacent", "Hypotenuse / Opposite", "SOH: Sine = Opposite ÷ Hypotenuse."],
+        ["cos θ = ?", "Adjacent / Hypotenuse", "Opposite / Hypotenuse", "Opposite / Adjacent", "Adjacent / Opposite", "CAH: Cosine = Adjacent ÷ Hypotenuse."],
+        ["tan θ = ?", "Opposite / Adjacent", "Adjacent / Opposite", "Opposite / Hypotenuse", "Hypotenuse / Adjacent", "TOA: Tangent = Opposite ÷ Adjacent."],
+        ["In a 3-4-5 triangle, sin of the angle opposite the side 3?", "3/5", "4/5", "3/4", "5/3", "The opposite side is 3 and the hypotenuse is 5."],
+        ["In a 3-4-5 triangle, tan of the angle opposite the side 4?", "4/3", "3/4", "4/5", "3/5", "The opposite side is 4 and the adjacent side is 3."],
+        ["The longest side of a right triangle is the…", "Hypotenuse", "Adjacent", "Opposite", "Median", "The hypotenuse sits across from the right angle and is always the longest side."]
+      ]},
+      { title: "Special angles", qs: [
+        ["sin 30° = ?", "1/2", "√3/2", "1", "√2/2", "In a 30-60-90 triangle, the side opposite 30° is half the hypotenuse."],
+        ["cos 60° = ?", "1/2", "√3/2", "0", "1", "cos 60° = sin 30° = 1/2."],
+        ["tan 45° = ?", "1", "0", "√3", "1/√3", "At 45° the opposite and adjacent sides are equal, so their ratio is 1."],
+        ["sin 90° = ?", "1", "0", "1/2", "Undefined", "90° is the point (0, 1) on the unit circle, and sine is the y value."],
+        ["cos 0° = ?", "1", "0", "−1", "1/2", "0° is the point (1, 0) on the unit circle, and cosine is the x value."],
+        ["tan 60° = ?", "√3", "1/√3", "1", "√3/2", "tan 60° = sin 60° ÷ cos 60° = (√3/2) ÷ (1/2) = √3."]
+      ]},
+      { title: "Radians and the unit circle", qs: [
+        ["180° in radians?", "π", "2π", "π/2", "π/4", "π radians is half a turn, which is 180°."],
+        ["π/3 radians in degrees?", "60°", "30°", "45°", "120°", "π is 180°, and 180° ÷ 3 = 60°."],
+        ["cos π = ?", "−1", "1", "0", "π", "π is the point (−1, 0) on the unit circle."],
+        ["sin(3π/2) = ?", "−1", "1", "0", "1/2", "3π/2 is 270°, the point (0, −1)."],
+        ["In which quadrant is 210°?", "Third", "Second", "Fourth", "First", "Angles from 180° to 270° are in the third quadrant."],
+        ["Period of y = sin x?", "2π", "π", "π/2", "4π", "sin x repeats after every full turn, which is 2π."]
+      ]},
+      { title: "Identities", qs: [
+        ["sin²θ + cos²θ = ?", "1", "0", "2", "tan θ", "This is Pythagoras on the unit circle: x² + y² = 1."],
+        ["tan θ is equal to…", "sin θ / cos θ", "cos θ / sin θ", "1 / sin θ", "sin θ · cos θ", "Opposite ÷ adjacent equals (opposite ÷ hyp) ÷ (adjacent ÷ hyp)."],
+        ["sin 2θ = ?", "2 sin θ cos θ", "2 sin θ", "sin²θ − cos²θ", "cos²θ − sin²θ", "This is the double-angle formula for sine."],
+        ["1 + tan²θ = ?", "sec²θ", "csc²θ", "cot²θ", "1", "Divide sin²θ + cos²θ = 1 by cos²θ."],
+        ["cos(−θ) = ?", "cos θ", "−cos θ", "sin θ", "−sin θ", "Reflecting an angle below the x-axis keeps its x value, so cosine doesn't change."],
+        ["sin(90° − θ) = ?", "cos θ", "sin θ", "−cos θ", "tan θ", "In a right triangle, the sine of one acute angle is the cosine of the other."]
+      ]},
+      { title: "Equations and graphs", qs: [
+        ["Solve sin x = 1/2 for 0° ≤ x < 180°", "30° and 150°", "30° only", "60° and 120°", "30° and 330°", "sin 30° = 1/2, and sine is also positive in the second quadrant: 180° − 30° = 150°."],
+        ["Amplitude of y = 3 sin 2x?", "3", "2", "6", "1/2", "The amplitude is the number in front of sin."],
+        ["Period of y = cos 2x?", "π", "2π", "4π", "π/2", "Divide 2π by the number multiplying x: 2π ÷ 2 = π."],
+        ["Law of cosines: c² = ?", "a² + b² − 2ab cos C", "a² + b² + 2ab cos C", "a² − b² − 2ab cos C", "a² + b²", "When C = 90°, cos C = 0 and the law becomes Pythagoras."],
+        ["cos 2θ = ?", "cos²θ − sin²θ", "2 cos θ", "2 sin θ cos θ", "1 + 2 sin²θ", "This is one form of the double-angle formula for cosine."],
+        ["Range of y = sin x?", "−1 ≤ y ≤ 1", "0 ≤ y ≤ 1", "All real numbers", "−π ≤ y ≤ π", "Sine is a y value on the unit circle, so it never goes above 1 or below −1."]
+      ]}
+    ]
+  },
+  {
+    id: "statistics", name: "Statistics and probability", glyph: "P(A)",
+    sets: [
+      { title: "Averages", qs: [
+        ["Mean of 2, 4, 6, 8?", "5", "4", "6", "20", "The sum is 20, and 20 ÷ 4 numbers = 5."],
+        ["Median of 3, 7, 9, 1, 5?", "5", "7", "9", "3", "In order: 1, 3, 5, 7, 9. The middle value is 5."],
+        ["Mode of 2, 3, 3, 5, 7?", "3", "2", "5", "4", "3 appears twice. Every other value appears once."],
+        ["Median of 4, 8, 10, 12?", "9", "8", "10", "8.5", "There are two middle values, 8 and 10. Their average is 9."],
+        ["Mean of 10, 20, 30?", "20", "30", "60", "15", "60 ÷ 3 = 20."],
+        ["Range of 5, 12, 3, 9?", "9", "12", "7", "4", "Largest minus smallest: 12 − 3 = 9."]
+      ]},
+      { title: "Working with data", qs: [
+        ["Which average is most affected by an outlier?", "Mean", "Median", "Mode", "None of them", "The mean uses every value, so one extreme value pulls it a long way."],
+        ["The mean of 5 numbers is 8. What is their sum?", "40", "13", "8", "45", "Sum = mean × count = 8 × 5 = 40."],
+        ["Mode of 2, 2, 4, 4, 4, 9?", "4", "2", "9", "3", "4 appears three times, more than any other value."],
+        ["Scores 70, 80, 90 and x have a mean of 85. x = ?", "100", "95", "85", "90", "The four scores must add to 4 × 85 = 340. 70 + 80 + 90 = 240, so x = 100."],
+        ["A frequency table shows…", "How often each value occurs", "Only the mean", "Only the largest value", "The order data was collected", "Frequency means how often, so the table counts each value."],
+        ["Interquartile range = ?", "Q3 − Q1", "Max − Min", "Q2 − Q1", "Mean − Median", "It measures the spread of the middle half of the data."]
+      ]},
+      { title: "Basic probability", qs: [
+        ["Probability of heads on a fair coin?", "1/2", "1", "1/4", "0", "Two equally likely sides, and one of them is heads."],
+        ["Probability of rolling a 6 on a fair die?", "1/6", "1/3", "6", "1/2", "One face out of six."],
+        ["Probability of rolling an even number on a fair die?", "1/2", "1/3", "1/6", "2/3", "Three even faces (2, 4, 6) out of six."],
+        ["A bag has 3 red and 7 blue balls. P(red)?", "3/10", "3/7", "7/10", "1/3", "3 red balls out of 10 balls in total."],
+        ["If P(rain) = 0.3, what is P(no rain)?", "0.7", "0.3", "1.3", "0", "An event and its opposite add to 1: 1 − 0.3 = 0.7."],
+        ["Probability of an impossible event?", "0", "1", "1/2", "−1", "Impossible is 0 and certain is 1. Every probability sits between them."]
+      ]},
+      { title: "Counting", qs: [
+        ["5! = ?", "120", "25", "60", "720", "5 × 4 × 3 × 2 × 1 = 120."],
+        ["How many ways to arrange the letters of CAT?", "6", "3", "9", "27", "3 choices for the first letter, 2 for the second, 1 for the last: 3 × 2 × 1 = 6."],
+        ["How many ways to choose 2 from 5 (5C2)?", "10", "20", "25", "7", "(5 × 4) ÷ (2 × 1) = 10."],
+        ["Two fair coins are flipped. P(both heads)?", "1/4", "1/2", "1/3", "3/4", "There are four equally likely outcomes, HH, HT, TH and TT, and one is HH."],
+        ["Outfits from 3 shirts and 4 pairs of pants?", "12", "7", "34", "81", "Each of the 3 shirts goes with each of the 4 pants: 3 × 4 = 12."],
+        ["Two fair dice are rolled. P(sum = 7)?", "1/6", "1/12", "7/36", "1/36", "Six of the 36 pairs make 7: 1+6, 2+5, 3+4, 4+3, 5+2, 6+1. 6/36 = 1/6."]
+      ]},
+      { title: "Expected value and spread", qs: [
+        ["Expected value of one fair die roll?", "3.5", "3", "4", "6", "(1 + 2 + 3 + 4 + 5 + 6) ÷ 6 = 21 ÷ 6 = 3.5."],
+        ["A and B are mutually exclusive, P(A) = 0.2, P(B) = 0.5. P(A or B)?", "0.7", "0.1", "0.3", "0.6", "They can't happen together, so add: 0.2 + 0.5 = 0.7."],
+        ["A and B are independent, P(A) = 0.5, P(B) = 0.4. P(A and B)?", "0.2", "0.9", "0.1", "0.45", "For independent events, multiply: 0.5 × 0.4 = 0.2."],
+        ["In a normal distribution, about what share lies within 1 SD of the mean?", "68%", "95%", "50%", "99.7%", "The 68–95–99.7 rule: about 68% lies within one standard deviation."],
+        ["Standard deviation of 5, 5, 5, 5?", "0", "5", "1", "25", "Every value equals the mean, so there is no spread at all."],
+        ["Ways to pick a president and a vice-president from 6 people?", "30", "15", "36", "12", "6 choices for president, then 5 left for vice-president: 6 × 5 = 30."]
+      ]}
+    ]
+  },
+  {
+    id: "calculus", name: "Calculus", glyph: "∫ f(x) dx",
+    sets: [
+      { title: "Limits", qs: [
+        ["lim x→2 of (x + 3)?", "5", "2", "3", "6", "The function is smooth there, so substitute x = 2: 2 + 3 = 5."],
+        ["lim x→0 of sin(x)/x?", "1", "0", "∞", "Doesn't exist", "Near 0, sin x is almost exactly x, so the ratio approaches 1."],
+        ["lim x→∞ of 1/x?", "0", "1", "∞", "−1", "As x grows, 1/x gets as small as you like."],
+        ["lim x→3 of (x² − 9)/(x − 3)?", "6", "0", "3", "9", "Factor the top: (x − 3)(x + 3) ÷ (x − 3) = x + 3, which is 6 at x = 3."],
+        ["lim x→0 of (1 + x)^(1/x)?", "e", "1", "0", "∞", "This limit is one of the ways to define e ≈ 2.718."],
+        ["lim x→∞ of (3x + 1)/(x − 2)?", "3", "1", "−1/2", "∞", "For very large x the leading terms win: 3x ÷ x = 3."]
+      ]},
+      { title: "First derivatives", qs: [
+        ["d/dx of x²?", "2x", "x", "x²/2", "2", "Power rule: bring the 2 down in front and lower the power by 1."],
+        ["d/dx of 5x?", "5", "5x", "x", "0", "A straight line has the same slope everywhere, here 5."],
+        ["d/dx of the constant 7?", "0", "7", "1", "7x", "A constant never changes, so its rate of change is 0."],
+        ["d/dx of x⁵?", "5x⁴", "x⁴", "5x⁵", "4x⁵", "Power rule: 5 · x⁵⁻¹ = 5x⁴."],
+        ["d/dx of 3x² + 2x?", "6x + 2", "3x + 2", "6x² + 2", "6x", "Differentiate each term: 3x² gives 6x and 2x gives 2."],
+        ["d/dx of √x?", "1/(2√x)", "2√x", "√x/2", "1/√x", "√x = x^(1/2), and the power rule gives ½ · x^(−1/2) = 1/(2√x)."]
+      ]},
+      { title: "Derivative rules", qs: [
+        ["d/dx of sin x?", "cos x", "−cos x", "sin x", "−sin x", "The slope of the sine curve at each point is cos x."],
+        ["d/dx of eˣ?", "eˣ", "x·eˣ⁻¹", "1", "e", "eˣ is its own derivative. That is what makes e special."],
+        ["d/dx of ln x?", "1/x", "x", "ln x", "eˣ", "A standard result: the derivative of ln x is 1/x."],
+        ["d/dx of (2x + 1)³?", "6(2x + 1)²", "3(2x + 1)²", "(2x + 1)²", "6(2x + 1)³", "Chain rule: 3(2x + 1)² times the derivative of the inside, 2."],
+        ["d/dx of x·sin x?", "sin x + x cos x", "cos x", "x cos x", "sin x − x cos x", "Product rule: (x)′ · sin x + x · (sin x)′ = sin x + x cos x."],
+        ["d/dx of cos(3x)?", "−3 sin(3x)", "3 sin(3x)", "−sin(3x)", "sin(3x)", "Chain rule: −sin(3x) times the derivative of the inside, 3."]
+      ]},
+      { title: "Integrals", qs: [
+        ["∫ 1 dx = ?", "x + C", "1 + C", "x² + C", "C", "x has slope 1. The + C stands for any constant."],
+        ["∫ 2x dx = ?", "x² + C", "2x² + C", "2 + C", "x + C", "The derivative of x² is 2x, so the integral goes back to x²."],
+        ["∫ x² dx = ?", "x³/3 + C", "2x + C", "x³ + C", "3x³ + C", "Raise the power by 1 and divide by the new power."],
+        ["∫ cos x dx = ?", "sin x + C", "−sin x + C", "cos x + C", "−cos x + C", "The derivative of sin x is cos x."],
+        ["∫ from 0 to 2 of x dx = ?", "2", "4", "1", "0", "x²/2 from 0 to 2 gives 4/2 − 0 = 2. It is the area of a triangle with base 2 and height 2."],
+        ["∫ 1/x dx = ?", "ln|x| + C", "−1/x² + C", "x + C", "eˣ + C", "The derivative of ln|x| is 1/x."]
+      ]},
+      { title: "Putting it to work", qs: [
+        ["Slope of y = x³ at x = 2?", "12", "8", "6", "4", "dy/dx = 3x², and 3 × 2² = 12."],
+        ["y = x² − 6x + 1 has a critical point at x = ?", "3", "−3", "6", "1", "dy/dx = 2x − 6, which is 0 when x = 3."],
+        ["Area under y = 3x² from x = 0 to x = 2?", "8", "12", "6", "4", "∫3x² dx = x³, and 2³ − 0³ = 8."],
+        ["Position s(t) = t² + 4t. Velocity at t = 3?", "10", "21", "6", "13", "Velocity is s′(t) = 2t + 4, which is 10 at t = 3."],
+        ["f(x) = −x² + 4x reaches its maximum at x = ?", "2", "4", "−2", "0", "f′(x) = −2x + 4, which is 0 when x = 2."],
+        ["d/dx of e^(2x)?", "2e^(2x)", "e^(2x)", "2x·e^(2x)", "e^(2x)/2", "Chain rule: e^(2x) times the derivative of the inside, 2."]
+      ]}
+    ]
+  }
+];
+
+const TOPIC = Object.fromEntries(TOPICS.map(t => [t.id, t]));
+const ALL = [];
+TOPICS.forEach(t => t.sets.forEach((s, si) => s.qs.forEach((q, qi) => ALL.push({ topic: t.id, set: si, index: qi }))));
+const setKey = (topic, set) => `${topic}-${set + 1}`;
+
+/* =========================================================
+   PROGRESS — which questions are solved.
+   Saved to the viewer's Claude account when the page can
+   (follows them to every device), otherwise in this browser.
+   ========================================================= */
+const LOCAL_KEY = "mathlearn_site_progress";
+let solved = {};               // { "algebra-2": [0, 3, 5] }
+let remoteRef = null;
+let saveTimer = null;
+
+function readLocal() {
+  try { return JSON.parse(localStorage.getItem(LOCAL_KEY) || "{}").solved || {}; } catch (e) { return {}; }
+}
+function writeLocal() {
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify({ solved })); } catch (e) { /* storage unavailable */ }
+}
+
+/* Union of two solved maps; keeps only well-formed entries */
+function unionSolved(a, b) {
+  const out = {};
+  [a, b].forEach(src => {
+    if (!src || typeof src !== "object") return;
+    Object.entries(src).forEach(([k, list]) => {
+      if (!/^[a-z]+-[1-5]$/.test(k) || !Array.isArray(list)) return;
+      const set = new Set(out[k] || []);
+      list.forEach(i => { if (Number.isInteger(i) && i >= 0 && i < 6) set.add(i); });
+      out[k] = [...set].sort((x, y) => x - y);
+    });
+  });
+  return out;
+}
+const sameSolved = (a, b) => JSON.stringify(unionSolved(a, {})) === JSON.stringify(unionSolved(b, {}));
+
+function isSolved(topic, set, index) {
+  return (solved[setKey(topic, set)] || []).includes(index);
+}
+function solvedInSet(topic, set) {
+  return (solved[setKey(topic, set)] || []).length;
+}
+function solvedInTopic(topic) {
+  return TOPIC[topic].sets.reduce((n, s, si) => n + solvedInSet(topic, si), 0);
+}
+
+function markSolved(item) {
+  const k = setKey(item.topic, item.set);
+  if ((solved[k] || []).includes(item.index)) return;
+  solved = unionSolved(solved, { [k]: [item.index] });
+  scheduleSave();
+}
+
+function scheduleSave() {
+  writeLocal();
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async () => {
+    if (!remoteRef) return;
+    try { await remoteRef.set({ solved, updatedAt: new Date().toISOString() }); } catch (e) { /* stays in this browser */ }
+  }, 500);
+}
+
+async function connectAccount() {
+  if (!window.claude?.use) return;
+  try {
+    const [db, user] = await Promise.all([window.claude.use("db"), window.claude.use("user")]);
+    if (!db || !user) return;
+    const uid = await user.id();
+    if (!uid) return;
+    remoteRef = db.doc(`data/users/${uid}/progress`);
+    const snap = await remoteRef.get();
+    const remote = snap.exists ? snap.data().solved : {};
+    const merged = unionSolved(remote, solved);
+    if (!sameSolved(merged, solved)) { solved = merged; writeLocal(); refreshProgressMarks(); }
+    if (!sameSolved(merged, remote)) scheduleSave();
+    setSaveNote("Progress saves to your Claude account, so it follows you to any device.");
+
+    // Progress made on another device shows up here live
+    remoteRef.onSnapshot(s => {
+      if (!s.exists) return;
+      const next = unionSolved(solved, s.data().solved);
+      if (!sameSolved(next, solved)) { solved = next; writeLocal(); refreshProgressMarks(); }
+    }, () => {});
+  } catch (e) {
+    remoteRef = null; // keep working from this browser
+  }
+}
+
+function setSaveNote(text) { document.getElementById("saveNote").textContent = text; }
+
+/* =========================================================
+   SMALL HELPERS
+   ========================================================= */
+function el(tag, props = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) {
+    if (k === "class") n.className = v;
+    else if (k.startsWith("on")) n[k] = v;
+    else if (v !== false && v != null) n.setAttribute(k, v === true ? "" : v);
+  }
+  kids.flat().forEach(k => { if (k != null && k !== false) n.append(k instanceof Node ? k : String(k)); });
+  return n;
+}
+
+function shuffle(arr, rand = Math.random) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(rand() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+/* Small seeded random so today's puzzle looks the same all day */
+function seeded(seed) {
+  return () => {
+    seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function makeItem(ref, rand) {
+  const [q, correct, w1, w2, w3, why] = TOPIC[ref.topic].sets[ref.set].qs[ref.index];
+  const options = shuffle([correct, w1, w2, w3], rand);
+  return { ...ref, q, why, correct, options, answer: options.indexOf(correct) };
+}
+
+function dots(topic, set, order, here) {
+  const wrap = el("span", { class: "dots", "aria-hidden": "true" });
+  (order || [0, 1, 2, 3, 4, 5]).forEach((qi, pos) => {
+    wrap.append(el("span", { class: "dot" + (isSolved(topic, set, qi) ? " on" : "") + (pos === here ? " here" : "") }));
+  });
+  return wrap;
+}
+
+/* =========================================================
+   QUESTION CARD — try as often as you like, then see why.
+   ========================================================= */
+function questionCard(item, { label, nextText, onNext, headingTag = "h2" }) {
+  let done = false;
+  const feedback = el("p", { class: "feedback", "aria-live": "polite" });
+  const why = el("div", { class: "why", hidden: true },
+    el("span", { class: "label" }, "Why"),
+    el("p", {}, "Answer: ", el("span", { class: "answer" }, item.correct)),
+    el("p", {}, item.why));
+
+  const nextBtn = nextText ? el("button", { class: "btn btn-primary", type: "button", hidden: true, onclick: onNext }, nextText) : null;
+  const showBtn = el("button", { class: "btn btn-quiet", type: "button", onclick: () => finish(null) }, "Show the answer");
+
+  const buttons = item.options.map((opt, i) =>
+    el("button", { class: "opt", type: "button", onclick: () => choose(i) },
+      el("span", { class: "val" }, opt), el("span", { class: "tag" })));
+
+  function finish(chosen) {
+    if (done) return;
+    done = true;
+    buttons.forEach((b, i) => {
+      b.disabled = true;
+      if (i === item.answer) {
+        b.classList.add("correct");
+        b.querySelector(".tag").textContent = chosen === i ? "Correct" : "Answer";
+      } else if (!b.classList.contains("tried")) {
+        b.classList.add("dim");
+      }
+    });
+    feedback.textContent = chosen === item.answer ? "That's it." : "Here's the answer.";
+    why.hidden = false;
+    showBtn.hidden = true;
+    markSolved(item);
+    refreshProgressMarks();
+    if (nextBtn) { nextBtn.hidden = false; nextBtn.focus({ preventScroll: true }); }
+  }
+
+  function choose(i) {
+    if (done) return;
+    if (i === item.answer) return finish(i);
+    const b = buttons[i];
+    b.classList.add("tried");
+    b.disabled = true;
+    b.querySelector(".tag").textContent = "Not this one";
+    b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake");
+    feedback.textContent = "Not this one. Have another look.";
+  }
+
+  return el("div", { class: "card qcard" },
+    label ? el("span", { class: "label" }, label) : null,
+    el(headingTag, { class: "q-text" }, item.q),
+    el("div", { class: "options" }, buttons),
+    feedback,
+    why,
+    el("div", { class: "q-actions" }, showBtn, nextBtn));
+}
+
+/* =========================================================
+   VIEWS
+   ========================================================= */
+const view = document.getElementById("view");
+let practice = null;           // { topic, set, order, pos }
+
+function parseRoute() {
+  const m = /^#([a-z]+)-([1-5])$/.exec(location.hash);
+  if (m && TOPIC[m[1]]) return { topic: m[1], set: Number(m[2]) - 1 };
+  return null;
+}
+
+function render() {
+  const route = parseRoute();
+  if (route) renderPractice(route);
+  else renderHome();
+}
+
+/* Update progress dots without rebuilding the question in front of the viewer */
+function refreshProgressMarks() {
+  document.querySelectorAll("[data-dots]").forEach(node => {
+    const [topic, set] = node.dataset.dots.split("|");
+    const here = node.dataset.here === undefined ? -1 : Number(node.dataset.here);
+    const order = node.dataset.order ? node.dataset.order.split(",").map(Number) : null;
+    node.replaceChildren(dots(topic, Number(set), order, here));
+  });
+  document.querySelectorAll("[data-count]").forEach(node => {
+    node.textContent = `${solvedInTopic(node.dataset.count)} of 30 solved`;
+  });
+}
+
+function todaysItem() {
+  const now = new Date();
+  const day = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000);
+  const ref = ALL[(day * 37) % ALL.length];
+  return makeItem(ref, seeded(day));
+}
+
+function renderHome() {
+  practice = null;
+  document.title = "MathLearn";
+  const today = todaysItem();
+  const t = TOPIC[today.topic];
+
+  const hero = el("section", { class: "hero" },
+    el("div", {},
+      el("h1", {}, "Enjoy math."),
+      el("p", { class: "lede" },
+        "Pick a topic and work through it at your own pace. There is no timer and no score. Try as many times as you like, and every answer shows you why it works."),
+      el("div", { class: "facts" },
+        el("span", { class: "label" }, "6 topics"),
+        el("span", { class: "label" }, "30 short sets"),
+        el("span", { class: "label" }, "180 questions"))),
+    questionCard(today, {
+      label: `Today's puzzle · ${t.name}`,
+      nextText: `More ${t.name.toLowerCase()}`,
+      onNext: () => { location.hash = setKey(today.topic, today.set); }
+    }));
+
+  const grid = el("div", { class: "topics" });
+  TOPICS.forEach(topic => {
+    const list = el("ul", { class: "sets" });
+    topic.sets.forEach((s, si) => {
+      list.append(el("li", {},
+        el("button", { class: "set-row", type: "button",
+            "aria-label": `${s.title}, ${solvedInSet(topic.id, si)} of 6 solved`,
+            onclick: () => { location.hash = setKey(topic.id, si); } },
+          el("span", { class: "n" }, si + 1),
+          el("span", { class: "t" }, s.title),
+          el("span", { "data-dots": `${topic.id}|${si}` }, dots(topic.id, si)))));
+    });
+    grid.append(el("article", { class: "card topic" },
+      el("div", { class: "topic-head" },
+        el("span", { class: "glyph", "aria-hidden": "true" }, topic.glyph),
+        el("div", {},
+          el("h3", { class: "topic-name" }, topic.name),
+          el("p", { class: "caption", "data-count": topic.id }, `${solvedInTopic(topic.id)} of 30 solved`))),
+      list));
+  });
+
+  view.replaceChildren(
+    hero,
+    el("section", {},
+      el("div", { class: "section-head" },
+        el("h2", {}, "Topics"),
+        el("p", { class: "caption" }, "Every set is open. Start anywhere.")),
+      grid));
+}
+
+function renderPractice(route, restore) {
+  const topic = TOPIC[route.topic];
+  const set = topic.sets[route.set];
+  const same = practice && practice.topic === route.topic && practice.set === route.set;
+  if (restore && restore.topic === route.topic && restore.set === route.set) practice = restore;
+  else if (!same) {
+    // Unsolved questions first, each set in a fresh order
+    const order = shuffle([0, 1, 2, 3, 4, 5]);
+    order.sort((a, b) => isSolved(route.topic, route.set, a) - isSolved(route.topic, route.set, b));
+    practice = { topic: route.topic, set: route.set, order, pos: 0 };
+  }
+  document.title = `${set.title} · MathLearn`;
+
+  const back = el("div", {}, el("button", { class: "btn btn-quiet", type: "button", onclick: () => { location.hash = ""; } }, "← All topics"));
+  const head = el("div", { class: "practice-head" },
+    el("span", { class: "label" }, `${topic.name} · Set ${route.set + 1} of 5`),
+    el("h1", {}, set.title));
+
+  if (practice.pos >= 6) {
+    const nextSet = route.set + 1 < 5 ? route.set + 1 : null;
+    view.replaceChildren(el("section", { class: "practice" }, back, head,
+      el("div", { class: "card done-card" },
+        el("h2", {}, "Set finished"),
+        el("p", {}, `You worked through all six ${set.title.toLowerCase()} questions. Come back to them whenever you like.`),
+        el("div", { "data-dots": `${route.topic}|${route.set}` }, dots(route.topic, route.set)),
+        el("div", { class: "q-actions" },
+          nextSet !== null
+            ? el("button", { class: "btn btn-primary", type: "button", onclick: () => { location.hash = setKey(route.topic, nextSet); } },
+                `Next: ${topic.sets[nextSet].title}`)
+            : el("button", { class: "btn btn-primary", type: "button", onclick: () => { location.hash = ""; } }, "Choose another topic"),
+          el("button", { class: "btn", type: "button", onclick: () => { practice = null; renderPractice(route); } }, "Go through this set again")))));
+    view.querySelector(".done-card .btn-primary").focus({ preventScroll: true });
+    return;
+  }
+
+  const qi = practice.order[practice.pos];
+  const item = makeItem({ topic: route.topic, set: route.set, index: qi });
+  const meta = el("div", { class: "practice-meta" },
+    el("span", { "data-dots": `${route.topic}|${route.set}`, "data-order": practice.order.join(","), "data-here": practice.pos },
+      dots(route.topic, route.set, practice.order, practice.pos)),
+    el("span", { class: "caption num" }, `Question ${practice.pos + 1} of 6`));
+
+  view.replaceChildren(el("section", { class: "practice" }, back, head, meta,
+    questionCard(item, {
+      nextText: practice.pos < 5 ? "Next question" : "Finish set",
+      onNext: () => { practice.pos++; renderPractice(route); window.scrollTo({ top: 0 }); }
+    })));
+}
+
+/* =========================================================
+   START OVER (inline confirm — no dialogs)
+   ========================================================= */
+function renderReset(confirming = false) {
+  const area = document.getElementById("resetArea");
+  if (!confirming) {
+    area.replaceChildren(el("button", { class: "btn btn-quiet", type: "button", onclick: () => renderReset(true) }, "Start over"));
+    return;
+  }
+  area.replaceChildren(el("span", { class: "confirm" },
+    el("span", { class: "caption" }, "Clear every solved question?"),
+    el("button", { class: "btn", type: "button", onclick: async () => {
+      solved = {};
+      writeLocal();
+      if (remoteRef) { try { await remoteRef.set({ solved: {}, updatedAt: new Date().toISOString() }); } catch (e) {} }
+      renderReset(false);
+      render();
+    } }, "Clear"),
+    el("button", { class: "btn btn-quiet", type: "button", onclick: () => renderReset(false) }, "Keep")));
+}
+
+/* =========================================================
+   BOOT
+   ========================================================= */
+function start(data) {
+  solved = unionSolved(readLocal(), {});
+  const route = parseRoute();
+  if (route && data && data.practice) renderPractice(route, data.practice);
+  else render();
+  renderReset(false);
+  connectAccount();
+}
+
+document.getElementById("brand").onclick = () => { location.hash = ""; };
+window.addEventListener("hashchange", () => { render(); window.scrollTo({ top: 0 }); });
+window.claude?.hot?.snapshot?.(() => ({ practice }));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
