@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Brainstack Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Figtree:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+      <div>
+        <h1>Brainstack</h1>
+        <p>Three Brainstack levels of quiz games, every level a fresh set of questions.</p>
+      </div>
+    </div>
+    <div class="top-right" id="head-right"></div>
+  </header>
+
+  <div class="top" id="nav-row">
+    <nav class="tabs" role="tablist" id="tabs">
+      <button class="tab" role="tab" id="tab-play" aria-selected="true">Play</button>
+      <button class="tab" role="tab" id="tab-records" aria-selected="false">Records</button>
+      <button class="tab" role="tab" id="tab-account" aria-selected="false">Account</button>
+    </nav>
+    <span class="sync" id="sync">Saving players in this browser</span>
+  </div>
+
+  <main id="view"></main>
+</div>
+
+<!-- progress.js is optional: it holds your saved player and is imported the first time the page opens. -->
+<script src="progress.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
