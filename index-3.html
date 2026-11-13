@@ -19,6 +19,7 @@
         <nav class="main-nav" aria-label="Main navigation">
             <a href="#explore">Explore</a>
             <a href="#learn">Learn</a>
+            <a href="#challenge">Challenge</a>
             <a href="#reading">Reading room</a>
         </nav>
         <div class="header-actions">
@@ -151,35 +152,112 @@
             </div>
         </section>
 
-        <section class="quiz-section section-wrap" aria-labelledby="quiz-title">
+        <section class="quiz-section section-wrap" id="challenge" aria-labelledby="quiz-title">
             <div class="quiz-card">
                 <div class="quiz-copy">
-                    <p class="eyebrow">THE MINI-CHALLENGE</p>
-                    <h2 id="quiz-title">Pick a topic.<br><span class="accent">Earn points.</span></h2>
-                    <p>Choose a subject and solve two quick questions. Correct answers earn 10 points. No timers, no streaks.</p>
+                    <p class="eyebrow">THE CHALLENGE ARENA</p>
+                    <h2 id="quiz-title">Pick a mode.<br><span class="accent">Earn your points.</span></h2>
+                    <p>Fresh questions every round across six topics. First-try answers score full points, streaks multiply them, and hints cost half.</p>
                     <div class="points-card">
                         <div class="points-total"><span class="points-star" aria-hidden="true">✦</span><strong id="quiz-points">0</strong><span>POINTS</span></div>
-                        <div class="quiz-level-row"><strong id="quiz-level">Curious beginner</strong><span id="quiz-next-level">0 / 40 to next level</span></div>
+                        <div class="quiz-level-row"><strong id="quiz-level">Curious beginner</strong><span id="quiz-next-level">0 / 100 to next level</span></div>
                         <div class="quiz-progress"><span class="quiz-progress-fill" id="quiz-progress-fill"></span></div>
+                        <dl class="quiz-stats">
+                            <div><dt>Best streak</dt><dd id="stat-streak">0</dd></div>
+                            <div><dt>First-try</dt><dd id="stat-accuracy">—</dd></div>
+                            <div><dt>Rounds</dt><dd id="stat-rounds">0</dd></div>
+                        </dl>
+                    </div>
+                    <div class="badge-panel">
+                        <div class="badge-panel-head"><p class="eyebrow">BADGES</p><span id="badge-count">0 / 9</span></div>
+                        <ul class="badge-grid" id="badge-grid"></ul>
                     </div>
                 </div>
-                <div class="quiz-play">
-                    <div class="quiz-topic-tabs" role="group" aria-label="Choose a quiz topic">
-                        <button class="quiz-topic-button" type="button" data-topic="CALCULUS" aria-pressed="false">Calculus</button>
-                        <button class="quiz-topic-button" type="button" data-topic="ARITHMETIC" aria-pressed="false">Arithmetic</button>
-                        <button class="quiz-topic-button" type="button" data-topic="TRIGONOMETRY" aria-pressed="false">Trigonometry</button>
-                        <button class="quiz-topic-button active" type="button" data-topic="GEOMETRY" aria-pressed="true">Geometry</button>
+                <div class="quiz-play" id="quiz-play">
+                    <div class="quiz-screen quiz-setup" id="quiz-setup">
+                        <div class="setup-group">
+                            <p class="setup-label" id="mode-label">01 · CHOOSE A MODE</p>
+                            <div class="quiz-mode-grid" role="group" aria-labelledby="mode-label">
+                                <button class="quiz-mode-button" type="button" data-mode="classic" aria-pressed="true"><span class="mode-glyph" aria-hidden="true">◎</span><strong>Classic</strong><small>8 questions · 2 tries · hints</small></button>
+                                <button class="quiz-mode-button" type="button" data-mode="speed" aria-pressed="false"><span class="mode-glyph" aria-hidden="true">ϟ</span><strong>Speed run</strong><small>60 seconds · speed bonus</small></button>
+                                <button class="quiz-mode-button" type="button" data-mode="survival" aria-pressed="false"><span class="mode-glyph" aria-hidden="true">♥</span><strong>Survival</strong><small>3 lives · gets harder</small></button>
+                                <button class="quiz-mode-button" type="button" data-mode="daily" aria-pressed="false"><span class="mode-glyph" aria-hidden="true">☀</span><strong>Daily</strong><small>5 questions · once a day</small></button>
+                            </div>
+                        </div>
+                        <div class="setup-group" id="topic-group">
+                            <p class="setup-label" id="topic-label">02 · PICK A TOPIC</p>
+                            <div class="quiz-chip-row" role="group" aria-labelledby="topic-label">
+                                <button class="quiz-chip" type="button" data-quiz-topic="MIXED" aria-pressed="true">Mixed</button>
+                                <button class="quiz-chip" type="button" data-quiz-topic="ARITHMETIC" aria-pressed="false">Arithmetic</button>
+                                <button class="quiz-chip" type="button" data-quiz-topic="ALGEBRA" aria-pressed="false">Algebra</button>
+                                <button class="quiz-chip" type="button" data-quiz-topic="GEOMETRY" aria-pressed="false">Geometry</button>
+                                <button class="quiz-chip" type="button" data-quiz-topic="TRIGONOMETRY" aria-pressed="false">Trigonometry</button>
+                                <button class="quiz-chip" type="button" data-quiz-topic="CALCULUS" aria-pressed="false">Calculus</button>
+                                <button class="quiz-chip" type="button" data-quiz-topic="PROBABILITY" aria-pressed="false">Probability</button>
+                            </div>
+                        </div>
+                        <div class="setup-group" id="difficulty-group">
+                            <p class="setup-label" id="difficulty-label">03 · SET THE DIFFICULTY</p>
+                            <div class="quiz-chip-row" role="group" aria-labelledby="difficulty-label">
+                                <button class="quiz-chip" type="button" data-quiz-difficulty="easy" aria-pressed="true">Easy <small>10 pts</small></button>
+                                <button class="quiz-chip" type="button" data-quiz-difficulty="medium" aria-pressed="false">Medium <small>15 pts</small></button>
+                                <button class="quiz-chip" type="button" data-quiz-difficulty="hard" aria-pressed="false">Hard <small>25 pts</small></button>
+                            </div>
+                        </div>
+                        <p class="setup-note" id="setup-note" aria-live="polite"></p>
+                        <button class="button quiz-start" id="quiz-start" type="button"><span id="quiz-start-label">Start round</span> <span aria-hidden="true">→</span></button>
                     </div>
-                    <span class="quiz-count">QUICK QUIZ <span>·</span> <span id="quiz-category">GEOMETRY</span> <span>·</span> <span id="quiz-number">01 / 02</span></span>
-                    <h3 id="quiz-question">If you double a circle’s radius, what happens to its area?</h3>
-                    <div class="quiz-options" id="quiz-options">
-                        <button class="quiz-option" type="button" data-answer="same">It doubles</button>
-                        <button class="quiz-option" type="button" data-answer="four">It becomes four times larger</button>
-                        <button class="quiz-option" type="button" data-answer="half">It gets cut in half</button>
+
+                    <div class="quiz-screen quiz-game" id="quiz-game" hidden>
+                        <div class="quiz-hud">
+                            <span class="quiz-count"><span id="quiz-mode-name">CLASSIC</span><span class="sep">·</span><span id="quiz-category">MIXED</span><span class="sep">·</span><span id="quiz-number">01 / 08</span></span>
+                            <div class="hud-pills">
+                                <span class="hud-pill hud-timer" id="hud-timer" hidden>60s</span>
+                                <span class="hud-pill hud-lives" id="hud-lives" role="img" hidden></span>
+                                <span class="hud-pill hud-streak" id="hud-streak">STREAK 0</span>
+                                <span class="hud-pill hud-score" id="hud-score">0 PTS</span>
+                            </div>
+                        </div>
+                        <div class="quiz-timer-track" id="quiz-timer-track" hidden><span id="quiz-timer-fill"></span></div>
+                        <ol class="quiz-dots" id="quiz-dots" aria-hidden="true"></ol>
+                        <span class="quiz-difficulty" id="quiz-difficulty"></span>
+                        <h3 id="quiz-question" tabindex="-1"></h3>
+                        <div class="quiz-options" id="quiz-options"></div>
+                        <form class="quiz-answer-form" id="quiz-answer-form" hidden>
+                            <label class="visually-hidden" for="quiz-answer-input">Your answer</label>
+                            <input id="quiz-answer-input" type="text" autocomplete="off" spellcheck="false" placeholder="A number or fraction, e.g. 3/4">
+                            <button class="button" type="submit">Check</button>
+                        </form>
+                        <p class="quiz-hint-text" id="quiz-hint-text" hidden></p>
+                        <div class="quiz-result-row">
+                            <span class="point-award" id="point-award" hidden></span>
+                            <p class="quiz-feedback" id="quiz-feedback" aria-live="polite"></p>
+                        </div>
+                        <div class="quiz-controls">
+                            <button class="button quiz-next" id="quiz-next" type="button" hidden><span id="quiz-next-label">Next question</span> <span aria-hidden="true">→</span></button>
+                            <span class="quiz-controls-spacer"></span>
+                            <button class="text-link quiz-hint-button" id="quiz-hint" type="button">Hint <small>(−50% pts)</small></button>
+                            <button class="text-link quiz-quit" id="quiz-quit" type="button">End round</button>
+                        </div>
+                        <p class="quiz-keys">Tip: press 1–4 to pick an answer.</p>
                     </div>
-                    <span class="point-award" id="point-award" aria-live="polite" hidden></span>
-                    <p class="quiz-feedback" id="quiz-feedback" aria-live="polite"></p>
-                    <button class="text-link quiz-next" id="quiz-next" type="button" hidden>Next question <span aria-hidden="true">→</span></button>
+
+                    <div class="quiz-screen quiz-results" id="quiz-results" hidden>
+                        <p class="eyebrow results-eyebrow" id="results-eyebrow">ROUND COMPLETE</p>
+                        <h3 id="results-title" tabindex="-1">Nicely done.</h3>
+                        <div class="results-grid">
+                            <div><strong id="results-points">+0</strong><span>POINTS</span></div>
+                            <div><strong id="results-correct">0/0</strong><span>CORRECT</span></div>
+                            <div><strong id="results-streak">0</strong><span>BEST STREAK</span></div>
+                            <div><strong id="results-accuracy">0%</strong><span>FIRST-TRY</span></div>
+                        </div>
+                        <ul class="results-breakdown" id="results-breakdown"></ul>
+                        <div class="results-badges" id="results-badges" hidden></div>
+                        <div class="results-actions">
+                            <button class="button quiz-start" id="results-again" type="button">Play again <span aria-hidden="true">↻</span></button>
+                            <button class="text-link" id="results-setup" type="button">Change mode</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
