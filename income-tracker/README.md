@@ -3,7 +3,7 @@
 A multi-user income and expense tracker.
 
 - **Front end:** React 18 (compiled in the browser by Babel, so there's no build step), with a flexbox layout
-- **API:** Node.js and Express in `server/`
+- **API:** Node.js and Express, all in `script.js`
 - **Database:** Microsoft SQL Server, accessed through the `mssql` package with parameterised queries
 - **Accounts:** sign up and sign in. Passwords are hashed with bcrypt and sessions are kept in an httpOnly cookie. Every user sees only their own transactions.
 
@@ -11,7 +11,7 @@ A multi-user income and expense tracker.
 
 | Problem | Fix |
 | --- | --- |
-| The page called `/api/transactions`, but no server existed to answer it | Added an Express API backed by SQL Server (`server/`) |
+| The page called `/api/transactions`, but no server existed to answer it | Added an Express API backed by SQL Server (`script.js`) |
 | Opening `index.html` by double-clicking it (`file://`) stops Babel from loading `script-4.js` | Express now serves the page at `http://localhost:3000` |
 | `react@18` and the Babel URL weren't pinned, so a new release could break the page | Pinned to exact versions |
 | SQL Server `DATE` values reached the browser as `2026-11-01T00:00:00.000Z` and could show the wrong day | SQL returns plain `YYYY-MM-DD` text |
@@ -23,20 +23,18 @@ A multi-user income and expense tracker.
 
 ```
 income-tracker/
+├─ script.js                  the whole server: settings, database, validation,
+│                             login, API routes  (npm run dev / npm run db:init)
 ├─ database/schema.sql        tables, constraints, index (safe to re-run)
-├─ scripts/init-db.js         runs schema.sql  →  npm run db:init
-├─ server/
-│  ├─ index.js                Express app, security headers, static files
-│  ├─ config.js               reads and checks .env
-│  ├─ db.js                   shared SQL Server connection pool
-│  ├─ auth.js                 session cookie + requireAuth middleware
-│  ├─ validate.js             input validation
-│  ├─ errors.js               JSON error responses
-│  └─ routes/{auth,transactions}.js
-├─ public/                    index.html, app.js (React), style.css
+├─ public/
+│  ├─ index.html              the page
+│  ├─ app.js                  React front end (runs in the browser)
+│  └─ style.css               flexbox layout
 ├─ api.http                   ready-made API requests for VS Code REST Client
 └─ .vscode/                   workspace settings, debugger, recommended extensions
 ```
+
+`script.js` holds all the server code. `public/app.js` must stay separate because it runs in the browser, while `script.js` runs in Node.js and talks to SQL Server. Merging them would send your server code to every visitor's browser.
 
 ## Setup
 
@@ -108,7 +106,7 @@ What `.vscode/settings.json` does:
 
 Debugging (`.vscode/launch.json`, *Run and Debug* panel, `Ctrl+Shift+D`):
 
-- **Server: debug API** runs the API with `.env` loaded and restarts on file changes. Set breakpoints in `server/`.
+- **Server: debug API** runs the API with `.env` loaded and restarts on file changes. Set breakpoints in `script.js`.
 - **Full stack (server + browser)** starts the API and opens Chrome with the debugger attached.
 - **Database: create tables** is the same as `npm run db:init`.
 
