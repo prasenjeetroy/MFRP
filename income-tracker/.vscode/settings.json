@@ -8,7 +8,7 @@
   "files.trimTrailingWhitespace": true,
   "files.insertFinalNewline": true,
 
-  // The React markup in script.js is written in html`...` templates (htm);
+  // The React markup in script-4.js is written in html`...` templates (htm);
   // the lit-html extension highlights them, and Emmet works inside them.
   "emmet.includeLanguages": { "javascript": "javascriptreact" },
   "javascript.updateImportsOnFileMove.enabled": "always",

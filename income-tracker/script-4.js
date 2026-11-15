@@ -1,8 +1,8 @@
 /* ============================================================================
    Income Tracker - all the JavaScript, server and browser, in one file
 
-     node script.js            start the web server  (npm start / npm run dev)
-     node script.js --init-db  create the database   (npm run db:init)
+     node script-4.js            start the web server  (npm start / npm run dev)
+     node script-4.js --init-db  create the database   (npm run db:init)
 
    Sections:
      1. Settings (.env)          6. Auth routes
@@ -12,7 +12,7 @@
      5. Sessions (login cookie)
 
    Sections 1-7 and 9 run only in Node. Section 8 is the one part the
-   browser receives (as /app.js); see the note at the top of that section.
+   browser receives (as /script-4.js); see the note at the top of that section.
    ========================================================================== */
 
 const fs = require("fs");
@@ -532,7 +532,7 @@ transactionsRouter.delete("/:id", async (req, res) => {
 /* ============================================================================
    8. Browser app (React)
       Everything inside browserApp() runs in the BROWSER, not in Node. The
-      server sends only this function's source to the page as /app.js, so the
+      server sends only this function's source to the page as /script-4.js, so the
       rest of this file (database, login code) never leaves the server.
       Inside it, use only browser globals (React, ReactDOM, htm, window,
       fetch). Server variables from this file are not available there.
@@ -1137,7 +1137,7 @@ function browserApp() {
   ReactDOM.createRoot(document.getElementById("root")).render(html`<${App} />`);
 }
 
-// The exact text sent to the browser as /app.js: browserApp's source, called once.
+// The exact text sent to the browser as /script-4.js: browserApp's source, called once.
 const BROWSER_SCRIPT = `"use strict";\n(${browserApp.toString()})();\n`;
 
 /* ============================================================================
@@ -1187,11 +1187,12 @@ function createApp() {
   app.use("/api", (_req, _res, next) => next(new HttpError(404, "API route not found.")));
 
   // The React app from section 8.
-  app.get("/app.js", (_req, res) => {
+  app.get("/script-4.js", (_req, res) => {
     res.type("application/javascript").set("Cache-Control", "no-cache").send(BROWSER_SCRIPT);
   });
 
-  app.use(express.static(path.join(__dirname, "public")));
+  // index-4.html is the home page, so http://localhost:3000 opens it directly.
+  app.use(express.static(path.join(__dirname, "public"), { index: "index-4.html" }));
   app.use(errorHandler);
   return app;
 }

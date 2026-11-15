@@ -5,7 +5,7 @@
       "name": "Server: debug API",
       "type": "node",
       "request": "launch",
-      "program": "${workspaceFolder}/script.js",
+      "program": "${workspaceFolder}/script-4.js",
       "envFile": "${workspaceFolder}/.env",
       "runtimeArgs": ["--watch"],
       "console": "integratedTerminal",
@@ -22,7 +22,7 @@
       "name": "Database: create tables",
       "type": "node",
       "request": "launch",
-      "program": "${workspaceFolder}/script.js",
+      "program": "${workspaceFolder}/script-4.js",
       "args": ["--init-db"],
       "console": "integratedTerminal"
     }

@@ -4,14 +4,14 @@
   "private": true,
   "description": "Multi-user income and expense tracker: React front end, Express API, SQL Server database.",
   "type": "commonjs",
-  "main": "script.js",
+  "main": "script-4.js",
   "engines": {
     "node": ">=18.18"
   },
   "scripts": {
-    "start": "node script.js",
-    "dev": "node --watch script.js",
-    "db:init": "node script.js --init-db"
+    "start": "node script-4.js",
+    "dev": "node --watch script-4.js",
+    "db:init": "node script-4.js --init-db"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

@@ -4,7 +4,7 @@ A multi-user income and expense tracker.
 
 - **Front end:** React 18 with [htm](https://github.com/developit/htm) (JSX-like syntax with no build step), with a flexbox layout
 - **API:** Node.js and Express
-- **One JavaScript file:** the server and the React app both live in `script.js`
+- **One JavaScript file:** the server and the React app both live in `script-4.js`
 - **Database:** Microsoft SQL Server, accessed through the `mssql` package with parameterised queries
 - **Accounts:** sign up and sign in. Passwords are hashed with bcrypt and sessions are kept in an httpOnly cookie. Every user sees only their own transactions.
 
@@ -12,8 +12,8 @@ A multi-user income and expense tracker.
 
 | Problem | Fix |
 | --- | --- |
-| The page called `/api/transactions`, but no server existed to answer it | Added an Express API backed by SQL Server (`script.js`) |
-| Opening `index.html` by double-clicking it (`file://`) stops the in-browser compiler from loading `script-4.js` | Express now serves the page at `http://localhost:3000` |
+| The page called `/api/transactions`, but no server existed to answer it | Added an Express API backed by SQL Server (`script-4.js`) |
+| Opening `index-4.html` by double-clicking it (`file://`) stops the in-browser compiler from loading `script-4.js` | Express now serves the page at `http://localhost:3000` |
 | `react@18` and the Babel URL weren't pinned (Babel is gone now), so a new release could break the page | Pinned to exact versions |
 | SQL Server `DATE` values reached the browser as `2026-11-01T00:00:00.000Z` and could show the wrong day | SQL returns plain `YYYY-MM-DD` text |
 | An HTML error page made `response.json()` throw "Unexpected token <" | The API client reads the response as text first and always shows a readable message |
@@ -24,20 +24,20 @@ A multi-user income and expense tracker.
 
 ```
 income-tracker/
-├─ script.js                  ALL the JavaScript: settings, database, validation,
+├─ script-4.js                ALL the JavaScript: settings, database, validation,
 │                             login, API routes and the React app
 │                             (npm run dev / npm run db:init)
 ├─ database/schema.sql        tables, constraints, index (safe to re-run)
 ├─ public/
-│  ├─ index.html              the page
-│  └─ style.css               flexbox layout
+│  ├─ index-4.html            the page
+│  └─ style-4.css             flexbox layout
 ├─ api.http                   ready-made API requests for VS Code REST Client
 └─ .vscode/                   workspace settings, debugger, recommended extensions
 ```
 
 ### How one file serves both the server and the browser
 
-The React app lives in section 8 of `script.js`, inside a function called `browserApp()`. Node never runs that function. When the page asks for `/app.js`, the server sends **only that function's source code**. The database and login code in the rest of the file never reaches the browser.
+The React app lives in section 8 of `script-4.js`, inside a function called `browserApp()`. Node never runs that function. The page loads `/script-4.js`, but the server doesn't send the file as it is on disk. It sends **only that function's source code**. The database and login code in the rest of the file never reaches the browser.
 
 Two rules follow from this:
 
@@ -110,18 +110,18 @@ When you open the folder, VS Code offers to install the recommended extensions. 
 | **SQL Server (mssql)** (`ms-mssql.mssql`) | Browse the database and run `schema.sql` or ad-hoc queries in VS Code |
 | **Prettier** (`esbenp.prettier-vscode`) | Formats code on save (`.prettierrc.json`) |
 | **REST Client** (`humao.rest-client`) | Click *Send Request* in `api.http` to test the API |
-| **lit-html** (`bierner.lit-html`) | Highlights the ``html`…` `` markup inside `script.js` |
+| **lit-html** (`bierner.lit-html`) | Highlights the ``html`…` `` markup inside `script-4.js` |
 | **DotENV** (`mikestead.dotenv`) | Syntax highlighting for `.env` |
 
 What `.vscode/settings.json` does:
 
 - Formats with Prettier on save, uses 2-space indentation and LF line endings, and trims trailing whitespace.
-- Turns on Emmet for JavaScript, and the **lit-html** extension highlights the ``html`…` `` markup in `script.js` as real HTML.
+- Turns on Emmet for JavaScript, and the **lit-html** extension highlights the ``html`…` `` markup in `script-4.js` as real HTML.
 - Adds an **"IncomeTracker (local)"** connection to the SQL Server extension. Open the *SQL Server* icon in the sidebar and connect. It asks for the `sa` password the first time and saves it in your OS keychain. Edit `server` or `user` there if yours differ.
 
 Debugging (`.vscode/launch.json`, *Run and Debug* panel, `Ctrl+Shift+D`):
 
-- **Server: debug API** runs the API with `.env` loaded and restarts on file changes. Set breakpoints in `script.js`.
+- **Server: debug API** runs the API with `.env` loaded and restarts on file changes. Set breakpoints in `script-4.js`.
 - **Full stack (server + browser)** starts the API and opens Chrome with the debugger attached.
 - **Database: create tables** is the same as `npm run db:init`.
 
@@ -164,4 +164,4 @@ All `/api/transactions` routes need a signed-in session.
 
 ## Going to production
 
-Keeping everything in one file is fine for a small project. As it grows, a usual next step is to move `browserApp()` into a Vite React project (`npm create vite@latest`) and serve its `dist/` folder from Express. Switch the React URLs in `index.html` from `.development.js` to `.production.min.js`. Also set `NODE_ENV=production`, serve over HTTPS, and use a least-privilege SQL login instead of `sa`.
+Keeping everything in one file is fine for a small project. As it grows, a usual next step is to move `browserApp()` into a Vite React project (`npm create vite@latest`) and serve its `dist/` folder from Express. Switch the React URLs in `index-4.html` from `.development.js` to `.production.min.js`. Also set `NODE_ENV=production`, serve over HTTPS, and use a least-privilege SQL login instead of `sa`.
