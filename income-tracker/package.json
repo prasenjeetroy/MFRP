@@ -1,0 +1,26 @@
+{
+  "name": "income-tracker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Multi-user income and expense tracker: React front end, Express API, SQL Server database.",
+  "type": "commonjs",
+  "main": "server/index.js",
+  "engines": {
+    "node": ">=18.18"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "db:init": "node scripts/init-db.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.7",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mssql": "^11.0.1"
+  }
+}

@@ -1,0 +1,36 @@
+{
+  // ---- Editor ----
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.tabSize": 2,
+  "editor.bracketPairColorization.enabled": true,
+  "files.eol": "\n",
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+
+  // public/app.js contains JSX, so treat it as React code (highlighting, IntelliSense, Emmet).
+  "files.associations": { "**/public/app.js": "javascriptreact" },
+  "emmet.includeLanguages": { "javascript": "javascriptreact" },
+  "javascript.updateImportsOnFileMove.enabled": "always",
+
+  // Keep installed packages out of search results.
+  "search.exclude": { "**/node_modules": true },
+
+  // ---- SQL Server (needs the "SQL Server (mssql)" extension) ----
+  "[sql]": { "editor.defaultFormatter": "ms-mssql.mssql" },
+  "mssql.connections": [
+    {
+      "profileName": "IncomeTracker (local)",
+      "server": "localhost",
+      "database": "IncomeTracker",
+      "authenticationType": "SqlLogin",
+      "user": "sa",
+      "savePassword": true,
+      "encrypt": "Mandatory",
+      "trustServerCertificate": true
+    }
+  ],
+
+  // ---- Integrated terminal ----
+  "terminal.integrated.env.windows": { "NODE_ENV": "development" }
+}

@@ -1,0 +1,36 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Server: debug API",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/server/index.js",
+      "envFile": "${workspaceFolder}/.env",
+      "runtimeArgs": ["--watch"],
+      "console": "integratedTerminal",
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Browser: open app",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:3000",
+      "webRoot": "${workspaceFolder}/public"
+    },
+    {
+      "name": "Database: create tables",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/scripts/init-db.js",
+      "console": "integratedTerminal"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full stack (server + browser)",
+      "configurations": ["Server: debug API", "Browser: open app"],
+      "stopAll": true
+    }
+  ]
+}

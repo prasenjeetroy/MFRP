@@ -1,0 +1,44 @@
+### Try the API from VS Code: install "REST Client", then click "Send Request" above each block.
+@base = http://localhost:3000/api
+
+### Health check (is SQL Server reachable?)
+GET {{base}}/health
+
+### Create an account (the session cookie is kept for the requests below)
+POST {{base}}/auth/register
+Content-Type: application/json
+
+{ "email": "demo@example.com", "displayName": "Demo", "password": "password123" }
+
+### Sign in
+POST {{base}}/auth/login
+Content-Type: application/json
+
+{ "email": "demo@example.com", "password": "password123" }
+
+### Who am I?
+GET {{base}}/auth/me
+
+### Add a transaction
+POST {{base}}/transactions
+Content-Type: application/json
+
+{ "title": "Salary", "category": "Salary", "type": "Income", "amount": 50000, "transactionDate": "2026-11-01" }
+
+### List (all filters optional)
+GET {{base}}/transactions?start=2026-01-01&end=2026-12-31&type=Income
+
+### Monthly totals for the chart
+GET {{base}}/transactions/summary?from=2026-06-01
+
+### Update transaction 1
+PUT {{base}}/transactions/1
+Content-Type: application/json
+
+{ "title": "Salary (Nov)", "category": "Salary", "type": "Income", "amount": 52000, "transactionDate": "2026-11-01" }
+
+### Delete transaction 1
+DELETE {{base}}/transactions/1
+
+### Sign out
+POST {{base}}/auth/logout
