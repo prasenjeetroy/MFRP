@@ -15,10 +15,10 @@
   <!-- Exact versions are pinned so an upstream release can never break the page. -->
   <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
-  <script crossorigin src="https://unpkg.com/@babel/standalone@7.26.4/babel.min.js"></script>
+  <script crossorigin src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js"></script>
 
-  <!-- Babel downloads and compiles this file, so the page must be served over
-       http://localhost (npm run dev), never opened as a file:// path. -->
-  <script type="text/babel" data-presets="react" src="app.js"></script>
+  <!-- Not a file on disk: script.js generates it from its "Browser app" section.
+       Open the page through http://localhost:3000 (npm run dev), not as a file. -->
+  <script src="app.js"></script>
 </body>
 </html>
