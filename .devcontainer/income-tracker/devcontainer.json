@@ -1,0 +1,19 @@
+{
+  // Lets GitHub Codespaces find the Income Tracker environment from the repository root.
+  // The full setup lives in income-tracker/.devcontainer/.
+  "name": "Income Tracker (Node.js + SQL Server)",
+  "dockerComposeFile": "../../income-tracker/.devcontainer/docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": { "label": "Income Tracker", "onAutoForward": "openBrowser" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-mssql.mssql", "esbenp.prettier-vscode", "humao.rest-client", "bierner.lit-html", "mikestead.dotenv"]
+    }
+  }
+}

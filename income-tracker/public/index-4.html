@@ -21,16 +21,17 @@
             “Connected to SQL Server”.</li>
           <li>Open <a href="http://localhost:3000">http://localhost:3000</a>. Live Server, Live Preview
             and opening the .html file directly don't work, because they can't run script-4.js or the API.</li>
-          <li>Make sure this computer can reach <code>unpkg.com</code>, where React is downloaded from.</li>
+          <li>If you just downloaded the project, run <code>npm install</code> first.</li>
         </ol>
       </div>
     </div>
   </div>
 
-  <!-- Exact versions are pinned so an upstream release can never break the page. -->
-  <script crossorigin src="https://unpkg.com/react@18.3.1/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js"></script>
-  <script crossorigin src="https://unpkg.com/htm@3.1.1/dist/htm.umd.js"></script>
+  <!-- React and htm come from node_modules through the server (npm install),
+       so no internet connection is needed. Versions are pinned in package.json. -->
+  <script src="vendor/react/react.development.js"></script>
+  <script src="vendor/react-dom/react-dom.development.js"></script>
+  <script src="vendor/htm/htm.umd.js"></script>
 
   <!-- This is NOT the whole script-4.js file: the server sends only its
        "Browser app" section (section 8). Database and login code stay on the server.

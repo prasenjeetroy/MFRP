@@ -52,6 +52,22 @@ Two rules follow from this:
 
 ## Setup
 
+### Easiest: the ready-made Dev Container (recommended)
+
+You don't need to install SQL Server or Node.js. `.devcontainer/` describes a complete environment, with Node.js 22 and SQL Server 2022 in Docker, and VS Code builds it for you.
+
+1. Install **Docker Desktop** (https://www.docker.com/products/docker-desktop) and start it.
+   - On Windows, keep the default *WSL 2* option.
+   - On Apple-silicon Macs, turn on *Settings → General → Use Rosetta*, because SQL Server only ships for Intel.
+2. In VS Code, install the **Dev Containers** extension (`ms-vscode-remote.remote-containers`).
+3. Open the `income-tracker` folder, press `F1`, and run **Dev Containers: Reopen in Container**.
+4. The first build takes a few minutes. It installs packages, creates `.env` and creates the database tables.
+5. In the VS Code terminal, run `npm run dev` and open **http://localhost:3000**.
+
+This also works in **GitHub Codespaces** (*Code → Codespaces → Create codespace*), entirely in the browser.
+
+Prefer installing everything yourself? Follow steps 1–3 below.
+
 ### 1. Install
 
 - **Node.js 18 or newer**: https://nodejs.org
@@ -161,7 +177,7 @@ All `/api/transactions` routes need a signed-in session.
 | `Failed to lookup instance` | `DB_INSTANCE` is set, but the SQL Server Browser service isn't running |
 | `self-signed certificate` | Set `DB_TRUST_CERT=true` for a local server |
 | "The app didn't start" | The page was opened with Live Server, Live Preview or as a file. Run `npm run dev` and open `http://localhost:3000` |
-| "React could not be downloaded" | `unpkg.com` is blocked by your network, VPN or firewall |
+| "React didn't load" | `npm install` wasn't run. Run it, then restart with `npm run dev` |
 | Blank panel in VS Code's built-in browser | Fixed: in development the page is allowed to be shown inside a frame. Make sure `NODE_ENV=development` in `.env` |
 
 ## Going to production

@@ -1184,9 +1184,9 @@ if (window.React && window.ReactDOM && window.htm) {
 } else {
   document.getElementById("root").innerHTML =
     '<div class="boot"><div class="panel boot-help now">' +
-    "<h2>React could not be downloaded</h2>" +
-    '<p class="muted">This page loads React and htm from unpkg.com. Check your internet ' +
-    "connection, VPN or firewall, then reload the page.</p></div></div>";
+    "<h2>React didn't load</h2>" +
+    '<p class="muted">Run <code>npm install</code> in the project folder, restart ' +
+    "the server with <code>npm run dev</code>, then reload the page.</p></div></div>";
 }
 `;
 
@@ -1198,8 +1198,8 @@ function createApp() {
   const app = express();
   app.disable("x-powered-by");
 
-  // Security headers. Scripts may come only from this server and unpkg
-  // (React and htm); inline and eval'd scripts are blocked.
+  // Security headers. Scripts may come only from this server; inline and
+  // eval'd scripts are blocked.
   // In development the page may be shown inside a frame, because VS Code's
   // built-in browser (Simple Browser) displays pages in one. Blocking that
   // gives an empty panel. In production, framing by other sites stays blocked
@@ -1208,7 +1208,7 @@ function createApp() {
     helmet({
       contentSecurityPolicy: {
         directives: {
-          "script-src": ["'self'", "https://unpkg.com"],
+          "script-src": ["'self'"],
           "frame-ancestors": config.isProduction ? ["'self'"] : null,
           "upgrade-insecure-requests": config.isProduction ? [] : null
         }
@@ -1241,6 +1241,13 @@ function createApp() {
 
   // Unknown API path: answer with JSON, not an HTML 404 page.
   app.use("/api", (_req, _res, next) => next(new HttpError(404, "API route not found.")));
+
+  // React and htm are served from node_modules (installed by npm install), so
+  // the page works offline and doesn't depend on an outside website.
+  const vendor = pkg => path.join(__dirname, "node_modules", pkg);
+  app.use("/vendor/react", express.static(path.join(vendor("react"), "umd")));
+  app.use("/vendor/react-dom", express.static(path.join(vendor("react-dom"), "umd")));
+  app.use("/vendor/htm", express.static(path.join(vendor("htm"), "dist")));
 
   // The React app from section 8.
   app.get("/script-4.js", (_req, res) => {

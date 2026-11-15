@@ -1,0 +1,25 @@
+# Two containers: "app" (Node.js, where VS Code runs) and "db" (SQL Server 2022).
+# The app shares the database's network, so SQL Server is at localhost:1433
+# inside the app container, exactly like a local install. No .env changes needed.
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/javascript-node:22
+    volumes:
+      - ..:/workspace:cached
+    command: sleep infinity
+    network_mode: service:db
+    depends_on:
+      - db
+
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    restart: unless-stopped
+    environment:
+      ACCEPT_EULA: "Y"
+      # Local development only: this database lives inside the container and is not exposed publicly.
+      MSSQL_SA_PASSWORD: "IncomeDev2026_Pass"
+    volumes:
+      - mssql-data:/var/opt/mssql
+
+volumes:
+  mssql-data:

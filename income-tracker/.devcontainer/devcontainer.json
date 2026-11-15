@@ -1,0 +1,29 @@
+{
+  // A ready-made environment: Node.js 22 + SQL Server 2022, nothing to install by hand.
+  // VS Code: install "Dev Containers", then run "Dev Containers: Reopen in Container".
+  "name": "Income Tracker (Node.js + SQL Server)",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+
+  // Installs packages, creates .env and the database tables (first start only).
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "forwardPorts": [3000],
+  "portsAttributes": {
+    "3000": { "label": "Income Tracker", "onAutoForward": "openBrowser" }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-mssql.mssql",
+        "esbenp.prettier-vscode",
+        "humao.rest-client",
+        "bierner.lit-html",
+        "mikestead.dotenv"
+      ]
+    }
+  }
+}
