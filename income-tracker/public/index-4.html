@@ -8,8 +8,23 @@
   <link rel="stylesheet" href="style-4.css">
 </head>
 <body>
+  <!-- React replaces everything inside #root once the app starts. If it never
+       starts, the help below fades in after a few seconds instead of a blank page. -->
   <div id="root">
-    <noscript>Income Tracker needs JavaScript turned on.</noscript>
+    <div class="boot">
+      <p class="muted">Loading Income Tracker…</p>
+      <noscript>Income Tracker needs JavaScript turned on.</noscript>
+      <div class="panel boot-help">
+        <h2>The app didn't start</h2>
+        <ol>
+          <li>In the VS Code terminal, run <code>npm run dev</code> and check that it prints
+            “Connected to SQL Server”.</li>
+          <li>Open <a href="http://localhost:3000">http://localhost:3000</a>. Live Server, Live Preview
+            and opening the .html file directly don't work, because they can't run script-4.js or the API.</li>
+          <li>Make sure this computer can reach <code>unpkg.com</code>, where React is downloaded from.</li>
+        </ol>
+      </div>
+    </div>
   </div>
 
   <!-- Exact versions are pinned so an upstream release can never break the page. -->

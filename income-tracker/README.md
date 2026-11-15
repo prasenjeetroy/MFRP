@@ -160,7 +160,9 @@ All `/api/transactions` routes need a signed-in session.
 | `Login failed for user 'sa'` | Wrong password, or SQL authentication isn't turned on |
 | `Failed to lookup instance` | `DB_INSTANCE` is set, but the SQL Server Browser service isn't running |
 | `self-signed certificate` | Set `DB_TRUST_CERT=true` for a local server |
-| Blank page | You opened the file directly. Use `http://localhost:3000` |
+| "The app didn't start" | The page was opened with Live Server, Live Preview or as a file. Run `npm run dev` and open `http://localhost:3000` |
+| "React could not be downloaded" | `unpkg.com` is blocked by your network, VPN or firewall |
+| Blank panel in VS Code's built-in browser | Fixed: in development the page is allowed to be shown inside a frame. Make sure `NODE_ENV=development` in `.env` |
 
 ## Going to production
 

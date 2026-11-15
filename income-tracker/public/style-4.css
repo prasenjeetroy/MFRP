@@ -296,6 +296,40 @@ input, select {
 }
 .error button.link { color: inherit; text-decoration: none; }
 
+/* ---------- Start-up message (shown only if the app fails to start) ---------- */
+
+.boot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.boot-help {
+  max-width: 560px;
+  line-height: 1.5;
+  visibility: hidden;
+  opacity: 0;
+  /* Appears only if React hasn't replaced this page after 4 seconds. */
+  animation: boot-show 0.3s ease 4s forwards;
+}
+.boot-help.now { animation-delay: 0s; }
+.boot-help ol { margin: 0; padding-left: 20px; }
+.boot-help li + li { margin-top: 8px; }
+.boot-help a { color: var(--accent); }
+.boot-help code {
+  padding: 1px 6px;
+  border-radius: 5px;
+  background: var(--surface-2);
+}
+
+@keyframes boot-show {
+  to { visibility: visible; opacity: 1; }
+}
+
 /* ---------- Small screens ---------- */
 
 @media (max-width: 760px) {

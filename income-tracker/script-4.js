@@ -266,25 +266,31 @@ const validate = {
 
 const SESSION_COOKIE = "it_session";
 
-function cookieOptions() {
+// VS Code's built-in browser shows the page inside a frame, and browsers don't
+// send SameSite=Lax cookies there, so signing in wouldn't stick. When the
+// page says it is framed (X-Framed header, development only), the cookie is
+// SameSite=None + Secure instead. Browsers accept Secure cookies on
+// http://localhost. Production always uses Lax.
+function cookieOptions(req) {
+  const framed = !config.isProduction && req.get("X-Framed") === "1";
   return {
     httpOnly: true,
-    sameSite: "lax",
-    secure: config.isProduction, // HTTPS only in production
+    sameSite: framed ? "none" : "lax",
+    secure: config.isProduction || framed, // HTTPS only in production
     path: "/",
     maxAge: config.sessionDays * 24 * 60 * 60 * 1000
   };
 }
 
-function startSession(res, user) {
+function startSession(req, res, user) {
   const token = jwt.sign({ sub: String(user.id), name: user.displayName }, config.jwtSecret, {
     expiresIn: `${config.sessionDays}d`
   });
-  res.cookie(SESSION_COOKIE, token, cookieOptions());
+  res.cookie(SESSION_COOKIE, token, cookieOptions(req));
 }
 
-function endSession(res) {
-  const { maxAge, ...options } = cookieOptions();
+function endSession(req, res) {
+  const { maxAge, ...options } = cookieOptions(req);
   res.clearCookie(SESSION_COOKIE, options);
 }
 
@@ -340,7 +346,7 @@ authRouter.post("/register", authLimiter, async (req, res) => {
     );
 
     const user = publicUser(result.recordset[0]);
-    startSession(res, user);
+    startSession(req, res, user);
     res.status(201).json(user);
   } catch (err) {
     // 2627 / 2601 = unique constraint violation: the email is already registered.
@@ -367,12 +373,12 @@ authRouter.post("/login", authLimiter, async (req, res) => {
   if (!row || !ok) throw new HttpError(401, "Email or password is incorrect.");
 
   const user = publicUser(row);
-  startSession(res, user);
+  startSession(req, res, user);
   res.json(user);
 });
 
-authRouter.post("/logout", (_req, res) => {
-  endSession(res);
+authRouter.post("/logout", (req, res) => {
+  endSession(req, res);
   res.status(204).end();
 });
 
@@ -385,7 +391,7 @@ authRouter.get("/me", requireAuth, async (req, res) => {
   const row = result.recordset[0];
   if (!row) {
     // The account was deleted while the cookie was still valid.
-    endSession(res);
+    endSession(req, res);
     throw new HttpError(401, "Please sign in.");
   }
   res.json(publicUser(row));
@@ -610,7 +616,12 @@ function browserApp() {
       response = await fetch(url, {
         credentials: "same-origin",
         ...options,
-        headers: { Accept: "application/json", ...(body !== undefined && { "Content-Type": "application/json" }) },
+        headers: {
+          Accept: "application/json",
+          ...(body !== undefined && { "Content-Type": "application/json" }),
+          // Tells the server the page is inside a frame (VS Code's built-in browser), see cookieOptions.
+          ...(window.top !== window.self && { "X-Framed": "1" })
+        },
         body: body !== undefined ? JSON.stringify(body) : undefined
       });
     } catch (err) {
@@ -1124,6 +1135,33 @@ function browserApp() {
     `;
   }
 
+  // If any component crashes while rendering, React would otherwise remove
+  // the whole page and leave it blank. This shows a message instead.
+  class CrashGuard extends React.Component {
+    constructor(props) {
+      super(props);
+      this.state = { error: null };
+    }
+    static getDerivedStateFromError(error) {
+      return { error };
+    }
+    componentDidCatch(error, info) {
+      console.error("Income Tracker crashed:", error, info.componentStack);
+    }
+    render() {
+      if (!this.state.error) return this.props.children;
+      return html`
+        <div className="boot">
+          <div className="panel boot-help now">
+            <h2>Something went wrong</h2>
+            <p className="muted">${this.state.error.message}</p>
+            <button onClick=${() => window.location.reload()}>Reload the page</button>
+          </div>
+        </div>
+      `;
+    }
+  }
+
   function ErrorBanner({ error, onClose }) {
     if (!error) return null;
     return html`
@@ -1134,11 +1172,23 @@ function browserApp() {
     `;
   }
 
-  ReactDOM.createRoot(document.getElementById("root")).render(html`<${App} />`);
+  ReactDOM.createRoot(document.getElementById("root")).render(html`<${CrashGuard}><${App} /><//>`);
 }
 
-// The exact text sent to the browser as /script-4.js: browserApp's source, called once.
-const BROWSER_SCRIPT = `"use strict";\n(${browserApp.toString()})();\n`;
+// The exact text sent to the browser as /script-4.js: browserApp's source,
+// called once, but only if React and htm were downloaded. Otherwise the page
+// explains what's wrong instead of staying blank.
+const BROWSER_SCRIPT = `"use strict";
+if (window.React && window.ReactDOM && window.htm) {
+  (${browserApp.toString()})();
+} else {
+  document.getElementById("root").innerHTML =
+    '<div class="boot"><div class="panel boot-help now">' +
+    "<h2>React could not be downloaded</h2>" +
+    '<p class="muted">This page loads React and htm from unpkg.com. Check your internet ' +
+    "connection, VPN or firewall, then reload the page.</p></div></div>";
+}
+`;
 
 /* ============================================================================
    9. App, database setup, startup
@@ -1150,14 +1200,20 @@ function createApp() {
 
   // Security headers. Scripts may come only from this server and unpkg
   // (React and htm); inline and eval'd scripts are blocked.
+  // In development the page may be shown inside a frame, because VS Code's
+  // built-in browser (Simple Browser) displays pages in one. Blocking that
+  // gives an empty panel. In production, framing by other sites stays blocked
+  // to prevent clickjacking.
   app.use(
     helmet({
       contentSecurityPolicy: {
         directives: {
           "script-src": ["'self'", "https://unpkg.com"],
+          "frame-ancestors": config.isProduction ? ["'self'"] : null,
           "upgrade-insecure-requests": config.isProduction ? [] : null
         }
-      }
+      },
+      xFrameOptions: config.isProduction ? { action: "sameorigin" } : false
     })
   );
 
