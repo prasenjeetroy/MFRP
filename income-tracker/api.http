@@ -8,13 +8,19 @@ GET {{base}}/health
 POST {{base}}/auth/register
 Content-Type: application/json
 
-{ "email": "demo@example.com", "displayName": "Demo", "password": "password123" }
+{ "displayName": "Demo User", "pin": "2580", "backupPin": "7391" }
 
 ### Sign in
 POST {{base}}/auth/login
 Content-Type: application/json
 
-{ "email": "demo@example.com", "password": "password123" }
+{ "displayName": "Demo User", "pin": "2580" }
+
+### Forgot PIN: use the backup PIN to set a new one
+POST {{base}}/auth/reset-pin
+Content-Type: application/json
+
+{ "displayName": "Demo User", "backupPin": "7391", "newPin": "3692" }
 
 ### Who am I?
 GET {{base}}/auth/me

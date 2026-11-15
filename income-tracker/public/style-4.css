@@ -154,7 +154,14 @@ input, select {
 .auth p { margin: 0; }
 .auth .field { flex: none; }
 .auth button[type="submit"] { margin-top: 6px; }
-.switch { text-align: center; font-size: 14px; }
+.switch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.hint { color: var(--muted); font-size: 12px; line-height: 1.4; }
 
 /* ---------- Totals ---------- */
 

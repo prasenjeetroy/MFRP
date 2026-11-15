@@ -6,7 +6,7 @@ A multi-user income and expense tracker.
 - **API:** Node.js and Express
 - **One JavaScript file:** the server and the React app both live in `script-4.js`
 - **Database:** Microsoft SQL Server, accessed through the `mssql` package with parameterised queries
-- **Accounts:** sign up and sign in. Passwords are hashed with bcrypt and sessions are kept in an httpOnly cookie. Every user sees only their own transactions.
+- **Accounts:** a display name and a PIN (4–8 digits), plus a backup PIN for resetting a forgotten PIN. PINs are hashed with bcrypt, and sessions are kept in an httpOnly cookie. Every user sees only their own transactions.
 
 ## Why the original version didn't work
 
@@ -115,7 +115,7 @@ npm run db:init
 npm run dev
 ```
 
-Open **http://localhost:3000**, create an account and start adding transactions. To see the multi-user separation, sign up a second account in a private window.
+Open **http://localhost:3000**, create an account (a display name, a PIN and a backup PIN) and start adding transactions. To see the multi-user separation, create a second account in a private window.
 
 ## VS Code settings
 
@@ -147,8 +147,9 @@ All `/api/transactions` routes need a signed-in session.
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| POST | `/api/auth/register` | `{ email, displayName, password }` creates an account and signs in |
-| POST | `/api/auth/login` | `{ email, password }` |
+| POST | `/api/auth/register` | `{ displayName, pin, backupPin }` creates an account and signs in |
+| POST | `/api/auth/login` | `{ displayName, pin }` |
+| POST | `/api/auth/reset-pin` | `{ displayName, backupPin, newPin }` sets a new PIN after checking the backup PIN, then signs in |
 | POST | `/api/auth/logout` | Ends the session |
 | GET | `/api/auth/me` | Returns the current user |
 | GET | `/api/transactions?start&end&type` | Newest 500 rows, plus totals for the whole range (SQL `SUM`) |
@@ -163,16 +164,22 @@ All `/api/transactions` routes need a signed-in session.
 
 - Every SQL statement uses parameters (`@userId`, `@title` and so on). User input is never pasted into SQL text.
 - Each read, update and delete includes `WHERE UserId = @userId`, so guessing another user's id returns *404*.
-- Passwords are hashed with bcrypt (cost 12). A wrong email and a wrong password get the same message and take the same time.
-- Sign-in and sign-up are rate-limited (20 attempts per 15 minutes per IP).
+- PINs and backup PINs are hashed with bcrypt (cost 12). The database never stores the digits themselves.
+- A PIN is 4 to 8 digits. Obvious PINs (repeated digits like `1111`, runs like `1234` or `8765`) are refused, and the backup PIN must differ from the PIN.
+- **5 wrong PINs lock the account for 15 minutes.** Wrong backup PINs count toward the same limit, so neither can be guessed. The count is updated in a single SQL statement, so simultaneous attempts can't get around it.
+- An unknown name and a wrong PIN get the same message and take the same time.
+- Display names are unique and case-insensitive: "Asha Roy", "asha roy" and "Asha  Roy" are the same account.
+- Sign-in, sign-up and PIN resets are also limited to 20 attempts per 15 minutes from one IP address.
 - The session cookie is `httpOnly` and `SameSite=Lax`, and `Secure` in production. Requests that change data must be JSON, which blocks cross-site form posts.
-- The database enforces the same rules again: `CHECK` constraints, a unique email, and a foreign key with cascade delete.
+- The database enforces the same rules again: `CHECK` constraints, a unique display name, and a foreign key with cascade delete.
 
 ## Troubleshooting
 
 | Message | Cause |
 | --- | --- |
 | `Cannot reach the database…` / `ESOCKET` | SQL Server isn't running, TCP/IP is off, or the port or instance is wrong (see step 2) |
+| `This database still uses the old email + password sign-in` | Your tables are from the earlier version. Copy anything you want to keep, then run the `DROP TABLE` line from the message and `npm run db:init` again |
+| "Too many wrong PINs" | The account is locked for 15 minutes after 5 wrong PINs. Wait, or use **Forgot your PIN?** with your backup PIN once the lock ends |
 | `Login failed for user 'sa'` | Wrong password, or SQL authentication isn't turned on |
 | `Failed to lookup instance` | `DB_INSTANCE` is set, but the SQL Server Browser service isn't running |
 | `self-signed certificate` | Set `DB_TRUST_CERT=true` for a local server |

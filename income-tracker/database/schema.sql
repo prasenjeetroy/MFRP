@@ -13,16 +13,27 @@ GO
 USE IncomeTracker;
 GO
 
+/* ---------- Upgrade check -------------------------------------------------
+   Earlier versions signed in with email + password. Those accounts can't be
+   turned into PIN accounts, so stop here instead of changing anything.      */
+IF COL_LENGTH(N'dbo.Users', N'Email') IS NOT NULL
+    THROW 50001, N'This database still uses the old email + password sign-in. Copy anything you want to keep, then run "DROP TABLE dbo.Transactions; DROP TABLE dbo.Users;" in the IncomeTracker database and run npm run db:init again.', 1;
+GO
+
 /* ---------- Users: one row per account ----------------------------------- */
 IF OBJECT_ID(N'dbo.Users', N'U') IS NULL
 BEGIN
     CREATE TABLE dbo.Users
     (
-        Id           INT IDENTITY(1, 1) NOT NULL CONSTRAINT PK_Users PRIMARY KEY,
-        Email        NVARCHAR(254)      NOT NULL CONSTRAINT UQ_Users_Email UNIQUE,
-        DisplayName  NVARCHAR(100)      NOT NULL,
-        PasswordHash NVARCHAR(100)      NOT NULL,   -- bcrypt hash, never the password
-        CreatedAt    DATETIME2(0)       NOT NULL CONSTRAINT DF_Users_CreatedAt DEFAULT SYSUTCDATETIME()
+        Id             INT IDENTITY(1, 1) NOT NULL CONSTRAINT PK_Users PRIMARY KEY,
+        -- Case-insensitive, so "Asha" and "asha" count as the same name.
+        DisplayName    NVARCHAR(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL
+            CONSTRAINT UQ_Users_DisplayName UNIQUE,
+        PinHash        NVARCHAR(100)      NOT NULL,   -- bcrypt hash, never the PIN itself
+        BackupPinHash  NVARCHAR(100)      NOT NULL,   -- bcrypt hash of the backup PIN
+        FailedAttempts INT                NOT NULL CONSTRAINT DF_Users_FailedAttempts DEFAULT 0,
+        LockedUntil    DATETIME2(0)       NULL,       -- set after too many wrong PINs
+        CreatedAt      DATETIME2(0)       NOT NULL CONSTRAINT DF_Users_CreatedAt DEFAULT SYSUTCDATETIME()
     );
 END;
 GO

@@ -162,7 +162,23 @@ async function closePool() {
 
 const TYPES = ["Income", "Expense"];
 const MAX_AMOUNT = 9_999_999_999.99; // fits DECIMAL(12, 2)
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PIN_RE = /^\d{4,8}$/;
+
+/** Trims a display name and collapses repeated spaces ("  Asha   Roy " -> "Asha Roy"). */
+function cleanName(value) {
+  return text(value).replace(/\s+/g, " ");
+}
+
+/** Returns an error message for an unsuitable new PIN, or null if it is fine. */
+function pinProblem(pin, label) {
+  if (!PIN_RE.test(pin)) return `${label} must be 4 to 8 digits.`;
+  const repeated = /^(\d)\1+$/.test(pin); // 1111, 000000
+  const sequence = "0123456789".includes(pin) || "9876543210".includes(pin); // 1234, 6543
+  if (repeated || sequence) return `${label} is too easy to guess. Avoid repeated or consecutive digits.`;
+  return null;
+}
+
+const digits = value => (typeof value === "string" ? value.trim() : "");
 
 function text(value) {
   return typeof value === "string" ? value.trim() : "";
@@ -229,26 +245,45 @@ const validate = {
 
   register(body = {}) {
     const errors = {};
-    const email = text(body.email).toLowerCase();
-    const displayName = text(body.displayName);
-    const password = typeof body.password === "string" ? body.password : "";
+    const displayName = cleanName(body.displayName);
+    const pin = digits(body.pin);
+    const backupPin = digits(body.backupPin);
 
-    if (!EMAIL_RE.test(email) || email.length > 254) errors.email = "Enter a valid email address.";
-    if (!displayName) errors.displayName = "Name is required.";
-    else if (displayName.length > 100) errors.displayName = "Name must be 100 characters or fewer.";
-    if (password.length < 8) errors.password = "Password must be at least 8 characters.";
-    // bcrypt only uses the first 72 bytes, so refuse longer passwords rather than silently truncating.
-    else if (Buffer.byteLength(password) > 72) errors.password = "Password must be 72 characters or fewer.";
+    if (displayName.length < 2) errors.displayName = "Name must be at least 2 characters.";
+    else if (displayName.length > 50) errors.displayName = "Name must be 50 characters or fewer.";
+
+    const pinError = pinProblem(pin, "PIN");
+    if (pinError) errors.pin = pinError;
+
+    const backupError = pinProblem(backupPin, "Backup PIN");
+    if (backupError) errors.backupPin = backupError;
+    else if (backupPin === pin) errors.backupPin = "Backup PIN must be different from your PIN.";
 
     failIfErrors(errors);
-    return { email, displayName, password };
+    return { displayName, pin, backupPin };
   },
 
   login(body = {}) {
-    const email = text(body.email).toLowerCase();
-    const password = typeof body.password === "string" ? body.password : "";
-    if (!email || !password) throw new HttpError(400, "Enter your email and password.");
-    return { email, password };
+    const displayName = cleanName(body.displayName);
+    const pin = digits(body.pin);
+    if (!displayName || !pin) throw new HttpError(400, "Enter your name and PIN.");
+    return { displayName, pin };
+  },
+
+  resetPin(body = {}) {
+    const errors = {};
+    const displayName = cleanName(body.displayName);
+    const backupPin = digits(body.backupPin);
+    const newPin = digits(body.newPin);
+
+    if (!displayName) errors.displayName = "Enter your name.";
+    if (!backupPin) errors.backupPin = "Enter your backup PIN.";
+    const pinError = pinProblem(newPin, "New PIN");
+    if (pinError) errors.newPin = pinError;
+    else if (newPin === backupPin) errors.newPin = "New PIN must be different from your backup PIN.";
+
+    failIfErrors(errors);
+    return { displayName, backupPin, newPin };
   },
 
   id(value) {
@@ -314,7 +349,7 @@ function requireAuth(req, _res, next) {
 
 const authRouter = express.Router();
 
-// Slow down password guessing: 20 attempts per 15 minutes per IP.
+// Slow down PIN guessing from one address: 20 attempts per 15 minutes per IP.
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 20,
@@ -323,25 +358,83 @@ const authLimiter = rateLimit({
   message: { error: "Too many attempts. Please wait a few minutes and try again." }
 });
 
-// Compared against when the email is unknown, so a wrong email and a wrong
-// password take the same time and an attacker cannot tell which accounts exist.
-const DUMMY_HASH = bcrypt.hashSync("not-a-real-password", 12);
+// A 4-digit PIN has only 10,000 possibilities, so each account also locks
+// after a few wrong PINs, wherever the attempts come from.
+const MAX_FAILED_PINS = 5;
+const LOCK_MINUTES = 15;
 
-const publicUser = row => ({ id: row.id, email: row.email, displayName: row.displayName });
+// Compared against when the name is unknown, so a wrong name and a wrong PIN
+// take the same time and an attacker cannot tell which accounts exist by timing.
+const DUMMY_HASH = bcrypt.hashSync("000000", 12);
+
+const publicUser = row => ({ id: row.id, displayName: row.displayName });
+
+/** Loads an account for sign-in, including whether it is locked right now. */
+async function findAccount(displayName) {
+  const result = await query(
+    `SELECT Id AS id, DisplayName AS displayName, PinHash AS pinHash, BackupPinHash AS backupPinHash,
+            CASE WHEN LockedUntil > SYSUTCDATETIME()
+                 THEN DATEDIFF(second, SYSUTCDATETIME(), LockedUntil) END AS lockedSeconds
+     FROM dbo.Users WHERE DisplayName = @displayName;`,
+    { displayName: [sql.NVarChar(50), displayName] }
+  );
+  return result.recordset[0];
+}
+
+function lockedError(seconds) {
+  const minutes = Math.max(1, Math.ceil(seconds / 60));
+  return new HttpError(429, `Too many wrong PINs. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}.`);
+}
+
+/**
+ * Checks a PIN against one of the account's hashes. A wrong PIN is counted
+ * (atomically, in SQL) and locks the account after MAX_FAILED_PINS; a right
+ * one clears the count. Throws a user-facing error when the check fails.
+ */
+async function verifyPin(account, pin, hashField, wrongMessage) {
+  if (account?.lockedSeconds > 0) throw lockedError(account.lockedSeconds);
+
+  const ok = await bcrypt.compare(pin, account ? account[hashField] : DUMMY_HASH);
+  if (!account) throw new HttpError(401, wrongMessage);
+
+  if (ok) {
+    await query(`UPDATE dbo.Users SET FailedAttempts = 0, LockedUntil = NULL WHERE Id = @id;`, {
+      id: [sql.Int, account.id]
+    });
+    return;
+  }
+
+  // An expired lock starts a fresh count; otherwise add one and lock at the limit.
+  const result = await query(
+    `UPDATE dbo.Users SET
+       FailedAttempts = CASE WHEN LockedUntil <= SYSUTCDATETIME() THEN 1 ELSE FailedAttempts + 1 END,
+       LockedUntil = CASE
+         WHEN LockedUntil <= SYSUTCDATETIME() THEN NULL
+         WHEN FailedAttempts + 1 >= @max THEN DATEADD(minute, @lockMinutes, SYSUTCDATETIME())
+         ELSE LockedUntil END
+     OUTPUT inserted.FailedAttempts AS failedAttempts
+     WHERE Id = @id;`,
+    { id: [sql.Int, account.id], max: [sql.Int, MAX_FAILED_PINS], lockMinutes: [sql.Int, LOCK_MINUTES] }
+  );
+
+  const left = MAX_FAILED_PINS - result.recordset[0].failedAttempts;
+  if (left <= 0) throw lockedError(LOCK_MINUTES * 60);
+  throw new HttpError(401, `${wrongMessage} ${left} attempt${left === 1 ? "" : "s"} left.`);
+}
 
 authRouter.post("/register", authLimiter, async (req, res) => {
-  const { email, displayName, password } = validate.register(req.body);
-  const passwordHash = await bcrypt.hash(password, 12);
+  const { displayName, pin, backupPin } = validate.register(req.body);
+  const [pinHash, backupPinHash] = await Promise.all([bcrypt.hash(pin, 12), bcrypt.hash(backupPin, 12)]);
 
   try {
     const result = await query(
-      `INSERT INTO dbo.Users (Email, DisplayName, PasswordHash)
-       OUTPUT inserted.Id AS id, inserted.Email AS email, inserted.DisplayName AS displayName
-       VALUES (@email, @displayName, @passwordHash);`,
+      `INSERT INTO dbo.Users (DisplayName, PinHash, BackupPinHash)
+       OUTPUT inserted.Id AS id, inserted.DisplayName AS displayName
+       VALUES (@displayName, @pinHash, @backupPinHash);`,
       {
-        email: [sql.NVarChar(254), email],
-        displayName: [sql.NVarChar(100), displayName],
-        passwordHash: [sql.NVarChar(100), passwordHash]
+        displayName: [sql.NVarChar(50), displayName],
+        pinHash: [sql.NVarChar(100), pinHash],
+        backupPinHash: [sql.NVarChar(100), backupPinHash]
       }
     );
 
@@ -349,10 +442,10 @@ authRouter.post("/register", authLimiter, async (req, res) => {
     startSession(req, res, user);
     res.status(201).json(user);
   } catch (err) {
-    // 2627 / 2601 = unique constraint violation: the email is already registered.
+    // 2627 / 2601 = unique constraint violation: the name is already taken.
     if (err.number === 2627 || err.number === 2601) {
-      throw new HttpError(409, "An account with this email already exists.", {
-        email: "An account with this email already exists."
+      throw new HttpError(409, "That name is already taken. Please choose another.", {
+        displayName: "That name is already taken. Please choose another."
       });
     }
     throw err;
@@ -360,19 +453,27 @@ authRouter.post("/register", authLimiter, async (req, res) => {
 });
 
 authRouter.post("/login", authLimiter, async (req, res) => {
-  const { email, password } = validate.login(req.body);
+  const { displayName, pin } = validate.login(req.body);
+  const account = await findAccount(displayName);
+  await verifyPin(account, pin, "pinHash", "Name or PIN is incorrect.");
 
-  const result = await query(
-    `SELECT Id AS id, Email AS email, DisplayName AS displayName, PasswordHash AS passwordHash
-     FROM dbo.Users WHERE Email = @email;`,
-    { email: [sql.NVarChar(254), email] }
-  );
+  const user = publicUser(account);
+  startSession(req, res, user);
+  res.json(user);
+});
 
-  const row = result.recordset[0];
-  const ok = await bcrypt.compare(password, row ? row.passwordHash : DUMMY_HASH);
-  if (!row || !ok) throw new HttpError(401, "Email or password is incorrect.");
+// Forgot PIN: the backup PIN proves who you are, then a new PIN is saved.
+authRouter.post("/reset-pin", authLimiter, async (req, res) => {
+  const { displayName, backupPin, newPin } = validate.resetPin(req.body);
+  const account = await findAccount(displayName);
+  await verifyPin(account, backupPin, "backupPinHash", "Name or backup PIN is incorrect.");
 
-  const user = publicUser(row);
+  await query(`UPDATE dbo.Users SET PinHash = @pinHash WHERE Id = @id;`, {
+    id: [sql.Int, account.id],
+    pinHash: [sql.NVarChar(100), await bcrypt.hash(newPin, 12)]
+  });
+
+  const user = publicUser(account);
   startSession(req, res, user);
   res.json(user);
 });
@@ -384,7 +485,7 @@ authRouter.post("/logout", (req, res) => {
 
 authRouter.get("/me", requireAuth, async (req, res) => {
   const result = await query(
-    `SELECT Id AS id, Email AS email, DisplayName AS displayName FROM dbo.Users WHERE Id = @id;`,
+    `SELECT Id AS id, DisplayName AS displayName FROM dbo.Users WHERE Id = @id;`,
     { id: [sql.Int, req.userId] }
   );
 
@@ -673,71 +774,116 @@ function browserApp() {
 
   /* ---------- Sign in / create account ---------- */
 
+  // Three screens share one form: sign in, create account, and forgot PIN.
+  const AUTH_MODES = {
+    login: {
+      intro: "Sign in with your name and PIN.",
+      submit: "Sign in",
+      fields: [["pin", "PIN", "current-password"]]
+    },
+    register: {
+      intro: "Create your account. You only need a name and a PIN.",
+      submit: "Create account",
+      fields: [
+        ["pin", "PIN (4 to 8 digits)", "new-password"],
+        ["backupPin", "Backup PIN", "off", "Used to reset your PIN if you forget it. Must differ from your PIN. Keep it somewhere safe."]
+      ]
+    },
+    reset: {
+      intro: "Forgot your PIN? Use your backup PIN to choose a new one.",
+      submit: "Reset PIN and sign in",
+      fields: [
+        ["backupPin", "Backup PIN", "off"],
+        ["newPin", "New PIN (4 to 8 digits)", "new-password"]
+      ]
+    }
+  };
+
   function AuthScreen({ onSignedIn }) {
     const [mode, setMode] = useState("login");
-    const [fields, setFields] = useState({ displayName: "", email: "", password: "" });
+    const [fields, setFields] = useState({ displayName: "", pin: "", backupPin: "", newPin: "" });
     const [error, setError] = useState(null);
     const [busy, setBusy] = useState(false);
-    const isRegister = mode === "register";
+    const screen = AUTH_MODES[mode];
+    const endpoint = { login: "login", register: "register", reset: "reset-pin" }[mode];
 
-    const set = name => e => setFields({ ...fields, [name]: e.target.value });
+    const setName = e => setFields({ ...fields, displayName: e.target.value });
+    // PIN boxes accept digits only, up to 8.
+    const setPin = name => e => setFields({ ...fields, [name]: e.target.value.replace(/\D/g, "").slice(0, 8) });
 
     async function submit(e) {
       e.preventDefault();
       setBusy(true);
       setError(null);
       try {
-        const body = isRegister ? fields : { email: fields.email, password: fields.password };
-        onSignedIn(await api(`/api/auth/${mode}`, { method: "POST", body }));
+        const body = { displayName: fields.displayName };
+        screen.fields.forEach(([name]) => (body[name] = fields[name]));
+        onSignedIn(await api(`/api/auth/${endpoint}`, { method: "POST", body }));
       } catch (err) {
         setError(err);
         setBusy(false);
       }
     }
 
-    function switchMode() {
-      setMode(isRegister ? "login" : "register");
+    function go(next) {
+      setMode(next);
       setError(null);
+      setFields(f => ({ displayName: f.displayName, pin: "", backupPin: "", newPin: "" }));
     }
 
     return html`
       <main className="center">
         <form className="panel auth" onSubmit=${submit} noValidate>
           <h1>Income Tracker</h1>
-          <p className="muted">${isRegister ? "Create your account to get started." : "Sign in to your account."}</p>
+          <p className="muted">${screen.intro}</p>
 
           <${ErrorBanner} error=${error} />
 
-          ${isRegister &&
-          html`
-            <${Field} label="Name" error=${error?.details?.displayName}>
-              <input required maxLength="100" autoComplete="name" value=${fields.displayName} onChange=${set("displayName")} />
-            <//>
-          `}
-          <${Field} label="Email" error=${error?.details?.email}>
-            <input required type="email" autoComplete="email" value=${fields.email} onChange=${set("email")} />
-          <//>
-          <${Field} label="Password" error=${error?.details?.password}>
+          <${Field} label="Display name" error=${error?.details?.displayName}>
             <input
+              id="auth-name"
               required
-              type="password"
-              minLength=${isRegister ? 8 : undefined}
-              autoComplete=${isRegister ? "new-password" : "current-password"}
-              value=${fields.password}
-              onChange=${set("password")}
+              maxLength="50"
+              autoComplete="username"
+              value=${fields.displayName}
+              onChange=${setName}
             />
           <//>
 
-          <button type="submit" disabled=${busy}>
-            ${busy ? "Please wait…" : isRegister ? "Create account" : "Sign in"}
-          </button>
+          ${screen.fields.map(
+            ([name, label, autoComplete, hint]) => html`
+              <${Field} key=${mode + name} label=${label} error=${error?.details?.[name]}>
+                <input
+                  id=${`auth-${name}`}
+                  required
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  minLength="4"
+                  maxLength="8"
+                  autoComplete=${autoComplete}
+                  value=${fields[name]}
+                  onChange=${setPin(name)}
+                />
+                ${hint && html`<span className="hint">${hint}</span>`}
+              <//>
+            `
+          )}
 
-          <p className="muted switch">
-            ${isRegister ? "Already have an account? " : "New here? "}
-            <button type="button" className="link" onClick=${switchMode}>
-              ${isRegister ? "Sign in" : "Create an account"}
-            </button>
-          </p>
+          <button type="submit" disabled=${busy}>${busy ? "Please wait…" : screen.submit}</button>
+
+          <div className="switch muted">
+            ${mode === "login"
+              ? html`
+                  <${React.Fragment}>
+                    <button type="button" className="link" onClick=${() => go("reset")}>Forgot your PIN?</button>
+                    <span>
+                      New here? <button type="button" className="link" onClick=${() => go("register")}>Create an account</button>
+                    </span>
+                  <//>
+                `
+              : html`<button type="button" className="link" onClick=${() => go("login")}>Back to sign in</button>`}
+          </div>
         </form>
       </main>
     `;
