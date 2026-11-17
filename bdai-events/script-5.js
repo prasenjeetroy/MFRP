@@ -1,5 +1,5 @@
 /* ==========================================================
-   BDAI Events — script.js
+   BDAI Events — script-5.js
    Vanilla JS: data, rendering, filters, modal registration,
    agenda builder, animations and micro-interactions.
    ========================================================== */

@@ -1,5 +1,5 @@
 /* ==========================================================
-   BDAI Events — styles.css
+   BDAI Events — style-5.css
    Theme tokens · layout · components · animations
    ========================================================== */
 
@@ -273,7 +273,9 @@ p { margin: 0 0 1em; }
   content: ""; position: absolute; inset: -1px; border-radius: inherit; padding: 1px;
   background: linear-gradient(140deg, var(--c1), transparent 40%, transparent 60%, var(--c2));
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor; mask-composite: exclude;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
   pointer-events: none;
 }
 .countdown-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; font-size: .9rem; }
@@ -413,7 +415,7 @@ select option { background: var(--bg); color: var(--text); }
 .chip-hot { background: var(--grad-hot); color: #fff; border: 0; }
 .chip-mode::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--dot, #22e39b); }
 .card-title { font-size: 1.25rem; margin-bottom: .4rem; }
-.card-desc { font-size: .93rem; color: var(--muted); margin-bottom: 1rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.card-desc { font-size: .93rem; color: var(--muted); margin-bottom: 1rem; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .card-meta { display: flex; flex-direction: column; gap: .35rem; font-size: .88rem; color: var(--muted); margin-bottom: 1rem; }
 .card-meta span { display: flex; align-items: center; gap: .45rem; }
 .card-meta svg { width: 16px; height: 16px; flex: none; color: var(--c2); }
@@ -432,7 +434,7 @@ select option { background: var(--bg); color: var(--text); }
 .events-grid.list { grid-template-columns: 1fr; }
 .events-grid.list .event-card { flex-direction: row; }
 .events-grid.list .card-banner { width: 220px; height: auto; flex: none; }
-.events-grid.list .card-desc { -webkit-line-clamp: 3; }
+.events-grid.list .card-desc { -webkit-line-clamp: 3; line-clamp: 3; }
 
 /* Empty state */
 .empty-state { text-align: center; padding: 4rem 1rem; }
