@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inbox — BDAI Events</title>
+  <meta name="description" content="Your BDAI Events inbox: ticket confirmations, account messages and the monthly drop." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style-5.css" />
+</head>
+<body data-page="inbox">
+  <!-- ================= HEADER ================= -->
+  <header class="header scrolled" id="header">
+    <nav class="nav container" aria-label="Main navigation">
+      <a href="index-5.html" class="logo" aria-label="BDAI Events home">
+        <span class="logo-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="28" height="28">
+            <circle cx="8" cy="8" r="3" /><circle cx="24" cy="8" r="3" />
+            <circle cx="16" cy="16" r="3.5" /><circle cx="8" cy="24" r="3" /><circle cx="24" cy="24" r="3" />
+            <path d="M8 8L16 16L24 8M8 24L16 16L24 24" fill="none" stroke-width="1.6" />
+          </svg>
+        </span>
+        <span class="logo-text">BDAI<span>Events</span></span>
+      </a>
+
+      <ul class="nav-links" id="navLinks">
+        <li><a href="index-5.html#events" class="nav-link">Events</a></li>
+        <li><a href="index-5.html#schedule" class="nav-link">Schedule</a></li>
+        <li><a href="index-5.html#team" class="nav-link">Team</a></li>
+        <li><a href="inbox-5.html" class="nav-link active" aria-current="page">Inbox</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <button class="icon-btn" id="themeToggle" aria-label="Toggle light and dark theme" title="Toggle theme">
+          <svg class="sun" viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+          <svg class="moon" viewBox="0 0 24 24" width="20" height="20"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+        <div id="accountSlot" class="account-slot"></div>
+        <button class="hamburger" id="hamburger" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ================= INBOX (rendered by inbox-5.js) ================= -->
+  <main class="inbox-main">
+    <div class="container" id="inboxApp" aria-live="polite"></div>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>
+        <a href="index-5.html" class="logo"><span class="logo-text">BDAI<span>Events</span></span></a>
+        <p class="muted">Big Data &amp; AI events for builders.</p>
+      </div>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="index-5.html#events">Events</a><a href="index-5.html#schedule">Schedule</a><a href="index-5.html#team">Team</a><a href="index-5.html#faq">FAQ</a>
+      </nav>
+      <p class="muted small">© <span id="year"></span> BDAI Events. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
+
+  <script src="account-5.js"></script>
+  <script src="inbox-5.js"></script>
+</body>
+</html>

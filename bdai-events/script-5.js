@@ -2,30 +2,17 @@
    BDAI Events — script-5.js
    Vanilla JS: data, rendering, filters, modal registration,
    agenda builder, animations and micro-interactions.
+   Needs account-5.js to be loaded first (shared helpers,
+   accounts, inbox, theme, toasts and the mobile menu).
    ========================================================== */
 (() => {
   "use strict";
 
   /* ---------------------------------------------------------
-     Helpers
+     Shared helpers (from account-5.js)
      --------------------------------------------------------- */
-  const $ = (sel, root = document) => root.querySelector(sel);
-  const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
-  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  const escapeHTML = (str) =>
-    String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-
-  // localStorage can throw (private mode, blocked storage) — never let it break the page.
-  const store = {
-    get(key, fallback) {
-      try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
-      catch { return fallback; }
-    },
-    set(key, value) {
-      try { localStorage.setItem(key, JSON.stringify(value)); } catch { /* ignore */ }
-    },
-  };
+  const { $, $$, escapeHTML, store, toast, prefersReducedMotion, account, inbox, userKey, onChange, openAuth } = window.BDAI;
+  const root = document.documentElement;
 
   const fmtDate = (iso, opts) => new Date(iso + "T00:00:00").toLocaleDateString("en-US", opts);
   const fmtPrice = (n) => (n === 0 ? "Free" : `$${n.toLocaleString("en-US")}`);
@@ -147,6 +134,8 @@
 
   const FAQS = [
     { q: "Who are BDAI events for?", a: "Data engineers, ML practitioners, researchers, analysts, product leaders and students — anyone building with data and AI. Each event page lists its level and prerequisites." },
+    { q: "Do I need an email to sign up?", a: "No. A BDAI account needs only your first name, last name and a 6-digit PIN security key. Ticket confirmations and the monthly drop arrive in your BDAI inbox instead of by email." },
+    { q: "What if I forget my PIN?", a: "Because no email is linked to your account, a forgotten PIN can't be reset, so keep it safe. After 5 wrong PINs the account locks for a minute. Your account and inbox are saved in this browser on this device: they won't appear on other devices, and clearing your browser data removes them." },
     { q: "Can I attend in-person events online?", a: "Hybrid events are streamed live with interactive Q&A. In-person-only events are not streamed, but recordings of talks are usually shared with attendees within a week." },
     { q: "Are there student or group discounts?", a: "Yes. Choose the Student ticket at checkout (50% off; bring a valid student ID). Groups of 5 or more can register together using the attendee counter." },
     { q: "What is your refund policy?", a: "Full refund up to 14 days before the event, 50% up to 3 days before. Tickets are transferable to a colleague at any time at no charge." },
@@ -164,40 +153,20 @@
     sort: "date",
     view: store.get("bdai.view", "grid"),
     saved: new Set(store.get("bdai.saved", [])),
-    registrations: store.get("bdai.registrations", {}),
+    registrations: {},
     agenda: new Set(store.get("bdai.agenda", [])),
     day: 0,
   };
 
+  // Registrations belong to the logged-in account (none when logged out).
+  const loadRegs = () => { const k = userKey("bdai.registrations"); return k ? store.get(k, {}) : {}; };
+  const saveRegs = () => { const k = userKey("bdai.registrations"); if (k) store.set(k, state.registrations); };
+  state.registrations = loadRegs();
+
   const seatsTaken = (ev) => Math.min(ev.seats, ev.taken + (state.registrations[ev.id]?.qty || 0));
 
   /* ---------------------------------------------------------
-     Theme
-     --------------------------------------------------------- */
-  const root = document.documentElement;
-  const savedTheme = store.get("bdai.theme", null);
-  root.dataset.theme = savedTheme || (window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-
-  $("#themeToggle").addEventListener("click", () => {
-    root.dataset.theme = root.dataset.theme === "dark" ? "light" : "dark";
-    store.set("bdai.theme", root.dataset.theme);
-    // re-trigger the icon animation
-    $$("#themeToggle svg").forEach((s) => { s.style.animation = "none"; void s.offsetWidth; s.style.animation = ""; });
-  });
-
-  /* ---------------------------------------------------------
-     Toasts
-     --------------------------------------------------------- */
-  function toast(msg, icon = "✨") {
-    const el = document.createElement("div");
-    el.className = "toast";
-    el.innerHTML = `<span aria-hidden="true">${icon}</span><span>${escapeHTML(msg)}</span>`;
-    $("#toasts").appendChild(el);
-    setTimeout(() => { el.classList.add("out"); el.addEventListener("animationend", () => el.remove(), { once: true }); }, 2800);
-  }
-
-  /* ---------------------------------------------------------
-     Header: scroll state, progress bar, active link, mobile menu
+     Header: scroll state, progress bar, active link
      --------------------------------------------------------- */
   const header = $("#header");
   const progress = $("#scrollProgress");
@@ -221,16 +190,6 @@
     });
   }, { rootMargin: "-45% 0px -50% 0px" });
   ["events", "schedule", "team", "faq"].forEach((id) => sectionObserver.observe(document.getElementById(id)));
-
-  const hamburger = $("#hamburger");
-  const navMenu = $("#navLinks");
-  const setMenu = (open) => {
-    navMenu.classList.toggle("open", open);
-    hamburger.setAttribute("aria-expanded", String(open));
-    hamburger.setAttribute("aria-label", open ? "Close menu" : "Open menu");
-  };
-  hamburger.addEventListener("click", () => setMenu(!navMenu.classList.contains("open")));
-  navLinks.forEach((l) => l.addEventListener("click", () => setMenu(false)));
 
   /* ---------------------------------------------------------
      Hero: typing effect
@@ -540,7 +499,7 @@
     searchTimer = setTimeout(() => { state.query = e.target.value; renderEvents(); }, 180);
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "/" && !/input|textarea|select/i.test(document.activeElement.tagName) && $("#modal").hidden) {
+    if (e.key === "/" && !/input|textarea|select/i.test(document.activeElement.tagName) && !document.body.classList.contains("modal-open")) {
       e.preventDefault();
       $("#events").scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth" });
       $("#searchInput").focus({ preventScroll: true });
@@ -634,13 +593,13 @@
     setTimeout(() => ($("input, button:not(.modal-close)", modalBody) || $(".modal-close")).focus({ preventScroll: true }), 50);
   }
 
-  function closeModal() {
+  function closeModal({ restoreFocus = true } = {}) {
     if (modal.hidden) return;
     modal.classList.add("closing");
     setTimeout(() => {
       modal.hidden = true;
-      document.body.classList.remove("modal-open");
-      lastFocus?.focus?.();
+      if (!$$(".modal").some((m) => !m.hidden)) document.body.classList.remove("modal-open");
+      if (restoreFocus) lastFocus?.focus?.();
     }, prefersReducedMotion ? 0 : 230);
   }
 
@@ -659,12 +618,13 @@
 
   function openEvent(id) {
     const e = EVENTS.find((x) => x.id === id);
+    const user = account.current();
     const reg = state.registrations[id];
-    if (reg) return showSuccess(e, reg, false);
+    if (user && reg) return showSuccess(e, reg, false);
 
     const left = e.seats - seatsTaken(e);
     const free = e.price === 0;
-    openModal(`
+    const details = `
       <div class="modal-hero" style="--banner:${BANNERS[e.category]}">
         <div class="card-tags"><span class="chip">${e.category}</span><span class="chip">${e.mode}</span></div>
         <h2 id="modalTitle">${e.emoji} ${escapeHTML(e.title)}</h2>
@@ -676,20 +636,38 @@
           <div><small>Time</small>${e.time}</div>
           <div><small>Location</small>${escapeHTML(e.location)}</div>
           <div><small>Availability</small>${left.toLocaleString("en-US")} of ${e.seats.toLocaleString("en-US")} seats left</div>
-        </div>
+        </div>`;
 
+    // Logged out: show the details and ask for an account first.
+    if (!user) {
+      openModal(`${details}
+          <div class="reg-gate">
+            <p><b>Registration needs a free BDAI account.</b><br />
+              <span class="muted">No email, just your first name, last name and a 6-digit PIN. Your ticket and updates arrive in your BDAI inbox.</span></p>
+            <div class="reg-gate-actions">
+              <button class="btn btn-primary" data-gate="signup">Create account</button>
+              <button class="btn btn-ghost" data-gate="login">Log in</button>
+            </div>
+          </div>
+        </div>`);
+      $$("[data-gate]", modalBody).forEach((b) => b.addEventListener("click", () => {
+        closeModal({ restoreFocus: false });
+        openAuth(b.dataset.gate, {
+          reason: `Log in or create an account to register for “${e.title}”.`,
+          then: () => openEvent(id),
+        });
+      }));
+      return;
+    }
+
+    openModal(`${details}
         <form id="regForm" novalidate>
+          <div class="reg-as">
+            <span class="avatar-sm" style="--av:${user.av}">${escapeHTML(user.initials)}</span>
+            <div><small class="muted">Registering as</small><b>${escapeHTML(user.name)}</b></div>
+            <span class="chip">📬 Confirmation goes to your inbox</span>
+          </div>
           <div class="form-grid">
-            <div class="field">
-              <label for="rName">Full name</label>
-              <input id="rName" name="name" autocomplete="name" placeholder="Ada Lovelace" required />
-              <span class="error" aria-live="polite"></span>
-            </div>
-            <div class="field">
-              <label for="rEmail">Work email</label>
-              <input id="rEmail" name="email" type="email" autocomplete="email" placeholder="ada@company.com" required />
-              <span class="error" aria-live="polite"></span>
-            </div>
             ${free ? "" : `
             <fieldset class="field full" style="border:0;padding:0;margin:0">
               <legend style="font-size:.85rem;font-weight:600;margin-bottom:.35rem">Ticket type</legend>
@@ -720,7 +698,6 @@
       </div>`);
 
     const form = $("#regForm");
-    const nameIn = $("#rName"), emailIn = $("#rEmail");
     const maxQty = Math.max(1, Math.min(10, left));
     let qty = 1;
 
@@ -744,28 +721,8 @@
     });
     form.addEventListener("change", (ev) => { if (ev.target.name === "ticket") updateTotal(); });
 
-    const validators = {
-      name: (v) => (v.trim().length >= 2 ? "" : "Please enter your full name."),
-      email: (v) => (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v.trim()) ? "" : "Please enter a valid email address."),
-    };
-    const validateField = (input) => {
-      const msg = validators[input.name](input.value);
-      const field = input.closest(".field");
-      field.classList.toggle("invalid", !!msg);
-      $(".error", field).textContent = msg;
-      input.setAttribute("aria-invalid", String(!!msg));
-      return !msg;
-    };
-    [nameIn, emailIn].forEach((input) => {
-      input.addEventListener("blur", () => validateField(input));
-      input.addEventListener("input", () => { if (input.closest(".field").classList.contains("invalid")) validateField(input); });
-    });
-
     form.addEventListener("submit", (ev) => {
       ev.preventDefault();
-      const ok = [nameIn, emailIn].map(validateField).every(Boolean);
-      if (!ok) { $(".field.invalid input", form)?.focus(); return; }
-
       const submit = $('button[type="submit"]', form);
       submit.disabled = true;
       submit.textContent = "Processing…";
@@ -773,17 +730,20 @@
       setTimeout(() => { // simulate a network request
         const ticket = TICKETS.find((x) => x.id === (form.elements.ticket?.value || "standard"));
         const reg = {
-          name: nameIn.value.trim(),
-          email: emailIn.value.trim(),
+          name: user.name,
           qty,
           ticket: ticket.name,
           total: Math.round(e.price * ticket.mult) * qty,
           code: "BDAI-" + Math.random().toString(36).slice(2, 8).toUpperCase(),
         };
         state.registrations[e.id] = reg;
-        store.set("bdai.registrations", state.registrations);
-        renderEvents();
-        if (e.flagship) updateFlagshipMeter();
+        saveRegs();
+        inbox.add({
+          from: "BDAI Tickets", category: "Events",
+          subject: `You're registered: ${e.title}`,
+          body: `Hi ${user.first},\n\nYour registration is confirmed.\n\nEvent: ${e.title}\nDate: ${fmtDate(e.date, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}\nTime: ${e.time}\nLocation: ${e.location}\nTicket: ${reg.ticket} × ${reg.qty}\nTotal: ${fmtPrice(reg.total)}\nConfirmation code: ${reg.code}\n\nShow this code at check-in. You can add the event to your calendar or cancel your registration from the event on the Events page.`,
+          cta: { label: "View events", href: "index-5.html#events" },
+        });
         showSuccess(e, reg, true);
       }, 900);
     });
@@ -794,7 +754,7 @@
       <div class="success">
         <div class="check-anim"><svg viewBox="0 0 24 24" width="40" height="40"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
         <h2 id="modalTitle">${fresh ? "You're in! 🎉" : "Your ticket"}</h2>
-        <p class="muted">${fresh ? "A confirmation would be sent to" : "Registered as"} <b>${escapeHTML(reg.email)}</b></p>
+        <p class="muted">${fresh ? "Your confirmation is waiting in your BDAI inbox." : `Registered as <b>${escapeHTML(reg.name)}</b>`}</p>
         <div class="ticket" style="--banner:${BANNERS[e.category]}">
           <div class="ticket-top"><b>${e.emoji} ${escapeHTML(e.title)}</b><br /><small>${fmtDate(e.date, { month: "long", day: "numeric", year: "numeric" })} · ${escapeHTML(e.location)}</small></div>
           <div class="ticket-bottom">
@@ -806,18 +766,23 @@
         </div>
         <div style="display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap">
           <button class="btn btn-primary" id="calBtn">Add to calendar</button>
+          <a class="btn btn-ghost" href="inbox-5.html">Open inbox</a>
           <button class="btn btn-ghost" id="cancelReg">Cancel registration</button>
         </div>
       </div>`;
     if (fresh) modalBody.innerHTML = html; else openModal(html);
-    if (fresh) { confetti(); toast("Registration confirmed", "🎟️"); $("#calBtn").focus(); }
+    if (fresh) { confetti(); toast("Registration confirmed, check your inbox", "🎟️"); $("#calBtn").focus(); }
 
     $("#calBtn").addEventListener("click", () => downloadICS(e));
     $("#cancelReg").addEventListener("click", () => {
       delete state.registrations[e.id];
-      store.set("bdai.registrations", state.registrations);
-      renderEvents();
-      if (e.flagship) updateFlagshipMeter();
+      saveRegs();
+      inbox.add({
+        from: "BDAI Tickets", category: "Events",
+        subject: `Registration cancelled: ${e.title}`,
+        body: `Your registration for ${e.title} (code ${reg.code}) has been cancelled.\n\nChanged your mind? You can register again from the Events page while seats are available.`,
+        cta: { label: "View events", href: "index-5.html#events" },
+      });
       closeModal();
       toast("Registration cancelled", "↩️");
     });
@@ -968,21 +933,57 @@
   });
 
   /* ---------------------------------------------------------
-     Newsletter
+     Subscription card: subscribing comes with an account (no email)
      --------------------------------------------------------- */
-  $("#newsletterForm").addEventListener("submit", (e) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const input = $("#nlEmail");
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(input.value.trim())) {
-      form.classList.remove("error"); void form.offsetWidth; form.classList.add("error");
-      toast("Please enter a valid email address", "⚠️");
-      input.focus();
+  function renderAccountCta() {
+    const el = $("#accountCta");
+    const user = account.current();
+    if (!user) {
+      el.innerHTML = `
+        <div>
+          <h2>Never miss a drop.</h2>
+          <p>Create a free BDAI account and the monthly drop lands in your BDAI inbox. No email needed: just your first name, last name and a 6-digit PIN.</p>
+        </div>
+        <div class="cta-actions">
+          <button class="btn btn-light" data-auth="signup">Create account &amp; subscribe</button>
+          <button class="btn btn-outline-light" data-auth="login">Log in</button>
+        </div>`;
       return;
     }
-    form.classList.remove("error");
-    input.value = "";
-    toast("Subscribed! Watch your inbox for the next drop", "📬");
+    const unread = inbox.unread();
+    const first = escapeHTML(user.first);
+    el.innerHTML = user.subscribed ? `
+        <div>
+          <h2>You're subscribed, ${first}.</h2>
+          <p>New drops, early-bird tickets and event updates arrive in your BDAI inbox.</p>
+        </div>
+        <div class="cta-actions">
+          <a class="btn btn-light" href="inbox-5.html">Open inbox${unread ? ` (${unread} new)` : ""}</a>
+          <button class="btn btn-outline-light" data-cta="unsubscribe">Unsubscribe</button>
+        </div>` : `
+        <div>
+          <h2>Get the monthly drop, ${first}.</h2>
+          <p>Early-bird tickets, speaker announcements and new city launches, once a month, straight to your BDAI inbox.</p>
+        </div>
+        <div class="cta-actions">
+          <button class="btn btn-light" data-cta="subscribe">Subscribe</button>
+          <a class="btn btn-outline-light" href="inbox-5.html">Open inbox</a>
+        </div>`;
+  }
+  $("#accountCta").addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-cta]");
+    if (!btn) return;
+    const on = btn.dataset.cta === "subscribe";
+    account.setSubscribed(on);
+    toast(on ? "Subscribed! New drops will arrive in your inbox" : "Unsubscribed from the monthly drop", on ? "📬" : "👋");
+  });
+
+  // Logging in/out (here or in another tab) or a new inbox message refreshes what depends on the account.
+  onChange(() => {
+    state.registrations = loadRegs();
+    renderEvents();
+    if ($(".countdown-card")?.classList.contains("visible")) updateFlagshipMeter();
+    renderAccountCta();
   });
 
   /* ---------------------------------------------------------
@@ -991,6 +992,7 @@
   $("#year").textContent = new Date().getFullYear();
   renderAll();
   renderTimeline();
+  renderAccountCta();
   requestAnimationFrame(moveIndicator);
   document.fonts?.ready.then(moveIndicator);
   observeReveals();
