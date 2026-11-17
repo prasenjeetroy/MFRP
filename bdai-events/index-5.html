@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style-5.css" />
 </head>
-<body data-page="home">
+<body>
   <!-- Scroll progress bar -->
   <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
 
@@ -53,7 +53,8 @@
     </nav>
   </header>
 
-  <main>
+  <!-- ================= HOME VIEW ================= -->
+  <main id="homeView">
     <!-- ================= HERO ================= -->
     <section class="hero" id="home">
       <canvas id="networkCanvas" class="hero-canvas" aria-hidden="true"></canvas>
@@ -227,6 +228,11 @@
         <div class="cta-card reveal" id="accountCta" aria-live="polite"></div>
       </div>
     </section>
+  </main>
+
+  <!-- ================= INBOX VIEW (shown when the address ends in #inbox; filled in by script-5.js, part 3) ================= -->
+  <main class="inbox-main" id="inboxView" hidden>
+    <div class="container" id="inboxApp" aria-live="polite"></div>
   </main>
 
   <!-- ================= FOOTER ================= -->

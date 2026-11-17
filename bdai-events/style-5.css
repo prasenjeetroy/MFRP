@@ -106,6 +106,8 @@ p { margin: 0 0 1em; }
   z-index: 200;
 }
 
+[data-view="inbox"] .scroll-progress { display: none; }
+
 /* ---------- Buttons ---------- */
 .btn {
   --pad: .75rem 1.25rem;
@@ -189,7 +191,7 @@ p { margin: 0 0 1em; }
   transition: background .3s, border-color .3s, backdrop-filter .3s;
   border-bottom: 1px solid transparent;
 }
-.header.scrolled {
+.header.scrolled, [data-view="inbox"] .header {
   background: color-mix(in srgb, var(--bg) 75%, transparent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);

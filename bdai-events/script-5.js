@@ -1,20 +1,21 @@
 /* ==========================================================
    BDAI Events — script-5.js
-   All the JavaScript for the site, used by both pages:
-     index-5.html  (<body data-page="home">)
-     inbox-5.html  (<body data-page="inbox">)
+   All the JavaScript for index-5.html. The page has two views:
+     Home   (<main id="homeView">)  — the normal address
+     Inbox  (<main id="inboxView">) — the address ending in #inbox
 
    PART 1  Shared: helpers, theme, toasts, mobile menu,
+           switching between the Home and Inbox views,
            accounts (first name, last name and a 6-digit PIN,
            no email), the log-in / sign-up dialog, the header
            account menu and the inbox message store.
-   PART 2  Home page: events, filters, registration, countdown,
+   PART 2  Home view: events, filters, registration, countdown,
            agenda, team, FAQ and the subscription card.
-   PART 3  Inbox page: folders, search, messages, reading pane
+   PART 3  Inbox view: folders, search, messages, reading pane
            and the profile card.
 
-   Each part is its own block; parts 2 and 3 share PART 1
-   through window.BDAI and only run on their own page.
+   Each part is its own block; parts 2 and 3 use PART 1
+   through window.BDAI.
    Everything is saved in this browser (localStorage); there
    is no server.
    ========================================================== */
@@ -390,14 +391,14 @@
         date: now - 2000, from: "BDAI Events Team", category: "Updates",
         subject: "Early-bird seats for BDAI Global Summit 2027",
         body: "The BDAI Global Summit comes to Bengaluru on February 18, 2027: three days of keynotes, deep-dive tracks and live labs.\n\nBuild your personal agenda now and reserve your seat while early-bird pricing lasts.",
-        cta: { label: "View the agenda", href: "index-5.html#schedule" },
+        cta: { label: "View the agenda", href: "#schedule" },
       },
       { date: now - 1000, ...subscribedMessage(user.first) },
       {
         date: now, from: "BDAI Events Team", category: "Account",
         subject: `Welcome to BDAI Events, ${user.first}!`,
         body: `Hi ${user.first},\n\nYour BDAI Events account is ready. To log in, use your first name, last name and the 6-digit PIN you just chose.\n\nKeep your PIN safe. There's no email linked to your account, so a forgotten PIN can't be reset.\n\nWith your account you can register for events, keep your tickets in one place and get every update right here in your inbox.\n\nSee you at the next event,\nThe BDAI Events Team`,
-        cta: { label: "Browse events", href: "index-5.html#events" },
+        cta: { label: "Browse events", href: "#events" },
       },
     ];
     const list = msgs.map((m) => ({ id: "m_" + randomHex(6), read: false, starred: false, ...m }));
@@ -407,7 +408,37 @@
   /* ---------------------------------------------------------
      Header: account button + menu (rendered into #accountSlot)
      --------------------------------------------------------- */
-  const onInboxPage = document.body.dataset.page === "inbox";
+  /* ---------------------------------------------------------
+     Views: Home and Inbox live in one page; "#inbox" shows the inbox.
+     Any other address (#events, #faq, …) shows Home and scrolls there.
+     --------------------------------------------------------- */
+  const HOME_TITLE = document.title;
+  const inInboxView = () => location.hash === "#inbox";
+
+  function applyView() {
+    const homeView = $("#homeView"), inboxView = $("#inboxView");
+    if (!homeView || !inboxView) return;
+    const view = inInboxView() ? "inbox" : "home";
+    const changed = document.body.dataset.view !== view;
+    document.body.dataset.view = view;
+    homeView.hidden = view === "inbox";
+    inboxView.hidden = view !== "inbox";
+    setMenuOpen(false);
+    $("#navLinks")?.classList.remove("open");
+    if (view === "inbox") {
+      $$(".nav-link.active").forEach((l) => l.classList.remove("active"));
+      if (changed) window.scrollTo(0, 0);
+    } else if (changed) {
+      document.title = HOME_TITLE;
+      window.dispatchEvent(new Event("resize")); // let the hero canvas and tabs measure themselves again
+      const target = location.hash.length > 1 ? document.getElementById(location.hash.slice(1)) : null;
+      requestAnimationFrame(() => (target ? target.scrollIntoView() : window.scrollTo(0, 0)));
+    }
+    document.dispatchEvent(new CustomEvent("bdai:view", { detail: { view } }));
+  }
+  const goToInbox = () => { if (inInboxView()) applyView(); else location.hash = "#inbox"; };
+  window.addEventListener("hashchange", applyView);
+
   const ICONS = {
     user: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
     inbox: '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 3h6l1-3h5"/></svg>',
@@ -435,7 +466,7 @@
             <span class="avatar-sm" style="--av:${user.av}">${escapeHTML(user.initials)}</span>
             <div><b>${escapeHTML(user.name)}</b><small>${user.subscribed ? "Subscribed to the monthly drop" : "Not subscribed"}</small></div>
           </div>
-          <a href="inbox-5.html" class="account-menu-item">${ICONS.inbox}<span>Inbox</span>${unread ? `<span class="count-pill">${unread}</span>` : ""}</a>
+          <a href="#inbox" class="account-menu-item">${ICONS.inbox}<span>Inbox</span>${unread ? `<span class="count-pill">${unread}</span>` : ""}</a>
           <button class="account-menu-item" data-acc="logout">${ICONS.logout}<span>Log out</span></button>
         </div>
       </div>`;
@@ -785,16 +816,19 @@
       <div class="auth-success-actions">
         ${authThen
           ? `<button class="btn btn-primary" data-continue>Continue to registration</button>
-             <a class="btn btn-ghost" href="inbox-5.html">Open inbox</a>`
-          : `${onInboxPage
-              ? '<button class="btn btn-primary" data-continue>Open inbox</button>'
-              : '<a class="btn btn-primary" href="inbox-5.html">Open inbox</a>'}
-             <button class="btn btn-ghost" data-continue>${onInboxPage ? "Close" : "Keep exploring"}</button>`}
+             <button class="btn btn-ghost" data-open-inbox>Open inbox</button>`
+          : `<button class="btn btn-primary" data-open-inbox>Open inbox</button>
+             <button class="btn btn-ghost" data-continue>${inInboxView() ? "Close" : "Keep exploring"}</button>`}
       </div>`;
     $("#authForms").hidden = true;
     box.hidden = false;
     authModal.setAttribute("aria-labelledby", "authSuccessTitle");
     $$("[data-continue]", box).forEach((b) => b.addEventListener("click", finishAuth));
+    $("[data-open-inbox]", box)?.addEventListener("click", () => {
+      authThen = null;
+      closeAuth({ restoreFocus: false });
+      goToInbox();
+    });
     setTimeout(() => $(".btn", box).focus(), 50);
     toast("Account created", "🎉");
   }
@@ -847,16 +881,17 @@
      Public API
      --------------------------------------------------------- */
   window.BDAI = {
-    $, $$, escapeHTML, store, toast, prefersReducedMotion, initialsOf,
+    $, $$, escapeHTML, store, toast, prefersReducedMotion, initialsOf, inInboxView, goToInbox,
     account, inbox, userKey, onChange, openAuth, closeAuth,
     _test: { sha256, hashPin, isWeakPin },
   };
 
   renderAccountSlot();
+  applyView();
 })();
 
 /* ##########################################################
-   PART 2 · HOME PAGE (index-5.html only)
+   PART 2 · HOME VIEW
    ########################################################## */
 (() => {
   "use strict";
@@ -864,8 +899,7 @@
   /* ---------------------------------------------------------
      Shared helpers (from PART 1)
      --------------------------------------------------------- */
-  const { $, $$, escapeHTML, store, toast, prefersReducedMotion, account, inbox, userKey, onChange, openAuth } = window.BDAI;
-  if (document.body.dataset.page !== "home") return; // this part is only for index-5.html
+  const { $, $$, escapeHTML, store, toast, prefersReducedMotion, account, inbox, userKey, onChange, openAuth, inInboxView, goToInbox } = window.BDAI;
   const root = document.documentElement;
 
   const fmtDate = (iso, opts) => new Date(iso + "T00:00:00").toLocaleDateString("en-US", opts);
@@ -1353,7 +1387,7 @@
     searchTimer = setTimeout(() => { state.query = e.target.value; renderEvents(); }, 180);
   });
   document.addEventListener("keydown", (e) => {
-    if (e.key === "/" && !/input|textarea|select/i.test(document.activeElement.tagName) && !document.body.classList.contains("modal-open")) {
+    if (e.key === "/" && !/input|textarea|select/i.test(document.activeElement.tagName) && !document.body.classList.contains("modal-open") && !inInboxView()) {
       e.preventDefault();
       $("#events").scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth" });
       $("#searchInput").focus({ preventScroll: true });
@@ -1596,7 +1630,7 @@
           from: "BDAI Tickets", category: "Events",
           subject: `You're registered: ${e.title}`,
           body: `Hi ${user.first},\n\nYour registration is confirmed.\n\nEvent: ${e.title}\nDate: ${fmtDate(e.date, { weekday: "long", month: "long", day: "numeric", year: "numeric" })}\nTime: ${e.time}\nLocation: ${e.location}\nTicket: ${reg.ticket} × ${reg.qty}\nTotal: ${fmtPrice(reg.total)}\nConfirmation code: ${reg.code}\n\nShow this code at check-in. You can add the event to your calendar or cancel your registration from the event on the Events page.`,
-          cta: { label: "View events", href: "index-5.html#events" },
+          cta: { label: "View events", href: "#events" },
         });
         showSuccess(e, reg, true);
       }, 900);
@@ -1620,7 +1654,7 @@
         </div>
         <div style="display:flex;gap:.6rem;justify-content:center;flex-wrap:wrap">
           <button class="btn btn-primary" id="calBtn">Add to calendar</button>
-          <a class="btn btn-ghost" href="inbox-5.html">Open inbox</a>
+          <button class="btn btn-ghost" id="ticketInbox">Open inbox</button>
           <button class="btn btn-ghost" id="cancelReg">Cancel registration</button>
         </div>
       </div>`;
@@ -1628,6 +1662,7 @@
     if (fresh) { confetti(); toast("Registration confirmed, check your inbox", "🎟️"); $("#calBtn").focus(); }
 
     $("#calBtn").addEventListener("click", () => downloadICS(e));
+    $("#ticketInbox").addEventListener("click", () => { closeModal({ restoreFocus: false }); goToInbox(); });
     $("#cancelReg").addEventListener("click", () => {
       delete state.registrations[e.id];
       saveRegs();
@@ -1635,7 +1670,7 @@
         from: "BDAI Tickets", category: "Events",
         subject: `Registration cancelled: ${e.title}`,
         body: `Your registration for ${e.title} (code ${reg.code}) has been cancelled.\n\nChanged your mind? You can register again from the Events page while seats are available.`,
-        cta: { label: "View events", href: "index-5.html#events" },
+        cta: { label: "View events", href: "#events" },
       });
       closeModal();
       toast("Registration cancelled", "↩️");
@@ -1812,7 +1847,7 @@
           <p>New drops, early-bird tickets and event updates arrive in your BDAI inbox.</p>
         </div>
         <div class="cta-actions">
-          <a class="btn btn-light" href="inbox-5.html">Open inbox${unread ? ` (${unread} new)` : ""}</a>
+          <a class="btn btn-light" href="#inbox">Open inbox${unread ? ` (${unread} new)` : ""}</a>
           <button class="btn btn-outline-light" data-cta="unsubscribe">Unsubscribe</button>
         </div>` : `
         <div>
@@ -1821,7 +1856,7 @@
         </div>
         <div class="cta-actions">
           <button class="btn btn-light" data-cta="subscribe">Subscribe</button>
-          <a class="btn btn-outline-light" href="inbox-5.html">Open inbox</a>
+          <a class="btn btn-outline-light" href="#inbox">Open inbox</a>
         </div>`;
   }
   $("#accountCta").addEventListener("click", (e) => {
@@ -1853,13 +1888,12 @@
 })();
 
 /* ##########################################################
-   PART 3 · INBOX PAGE (inbox-5.html only)
+   PART 3 · INBOX VIEW (#inbox)
    ########################################################## */
 (() => {
   "use strict";
 
-  const { $, $$, escapeHTML, toast, account, inbox, onChange } = window.BDAI;
-  if (document.body.dataset.page !== "inbox") return; // this part is only for inbox-5.html
+  const { $, $$, escapeHTML, toast, account, inbox, onChange, inInboxView } = window.BDAI;
   const app = $("#inboxApp");
 
   const ui = { folder: "all", query: "", openId: null, userId: null, deleteArmed: false };
@@ -1938,7 +1972,7 @@
   }
 
   function renderLocked() {
-    document.title = "Inbox — BDAI Events";
+    if (inInboxView()) document.title = "Inbox — BDAI Events";
     app.innerHTML = `
       <section class="inbox-locked">
         <div class="lock-icon" aria-hidden="true">🔒</div>
@@ -1995,7 +2029,7 @@
     const unread = inbox.unread(), total = inbox.list().length;
     $("#inboxTitle").textContent = `Hi, ${user.first}`;
     $("#inboxSub").textContent = `${unread ? `${unread} unread · ` : "All caught up · "}${total} message${total === 1 ? "" : "s"}`;
-    document.title = `${unread ? `(${unread}) ` : ""}Inbox — BDAI Events`;
+    if (inInboxView()) document.title = `${unread ? `(${unread}) ` : ""}Inbox — BDAI Events`;
   }
 
   function renderFolders() {
@@ -2176,8 +2210,8 @@
   }
 
   /* ---------- init ---------- */
-  $("#year").textContent = new Date().getFullYear();
   onChange(render);
+  document.addEventListener("bdai:view", (e) => { if (e.detail.view === "inbox") render(); });
   render();
   setInterval(() => { if ($("#mailList")) renderList(); }, 60 * 1000); // keep "5 min ago" fresh
 })();
