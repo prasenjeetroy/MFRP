@@ -37,7 +37,7 @@
   const BANNERS = {
     Conference: "linear-gradient(135deg,#7c5cff,#00d4ff)",
     Workshop:   "linear-gradient(135deg,#00b894,#00d4ff)",
-    Hackathon:  "linear-gradient(135deg,#ff4fd8,#7c5cff)",
+    "AI Developer Ops": "linear-gradient(135deg,#ff4fd8,#7c5cff)",
     Webinar:    "linear-gradient(135deg,#ff9f43,#ff4fd8)",
     Meetup:     "linear-gradient(135deg,#3b82f6,#8b5cf6)",
   };
@@ -49,11 +49,11 @@
       price: 299, seats: 1200, taken: 912, emoji: "🚀", flagship: true,
       tags: ["GenAI", "Data Platforms", "Leadership"],
       desc: "Our flagship three-day summit: keynotes, eight parallel tracks, live labs and the BDAI Innovation Awards." },
-    { id: "genai-hack", title: "GenAI Builders Hackathon", category: "Hackathon", mode: "In-person",
-      date: "2026-12-05", time: "48 hours · starts 10:00 PST", location: "San Francisco, USA",
+    { id: "genai-hack", title: "AI Developer Ops Bootcamp", category: "AI Developer Ops", mode: "In-person",
+      date: "2026-12-05", time: "2 days · starts 10:00 PST", location: "San Francisco, USA",
       price: 0, seats: 300, taken: 271, emoji: "🤖",
-      tags: ["LLMs", "Agents", "Prizes"],
-      desc: "Form a team, ship an AI product in 48 hours and pitch to a panel of founders and investors." },
+      tags: ["LLMOps", "CI/CD", "Deployment"],
+      desc: "Two hands-on days building, testing and deploying AI applications with CI/CD, evaluation and monitoring." },
     { id: "lakehouse", title: "Lakehouse Architecture Masterclass", category: "Workshop", mode: "Online",
       date: "2026-11-28", time: "14:00 – 18:00 UTC", location: "Live online",
       price: 79, seats: 150, taken: 96, emoji: "🏞️",
@@ -89,11 +89,11 @@
       price: 129, seats: 50, taken: 47, emoji: "👁️",
       tags: ["Edge AI", "Quantization", "IoT"],
       desc: "Deploy compact vision models to edge devices. Dev kits provided to every attendee." },
-    { id: "agents-hack", title: "Agents & Tool-Use Hack Night", category: "Hackathon", mode: "Hybrid",
-      date: "2027-01-30", time: "18:00 – 02:00 IST", location: "Bengaluru, India",
+    { id: "agents-hack", title: "Agent Ops Night: Prototype to Production", category: "AI Developer Ops", mode: "Hybrid",
+      date: "2027-01-30", time: "18:00 – 22:00 IST", location: "Bengaluru, India",
       price: 0, seats: 200, taken: 120, emoji: "🧠",
-      tags: ["Agents", "APIs", "Automation"],
-      desc: "One night, one challenge: build an autonomous agent that solves a real business workflow." },
+      tags: ["Agents", "Observability", "Automation"],
+      desc: "An evening of practical sessions on deploying, observing and scaling AI agents safely in production." },
     { id: "leaders", title: "Data Leaders Forum", category: "Conference", mode: "In-person",
       date: "2027-03-11", time: "09:00 – 17:30 IST", location: "Mumbai, India",
       price: 249, seats: 400, taken: 150, emoji: "📊",
@@ -122,7 +122,7 @@
       { t: "09:00", title: "Keynote: Agents in the Enterprise", who: "Hari Prasad", track: "Keynote", room: "Main Hall" },
       { t: "10:30", title: "Privacy-Preserving ML in Practice", who: "Devi Prasad", track: "Responsible AI", room: "Hall C" },
       { t: "11:45", title: "Multimodal Models for Industry", who: "Dayashankar Roy", track: "GenAI", room: "Hall B" },
-      { t: "13:00", title: "Lunch & Hackathon Demos", who: "Finalist teams", track: "Break", room: "Expo" },
+      { t: "13:00", title: "Lunch & AI Developer Ops Demos", who: "Community teams", track: "Break", room: "Expo" },
       { t: "14:30", title: "Lab: Shipping an Agent with Guardrails", who: "Tolstoy Kr. Roy", track: "Lab", room: "Lab 1" },
       { t: "16:30", title: "BDAI Innovation Awards & Closing", who: "Bhavyam Roy", track: "Keynote", room: "Main Hall" },
     ],
@@ -475,6 +475,7 @@
     const registered = state.registrations[e.id];
     const soldOut = left <= 0;
     return `
+      <div class="card-wrap">
       <article class="event-card" style="--i:${i};--banner:${BANNERS[e.category]}" data-id="${e.id}">
         <div class="card-banner">
           <div class="card-date"><b>${fmtDate(e.date, { day: "2-digit" })}</b><small>${fmtDate(e.date, { month: "short" })}</small></div>
@@ -506,7 +507,8 @@
               : `<button class="btn btn-primary btn-sm" data-action="open" ${soldOut ? "disabled" : ""}>${soldOut ? "Sold out" : "Register"}</button>`}
           </div>
         </div>
-      </article>`;
+      </article>
+      </div>`;
   }
 
   function renderEvents() {

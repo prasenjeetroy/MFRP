@@ -140,7 +140,7 @@ p { margin: 0 0 1em; }
 .btn-ghost:hover { border-color: var(--c1); box-shadow: var(--glow); }
 
 .btn-light { background: #fff; color: #1b1440; }
-.btn-light:hover { transform: translateY(-2px); }
+.btn-light:hover { box-shadow: 0 8px 24px -8px rgba(0, 0, 0, .45); filter: brightness(1.04); }
 
 .btn[disabled] { opacity: .5; pointer-events: none; }
 
@@ -175,6 +175,12 @@ p { margin: 0 0 1em; }
 .badge.show { transform: scale(1); }
 .badge.bump { animation: bump .4s var(--ease); }
 @keyframes bump { 50% { transform: scale(1.35); } }
+
+/* Elements that lift a few px on hover get a thin invisible strip underneath,
+   so the pointer stays "on" them while they move and they don't flicker. */
+.chip-btn::after, .icon-btn::after, .ticket-opt label::after, .to-top::after {
+  content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 4px;
+}
 
 /* ---------- Header ---------- */
 .header {
@@ -254,7 +260,7 @@ p { margin: 0 0 1em; }
 @keyframes pulse { 70% { box-shadow: 0 0 0 10px rgba(34, 227, 155, 0); } 100% { box-shadow: 0 0 0 0 rgba(34, 227, 155, 0); } }
 
 .hero-title { font-size: clamp(2.4rem, 6vw, 4.6rem); font-weight: 700; margin-bottom: 1.2rem; }
-.typed-wrap { display: inline-flex; align-items: center; min-height: 1.15em; white-space: nowrap; }
+.typed-wrap { display: flex; align-items: center; height: 1.15em; white-space: nowrap; } /* fixed height: the line must not grow or shrink while the word is typed and deleted */
 .typed { background: var(--grad-hot); -webkit-background-clip: text; background-clip: text; color: transparent; }
 .caret { display: inline-block; width: 3px; height: .9em; margin-left: 6px; background: var(--c3); animation: blink 1s steps(1) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
@@ -341,6 +347,7 @@ select option { background: var(--bg); color: var(--text); }
 
 .chips { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: 1rem; }
 .chip-btn {
+  position: relative;
   padding: .5rem 1rem; border-radius: 999px;
   border: 1px solid var(--border); background: var(--surface);
   font-size: .9rem; font-weight: 500; color: var(--muted);
@@ -372,8 +379,11 @@ select option { background: var(--bg); color: var(--text); }
   background: radial-gradient(420px circle at var(--x) var(--y), rgba(124, 92, 255, .18), transparent 45%);
   opacity: 0; transition: opacity .3s;
 }
-.event-card:hover { transform: translateY(-6px); border-color: rgba(124, 92, 255, .5); box-shadow: var(--shadow), var(--glow); }
-.event-card:hover::before { opacity: 1; }
+/* The wrapper stays still and receives the hover, so the lifted card can't slip out from under the pointer and flicker */
+.card-wrap { display: flex; }
+.card-wrap > .event-card { flex: 1; min-width: 0; }
+.card-wrap:hover .event-card { transform: translateY(-6px); border-color: rgba(124, 92, 255, .5); box-shadow: var(--shadow), var(--glow); }
+.card-wrap:hover .event-card::before { opacity: 1; }
 .event-card > * { position: relative; z-index: 1; }
 
 .card-banner { height: 120px; position: relative; overflow: hidden; background: var(--banner, var(--grad)); }
@@ -384,9 +394,9 @@ select option { background: var(--bg); color: var(--text); }
   mask-image: linear-gradient(to bottom, #000, transparent);
   transition: transform 6s linear;
 }
-.event-card:hover .card-banner::after { transform: translate(22px, 22px); }
+.card-wrap:hover .card-banner::after { transform: translate(22px, 22px); }
 .card-emoji { position: absolute; right: 18px; bottom: -6px; font-size: 4.2rem; filter: drop-shadow(0 8px 16px rgba(0,0,0,.3)); transition: transform .4s var(--ease); }
-.event-card:hover .card-emoji { transform: rotate(-10deg) scale(1.1); }
+.card-wrap:hover .card-emoji { transform: rotate(-10deg) scale(1.1); }
 .card-date {
   position: absolute; left: 16px; top: 16px;
   display: flex; flex-direction: column; align-items: center;
@@ -467,8 +477,8 @@ select option { background: var(--bg); color: var(--text); }
   background: var(--bg); border: 3px solid var(--c1);
   transition: background .3s, transform .3s;
 }
-.session-card:hover { transform: translateX(6px); border-color: var(--c1); }
-.session-card:hover::before { transform: scale(1.25); }
+.session:hover .session-card { transform: translateX(6px); border-color: var(--c1); }
+.session:hover .session-card::before { transform: scale(1.25); }
 .session-card.added { border-color: #22e39b; box-shadow: 0 0 0 1px rgba(34, 227, 155, .35); }
 .session-card.added::before { background: #22e39b; border-color: #22e39b; }
 .session-card h4 { font-size: 1.08rem; margin-bottom: .25rem; }
@@ -603,7 +613,7 @@ select option { background: var(--bg); color: var(--text); }
 .ticket-opt { position: relative; }
 .ticket-opt input { position: absolute; opacity: 0; pointer-events: none; }
 .ticket-opt label {
-  display: block; padding: .8rem; border-radius: 12px; cursor: pointer; height: 100%;
+  position: relative; display: block; padding: .8rem; border-radius: 12px; cursor: pointer; height: 100%;
   border: 1px solid var(--border); background: var(--surface);
   transition: border-color .2s, transform .2s, box-shadow .2s;
 }
