@@ -493,6 +493,7 @@ select option { background: var(--bg); color: var(--text); }
 }
 .speaker-back { transform: rotateY(180deg); background: linear-gradient(160deg, rgba(124, 92, 255, .2), rgba(0, 212, 255, .12)), var(--surface); }
 .avatar {
+  flex: none;
   width: 112px; height: 112px; border-radius: 50%;
   display: grid; place-items: center;
   font-family: var(--font-display); font-size: 2.2rem; font-weight: 700; color: #fff;
@@ -505,6 +506,18 @@ select option { background: var(--bg); color: var(--text); }
 .speaker .role { font-size: .88rem; color: var(--muted); margin-bottom: .6rem; }
 .speaker-back p { font-size: .9rem; color: var(--muted); }
 .speaker-back .talk { font-weight: 600; color: var(--text); margin-bottom: .6rem; }
+.speaker-back .role { margin-bottom: .9rem; }
+.speaker .bio { font-size: .92rem; color: var(--muted); max-width: 380px; margin-bottom: .9rem; }
+.talk-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .5rem; width: 100%; }
+.talk-list li { padding: .5rem .7rem; border-radius: 10px; background: var(--surface-2); border: 1px solid var(--border); font-size: .85rem; font-weight: 600; text-align: left; }
+.talk-list small { display: block; font-weight: 500; color: var(--c2); font-size: .72rem; }
+
+/* Founder card: twice as wide on screens with room for two columns */
+.speaker.featured .speaker-face { background: linear-gradient(160deg, rgba(124, 92, 255, .22), rgba(255, 79, 216, .12)), var(--surface); border-color: rgba(124, 92, 255, .45); }
+.speaker.featured .avatar { width: 104px; height: 104px; font-size: 2.3rem; margin-bottom: .9rem; }
+.speaker.featured h3 { font-size: 1.4rem; }
+.speaker.featured .role { color: var(--text); font-weight: 600; }
+@media (min-width: 600px) { .speaker.featured { grid-column: span 2; } }
 
 /* ---------- FAQ accordion ---------- */
 .faq-wrap { display: grid; grid-template-columns: 1fr 1.4fr; gap: 3rem; align-items: start; }

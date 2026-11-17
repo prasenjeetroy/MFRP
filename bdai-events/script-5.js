@@ -103,40 +103,46 @@
 
   const AGENDA = [
     [ // Day 1
-      { t: "09:00", title: "Opening Keynote: The Next Decade of Data", who: "Dr. Aria Kapoor", track: "Keynote", room: "Main Hall" },
-      { t: "10:30", title: "Modern Data Stack: What Actually Matters", who: "Marcus Lindqvist", track: "Data Eng", room: "Hall B" },
-      { t: "11:45", title: "Feature Engineering Patterns That Scale", who: "Noor El-Amin", track: "ML", room: "Hall C" },
+      { t: "09:00", title: "Opening Keynote: The Next Decade of Data", who: "Bhavyam Roy", track: "Keynote", room: "Main Hall" },
+      { t: "10:30", title: "Modern Data Stack: What Actually Matters", who: "Vindalu Kr.", track: "Data Eng", room: "Hall B" },
+      { t: "11:45", title: "Feature Engineering Patterns That Scale", who: "Dayashankar Roy", track: "ML", room: "Hall C" },
       { t: "13:00", title: "Lunch & Expo Floor", who: "Partners showcase", track: "Break", room: "Expo" },
-      { t: "14:15", title: "Lab: Your First Lakehouse in 90 Minutes", who: "Chen Wei", track: "Lab", room: "Lab 1" },
-      { t: "16:30", title: "Panel: Building Data Teams in 2027", who: "Moderated by Sofia Reyes", track: "Leadership", room: "Main Hall" },
+      { t: "14:15", title: "Lab: Your First Lakehouse in 90 Minutes", who: "Tolstoy Kr. Roy", track: "Lab", room: "Lab 1" },
+      { t: "16:30", title: "Panel: Building Data Teams in 2027", who: "Moderated by Bhavyam Roy", track: "Leadership", room: "Main Hall" },
     ],
     [ // Day 2
-      { t: "09:00", title: "Keynote: Training & Serving at Planet Scale", who: "Kenji Watanabe", track: "Keynote", room: "Main Hall" },
-      { t: "10:30", title: "Real-time Feature Pipelines with Streaming", who: "Marcus Lindqvist", track: "Data Eng", room: "Hall B" },
-      { t: "11:45", title: "Evaluating LLM Apps Beyond Vibes", who: "Priya Raman", track: "GenAI", room: "Hall C" },
+      { t: "09:00", title: "Keynote: Training & Serving at Planet Scale", who: "Rhythm Kr. Roy", track: "Keynote", room: "Main Hall" },
+      { t: "10:30", title: "Real-time Feature Pipelines with Streaming", who: "Jelesky Kr", track: "Data Eng", room: "Hall B" },
+      { t: "11:45", title: "Evaluating LLM Apps Beyond Vibes", who: "Sooraj Pratap", track: "GenAI", room: "Hall C" },
       { t: "13:00", title: "Lunch & Birds-of-a-Feather Tables", who: "Community", track: "Break", room: "Expo" },
-      { t: "14:15", title: "Lab: Fine-tuning Small Models on a Budget", who: "Noor El-Amin", track: "Lab", room: "Lab 2" },
-      { t: "16:00", title: "Cost-Aware Cloud Data Platforms", who: "Lucas Oliveira", track: "Data Eng", room: "Hall B" },
+      { t: "14:15", title: "Lab: Fine-tuning Small Models on a Budget", who: "Meeka Roy", track: "Lab", room: "Lab 2" },
+      { t: "16:00", title: "Cost-Aware Cloud Data Platforms", who: "Shankaranand Roy", track: "Data Eng", room: "Hall B" },
     ],
     [ // Day 3
-      { t: "09:00", title: "Keynote: Agents in the Enterprise", who: "Priya Raman", track: "Keynote", room: "Main Hall" },
-      { t: "10:30", title: "Privacy-Preserving ML in Practice", who: "Sofia Reyes", track: "Responsible AI", room: "Hall C" },
-      { t: "11:45", title: "Multimodal Models for Industry", who: "Kenji Watanabe", track: "GenAI", room: "Hall B" },
+      { t: "09:00", title: "Keynote: Agents in the Enterprise", who: "Hari Prasad", track: "Keynote", room: "Main Hall" },
+      { t: "10:30", title: "Privacy-Preserving ML in Practice", who: "Devi Prasad", track: "Responsible AI", room: "Hall C" },
+      { t: "11:45", title: "Multimodal Models for Industry", who: "Dayashankar Roy", track: "GenAI", room: "Hall B" },
       { t: "13:00", title: "Lunch & Hackathon Demos", who: "Finalist teams", track: "Break", room: "Expo" },
-      { t: "14:30", title: "Lab: Shipping an Agent with Guardrails", who: "Chen Wei", track: "Lab", room: "Lab 1" },
-      { t: "16:30", title: "BDAI Innovation Awards & Closing", who: "Dr. Aria Kapoor", track: "Keynote", room: "Main Hall" },
+      { t: "14:30", title: "Lab: Shipping an Agent with Guardrails", who: "Tolstoy Kr. Roy", track: "Lab", room: "Lab 1" },
+      { t: "16:30", title: "BDAI Innovation Awards & Closing", who: "Bhavyam Roy", track: "Keynote", room: "Main Hall" },
     ],
   ];
 
-  const SPEAKERS = [
-    { name: "Dr. Aria Kapoor", role: "Chief Scientist, NovaMind Labs", talk: "The Next Decade of Data", bio: "Leads a 200-person research org working on foundation models for science.", av: "linear-gradient(135deg,#7c5cff,#00d4ff)" },
-    { name: "Kenji Watanabe", role: "VP ML Infrastructure, Skyline AI", talk: "Training & Serving at Planet Scale", bio: "Built inference platforms serving billions of predictions per day.", av: "linear-gradient(135deg,#ff4fd8,#7c5cff)" },
-    { name: "Priya Raman", role: "Head of Applied AI, Finlytics", talk: "Agents in the Enterprise", bio: "Ships LLM products in regulated industries; author of an open-source eval toolkit.", av: "linear-gradient(135deg,#ff9f43,#ff4fd8)" },
-    { name: "Marcus Lindqvist", role: "Principal Data Engineer, Streamworks", talk: "Real-time Feature Pipelines", bio: "Streaming systems veteran and long-time open-source contributor.", av: "linear-gradient(135deg,#00b894,#00d4ff)" },
-    { name: "Sofia Reyes", role: "Director, Responsible AI Institute", talk: "Privacy-Preserving ML", bio: "Advises governments and startups on AI policy, audits and safety.", av: "linear-gradient(135deg,#3b82f6,#8b5cf6)" },
-    { name: "Noor El-Amin", role: "ML Engineer, OpenField", talk: "Fine-tuning Small Models", bio: "Specialises in efficient training, distillation and on-device ML.", av: "linear-gradient(135deg,#f43f5e,#f59e0b)" },
-    { name: "Chen Wei", role: "Developer Advocate, Datavault", talk: "Lab: Shipping an Agent", bio: "Has run 150+ hands-on labs for developers across four continents.", av: "linear-gradient(135deg,#06b6d4,#22c55e)" },
-    { name: "Lucas Oliveira", role: "Cloud Architect, Brightcloud", talk: "Cost-Aware Data Platforms", bio: "Helps teams cut cloud data spend without slowing down analytics.", av: "linear-gradient(135deg,#a855f7,#ec4899)" },
+  const ENGINEER = "Software Engineer & Contributor";
+  const TEAM = [
+    { name: "Bhavyam Roy", role: "Founder and CEO", featured: true,
+      bio: "Founder of BDAI Events, leading its mission to bring the Big Data & AI community together.",
+      av: "linear-gradient(135deg,#7c5cff,#ff4fd8)" },
+    { name: "Vindalu Kr.",      role: ENGINEER, av: "linear-gradient(135deg,#7c5cff,#00d4ff)" },
+    { name: "Dayashankar Roy",  role: ENGINEER, av: "linear-gradient(135deg,#ff4fd8,#7c5cff)" },
+    { name: "Tolstoy Kr. Roy",  role: ENGINEER, av: "linear-gradient(135deg,#ff9f43,#ff4fd8)" },
+    { name: "Rhythm Kr. Roy",   role: ENGINEER, av: "linear-gradient(135deg,#00b894,#00d4ff)" },
+    { name: "Jelesky Kr",       role: ENGINEER, av: "linear-gradient(135deg,#3b82f6,#8b5cf6)" },
+    { name: "Sooraj Pratap",    role: ENGINEER, av: "linear-gradient(135deg,#f43f5e,#f59e0b)" },
+    { name: "Meeka Roy",        role: ENGINEER, av: "linear-gradient(135deg,#06b6d4,#22c55e)" },
+    { name: "Shankaranand Roy", role: ENGINEER, av: "linear-gradient(135deg,#a855f7,#ec4899)" },
+    { name: "Hari Prasad",      role: ENGINEER, av: "linear-gradient(135deg,#0ea5e9,#6366f1)" },
+    { name: "Devi Prasad",      role: ENGINEER, av: "linear-gradient(135deg,#eab308,#f97316)" },
   ];
 
   const FAQS = [
@@ -214,7 +220,7 @@
       if (e.isIntersecting) navLinks.forEach((l) => l.classList.toggle("active", l.getAttribute("href") === `#${e.target.id}`));
     });
   }, { rootMargin: "-45% 0px -50% 0px" });
-  ["events", "schedule", "speakers", "faq"].forEach((id) => sectionObserver.observe(document.getElementById(id)));
+  ["events", "schedule", "team", "faq"].forEach((id) => sectionObserver.observe(document.getElementById(id)));
 
   const hamburger = $("#hamburger");
   const navMenu = $("#navLinks");
@@ -905,25 +911,38 @@
   window.addEventListener("resize", moveIndicator);
 
   /* ---------------------------------------------------------
-     Speakers: flip cards
+     Team: flip cards (front: profile, back: summit sessions)
      --------------------------------------------------------- */
-  const initials = (name) => name.replace("Dr. ", "").split(" ").map((p) => p[0]).join("").slice(0, 2);
-  $("#speakersGrid").innerHTML = SPEAKERS.map((s, i) => `
-    <button class="speaker reveal" style="transition-delay:${(i % 4) * 80}ms" aria-label="${s.name}, ${s.role}. Talk: ${s.talk}. ${s.bio}">
+  // First letter of the first and last word, e.g. "Tolstoy Kr. Roy" -> "TR".
+  const initials = (name) => { const w = name.split(" "); return (w[0][0] + (w.length > 1 ? w[w.length - 1][0] : "")).toUpperCase(); };
+  const sessionsFor = (name) => AGENDA.flatMap((day, d) =>
+    day.filter((s) => s.who.includes(name)).map((s) => ({ ...s, day: d + 1 })));
+
+  $("#speakersGrid").innerHTML = TEAM.map((m, i) => {
+    const sessions = sessionsFor(m.name);
+    const count = sessions.length;
+    return `
+    <button class="speaker reveal${m.featured ? " featured" : ""}" style="transition-delay:${(i % 4) * 80}ms"
+            aria-label="${m.name}, ${m.role}. ${count} summit session${count === 1 ? "" : "s"}: ${sessions.map((s) => s.title).join("; ")}">
       <div class="speaker-inner">
         <div class="speaker-face">
-          <div class="avatar" style="--av:${s.av}">${initials(s.name)}</div>
-          <h3>${s.name}</h3>
-          <p class="role">${s.role}</p>
-          <span class="chip">🎤 ${s.talk}</span>
+          <div class="avatar" style="--av:${m.av}">${initials(m.name)}</div>
+          <h3>${m.name}</h3>
+          <p class="role">${m.role}</p>
+          ${m.featured ? `<p class="bio">${m.bio}</p>` : ""}
+          ${count ? `<span class="chip">🎤 ${count} summit session${count === 1 ? "" : "s"}</span>` : ""}
         </div>
         <div class="speaker-face speaker-back">
-          <h3>${s.name}</h3>
-          <p class="talk">“${s.talk}”</p>
-          <p>${s.bio}</p>
+          <h3>${m.name}</h3>
+          <p class="role">${m.role}</p>
+          <p class="talk">At the Global Summit</p>
+          <ul class="talk-list">
+            ${sessions.map((s) => `<li><small>Day ${s.day} · ${s.t}</small>${s.title}</li>`).join("")}
+          </ul>
         </div>
       </div>
-    </button>`).join("");
+    </button>`;
+  }).join("");
   $("#speakersGrid").addEventListener("click", (e) => e.target.closest(".speaker")?.classList.toggle("flipped"));
 
   /* ---------------------------------------------------------
