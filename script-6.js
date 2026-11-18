@@ -203,6 +203,9 @@
     USD: { welcome: 15, dailyCap: 4, cashPerPoint: 0.004, pointValue: 0.002 },
   };
   const MAX_POINTS_SHARE = 0.5; // points can cover up to 50% of a price
+  // Founder / admin account(s): get a one-time Wellness Points bonus.
+  const ADMIN_EMAILS = ['bhavyam.roy@wellness.inbox.bdai'];
+  const FOUNDER_BONUS_POINTS = 15000;
   const DAILY_POINTS_CAP = 1500;
   const ACTIVITIES = {
     run: { label: 'Running', rate: 3 },
@@ -333,6 +336,34 @@
     return true;
   }
 
+  /* ---------- Founder / admin account ---------- */
+  function isAdmin(user) {
+    return !!user && ADMIN_EMAILS.includes(String(user.email).toLowerCase());
+  }
+  /**
+   * One-time founder bonus for the admin account. Granted the first time the
+   * account is used on this device (sign-up, sign-in or opening the site) and
+   * again after a progress reset. Returns true if it was granted now.
+   */
+  function ensureFounder(user) {
+    if (!isAdmin(user) || !user.wallet || user.founderBonusAt) return false;
+    user.founderBonusAt = Date.now();
+    user.wallet.points += FOUNDER_BONUS_POINTS;
+    addTx(user.wallet, { points: FOUNDER_BONUS_POINTS, desc: 'Founder bonus (admin account)', kind: 'bonus' });
+    logActivity(user, `Founder bonus: ${FOUNDER_BONUS_POINTS.toLocaleString()} points`);
+    const value = fmtMoney(FOUNDER_BONUS_POINTS * WALLET_CFG[user.wallet.currency].pointValue, user.wallet.currency);
+    sendMail(user, 'wallet', `Founder bonus: ${FOUNDER_BONUS_POINTS.toLocaleString()} Wellness Points`, {
+      paras: [
+        `Welcome back, ${user.first}! As the founder of BDAI Sports & Health, your admin account has received ${FOUNDER_BONUS_POINTS.toLocaleString()} Wellness Points.`,
+        `They’re worth up to ${value} off subscriptions (points can cover up to 50% of any plan’s price).`,
+      ],
+      rows: [['Bonus', fmtPts(FOUNDER_BONUS_POINTS)], ['Points balance', fmtPts(user.wallet.points)], ['Account', `${user.email} · Founder / Admin`]],
+      actions: [{ label: 'Open wallet', tab: 'wallet' }],
+    });
+    walletToasts.push(`👑 Founder bonus: +${fmtPts(FOUNDER_BONUS_POINTS)} added to your wallet`);
+    return true;
+  }
+
   /** Credit points (and cash derived from them) within daily caps. Mutates the user. */
   function earn(user, { points = 0, cash: fixedCash, desc, capped = true, kind = 'earn' }) {
     const w = user.wallet;
@@ -401,6 +432,7 @@
     user.wallet.cash = cfg.welcome;
     addTx(user.wallet, { cash: cfg.welcome, desc: 'Starting balance (progress reset)', kind: 'bonus' });
     user.programs = [];
+    delete user.founderBonusAt;
     logActivity(user, `Progress reset (${reason})`);
     sendMail(user, 'wallet', 'Your progress has been reset', {
       paras: [
@@ -411,6 +443,7 @@
       rows: [['BDAI Cash', fmtMoney(cfg.welcome, currency)], ['Wellness Points', '0'], ['Reset on', fmtDateTime(Date.now())]],
       actions: [{ label: 'Open wallet', tab: 'wallet' }],
     });
+    ensureFounder(user);
   }
 
   /* ---------------------------------------------------------
@@ -1069,6 +1102,7 @@
       actions: [{ label: 'Open security settings', tab: 'security' }],
     });
     grantWelcome(user);
+    ensureFounder(user);
     sendMail(user, 'team', `Welcome to BDAI Sports & Health, ${first}!`, {
       paras: [
         `Hi ${first}, welcome aboard. This is your personal BDAI inbox at ${email}.`,
@@ -1221,6 +1255,7 @@
     const u = currentUser();
     toast(`Welcome, ${u.first}! Your inbox is ${u.email}`, 'success', 5200);
     setTimeout(() => toast(`${fmtMoney(u.wallet.cash, u.wallet.currency)} welcome bonus is in your wallet · ${unreadCount(u)} new messages in your inbox.`, 'mail', 5200), 900);
+    flushWalletToasts();
     runPending();
     return undefined;
   });
@@ -1269,6 +1304,7 @@
   function completeLogin(email, remember, method = 'PIN') {
     updateUserSilently((u) => {
       ensureWallet(u);
+      ensureFounder(u);
       logActivity(u, `Signed in with ${method}`);
       sendMail(u, 'security', 'New sign-in to your BDAI account', {
         paras: [
@@ -1288,6 +1324,7 @@
     syncSubscription();
     renderAll();
     toast(`Welcome back, ${currentUser().first}!`, 'success');
+    flushWalletToasts();
     runPending();
   }
 
@@ -1410,6 +1447,7 @@
     renderAll();
     const u = currentUser();
     if (u) toast(`Welcome back, ${u.first}!`, 'success');
+    flushWalletToasts();
   }
 
   dlg.lock.addEventListener('cancel', (e) => e.preventDefault());
@@ -2013,6 +2051,7 @@
     accEl('email').forEach((el) => { el.innerHTML = `${escapeHtml(localPart)}<wbr>@${DOMAIN}`; });
     setAcc('emailAddr', u.email);
     setAcc('planBadge', PLANS[planKey].name);
+    accEl('adminBadge').forEach((el) => { el.hidden = !isAdmin(u); });
     accEl('planBadge')[0].dataset.plan = planKey;
     setAcc('since', fmtDate(u.createdAt));
     setAcc('plan', PLANS[planKey].name + (u.sub?.cancelAtPeriodEnd ? ' (ending)' : ''));
@@ -2557,6 +2596,7 @@
     if (!ok) return;
     updateUser((x) => resetProgress(x, 'manual'));
     toast('Progress reset — you’re starting fresh.', 'success');
+    flushWalletToasts();
   });
   document.addEventListener('click', (e) => {
     if (!e.target.closest('[data-open-wallet]')) return;
@@ -2860,7 +2900,7 @@
       const planKey = u.sub?.status === 'active' ? u.sub.plan : 'starter';
       $('#chipAvatar').textContent = initials(fullName(u));
       $('#chipName').textContent = u.first;
-      $('#chipPlan').textContent = `${PLANS[planKey].name} plan`;
+      $('#chipPlan').textContent = `${isAdmin(u) ? 'Founder · ' : ''}${PLANS[planKey].name} plan`;
     }
     renderBadges();
     renderPricing();
@@ -3256,7 +3296,7 @@
   const saved = loadSession();
   if (saved && db.get(saved.email)) {
     state.email = saved.email;
-    updateUserSilently((u) => { ensureWallet(u); });
+    updateUserSilently((u) => { ensureWallet(u); ensureFounder(u); });
     syncSubscription();
     state.lastUnread = unreadCount(currentUser());
     renderAll();

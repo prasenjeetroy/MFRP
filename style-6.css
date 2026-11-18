@@ -1028,6 +1028,10 @@ dialog { color: var(--text); }
 .bmi-source { margin: 10px 0 0; padding-top: 10px; border-top: 1px dashed var(--border-strong); font-size: .76rem; color: var(--muted); }
 .result-tag[data-tone="info"] { color: var(--primary-2); background: color-mix(in srgb, var(--primary-2) 15%, transparent); }
 
+/* ---------- Founder / admin ---------- */
+.admin-badge { display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; padding: 4px 12px; border-radius: 999px; font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #2a1600; background: linear-gradient(135deg, #ffd24b, #ff9a3c); }
+.admin-badge .i { width: 13px; height: 13px; fill: currentColor; }
+
 /* ---------- Reveal on scroll ---------- */
 .reveal { opacity: 0; transform: translateY(26px); transition: opacity .8s var(--ease), transform .8s var(--ease); transition-delay: var(--d, 0s); }
 .reveal.is-visible { opacity: 1; transform: none; }
