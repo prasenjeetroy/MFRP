@@ -224,8 +224,7 @@
   const MILESTONES = [
     { id: 'first', title: 'First workout', desc: 'Log your first activity', goal: 1, metric: 'workouts', points: 50, cash: 0 },
     { id: 'five', title: 'Getting serious', desc: 'Log 5 activities', goal: 5, metric: 'workouts', points: 150, cashMul: 25 },
-    { id: 'streak3', title: '3-day streak', desc: 'Earn 3 days in a row', goal: 3, metric: 'streak', points: 100, cash: 0 },
-    { id: 'streak7', title: 'Week warrior', desc: 'Earn 7 days in a row', goal: 7, metric: 'streak', points: 300, cashMul: 50 },
+    { id: 'ten', title: 'Committed athlete', desc: 'Log 10 activities', goal: 10, metric: 'workouts', points: 300, cashMul: 50 },
     { id: 'pts1k', title: 'Point collector', desc: 'Earn 1,000 lifetime points', goal: 1000, metric: 'lifetime', points: 0, cashMul: 50 },
     { id: 'minutes', title: '10 hours active', desc: 'Log 600 active minutes', goal: 600, metric: 'minutes', points: 250, cashMul: 75 },
   ];
@@ -262,6 +261,7 @@
     pending: null,
     lastUnread: 0,
     lastCash: null,
+    inboxUnlocked: false,
   };
 
   const currentUser = () => db.get(state.email);
@@ -291,14 +291,13 @@
      Wallet engine: BDAI Cash + Wellness Points
      --------------------------------------------------------- */
   const dayKey = (d = new Date()) => d.toLocaleDateString('en-CA'); // local YYYY-MM-DD
-  const yesterdayKey = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dayKey(d); };
   const fmtPts = (n) => `${Math.round(n).toLocaleString()} pts`;
   const walletToasts = [];
 
   function newWallet(currency) {
     return {
       currency, cash: 0, points: 0, lifetime: 0, workouts: 0, minutes: 0,
-      tx: [], milestones: {}, streak: { count: 0, last: '' },
+      tx: [], milestones: {},
       daily: { date: dayKey(), cash: 0, points: 0, logs: 0, tasks: {} },
     };
   }
@@ -306,7 +305,6 @@
     if (!w.daily || w.daily.date !== dayKey()) w.daily = { date: dayKey(), cash: 0, points: 0, logs: 0, tasks: {} };
     return w.daily;
   }
-  const liveStreak = (w) => (w.streak.last === dayKey() || w.streak.last === yesterdayKey() ? w.streak.count : 0);
   function addTx(w, { cash = 0, points = 0, desc, kind = 'earn' }) {
     w.tx.unshift({ t: Date.now(), cash: round2(cash), points: Math.round(points), desc, kind });
     w.tx.length = Math.min(w.tx.length, 150);
@@ -348,11 +346,6 @@
     w.points += pts;
     w.lifetime += pts;
     if (capped) { d.cash = round2(d.cash + cash); d.points += pts; }
-    const today = dayKey();
-    if (w.streak.last !== today) {
-      w.streak.count = w.streak.last === yesterdayKey() ? w.streak.count + 1 : 1;
-      w.streak.last = today;
-    }
     addTx(w, { cash, points: pts, desc, kind });
     checkMilestones(user);
     return { cash, points: pts };
@@ -370,7 +363,6 @@
 
   function milestoneValue(w, m) {
     if (m.metric === 'workouts') return w.workouts;
-    if (m.metric === 'streak') return liveStreak(w);
     if (m.metric === 'lifetime') return w.lifetime;
     return w.minutes;
   }
@@ -411,11 +403,11 @@
    * Deliver a message to a user's inbox (mutates the user object; caller saves).
    * Bodies are plain text paragraphs + key/value rows, rendered escaped.
    */
-  function sendMail(user, from, subject, { paras = [], rows = [], actions = [] } = {}) {
+  function sendMail(user, from, subject, { paras = [], rows = [], actions = [], code = null } = {}) {
     user.inbox = user.inbox || [];
     user.inbox.unshift({
       id: `m${Date.now().toString(36)}${randomHex(3)}`,
-      from, cat: SENDERS[from].cat, subject, paras, rows, actions,
+      from, cat: SENDERS[from].cat, subject, paras, rows, actions, code,
       t: Date.now(), read: false,
     });
     user.inbox.length = Math.min(user.inbox.length, 80);
@@ -450,6 +442,7 @@
     lock: $('#lockDialog'),
     checkout: $('#checkoutDialog'),
     account: $('#accountDialog'),
+    keyReset: $('#keyResetDialog'),
   };
   const openDialog = (d) => { if (!d.open) d.showModal(); };
   const closeDialog = (d) => { if (d.open) d.close(); };
@@ -1297,6 +1290,7 @@
   function logout(message = 'You’ve been signed out.', type = 'info') {
     if (state.email) updateUserSilently((x) => logActivity(x, 'Signed out'));
     state.locked = false;
+    state.inboxUnlocked = false;
     state.email = null;
     state.pending = null;
     clearSession();
@@ -1361,6 +1355,7 @@
     const u = currentUser();
     if (!u || !u.pin) return;
     state.locked = true;
+    state.inboxUnlocked = false;
     $('#lockName').textContent = u.first;
     $('#lockAvatar').textContent = initials(fullName(u));
     setMsg(lockMsg, '');
@@ -1914,7 +1909,30 @@
       b.tabIndex = on ? 0 : -1;
     });
     $$('[data-acc-panel]', dlg.account).forEach((p) => { p.hidden = p.dataset.accPanel !== tab; });
-    if (tab === 'inbox') renderInbox();
+    if (tab === 'inbox') {
+      renderInbox();
+      if (!state.inboxUnlocked) unlockInbox();
+    }
+  }
+
+  /** The inbox opens only after the PIN is entered; it re-locks when the account window closes. */
+  let inboxPrompting = false;
+  async function unlockInbox() {
+    if (state.inboxUnlocked || inboxPrompting) return state.inboxUnlocked;
+    inboxPrompting = true;
+    const ok = await pinPrompt({ title: 'Open your inbox', sub: 'Enter your PIN to read your BDAI mail.' });
+    inboxPrompting = false;
+    if (ok) {
+      state.inboxUnlocked = true;
+      updateUserSilently((x) => logActivity(x, 'Inbox opened with PIN'));
+      if (krWantsCodeMail) {
+        krWantsCodeMail = false;
+        const m = (currentUser()?.inbox || []).find((x) => x.code);
+        if (m) { inboxState.openId = m.id; setMailRead(m.id, true); }
+      }
+      if (dlg.account.open) renderInbox();
+    }
+    return ok;
   }
   $$('[data-acc-tab]', dlg.account).forEach((b) => b.addEventListener('click', () => switchAccountTab(b.dataset.accTab)));
   $('.account-tabs', dlg.account).addEventListener('keydown', (e) => {
@@ -1934,10 +1952,15 @@
     if (tab === 'inbox') inboxState.openId = null;
     renderAccount();
     fillProfileForm();
+    openDialog(dlg.account); // open first so the inbox PIN prompt stacks on top
     switchAccountTab(tab);
-    openDialog(dlg.account);
   }
   $('#userChip').addEventListener('click', () => openAccount('profile'));
+  $('#inboxUnlockBtn').addEventListener('click', () => unlockInbox());
+  dlg.account.addEventListener('close', () => {
+    state.inboxUnlocked = false;
+    inboxState.openId = null;
+  });
   $('#inboxBtn').addEventListener('click', () => openAccount('inbox'));
 
   const accEl = (k) => $$(`[data-acc="${k}"]`, dlg.account);
@@ -2155,27 +2178,156 @@
     const ok = await openPinSetup({ mode: 'change' });
     if (ok && dlg.account.open) renderAccount();
   });
-  $('#regenKeyBtn').addEventListener('click', async () => {
-    const ok = await pinPrompt({ title: 'Regenerate recovery key', sub: 'Your old recovery key will stop working.' });
-    if (!ok) return;
-    const key = generateRecoveryKey();
+  /* ---------- Lost security key → one-time code sent to the PIN-locked inbox ---------- */
+  const KR_TTL = 10 * 60 * 1000; // code lifetime
+  const KR_RESEND = 30 * 1000; // resend cooldown
+  const KR_MAX_TRIES = 5; // wrong codes before a new one is required
+  const keyResetForm = $('#keyResetForm');
+  let krTimer = null;
+  let krWantsCodeMail = false;
+  let lastCopiedCode = '';
+
+  /** Create a 6-digit code, store only its hash, and deliver it to the inbox. */
+  async function sendKeyResetCode() {
+    const u = currentUser();
+    if (!u) return { ok: false };
+    const now = Date.now();
+    if (u.keyReset && now - u.keyReset.sentAt < KR_RESEND) {
+      return { ok: false, wait: Math.ceil((KR_RESEND - (now - u.keyReset.sentAt)) / 1000) };
+    }
+    const code = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
     const salt = randomHex();
-    const hash = await deriveHash(normalizeKey(key), salt);
-    updateUser((u) => {
-      u.recovery = { salt, hash, createdAt: Date.now() };
-      logActivity(u, 'Recovery security key regenerated');
-      sendMail(u, 'security', 'New recovery security key issued', {
+    const hash = await deriveHash(code, salt, 20000);
+    const exp = now + KR_TTL;
+    updateUser((x) => {
+      // Any earlier code stops working.
+      (x.inbox || []).forEach((m) => { if (m.code) m.code.exp = Math.min(m.code.exp, now); });
+      x.keyReset = { salt, hash, exp, sentAt: now, tries: 0 };
+      logActivity(x, 'Security-key reset code sent to inbox');
+      sendMail(x, 'security', 'Your security key reset code', {
         paras: [
-          `Hi ${u.first}, a new recovery security key was generated for ${u.email}. The previous key no longer works.`,
-          'For your safety we never email the key itself — keep the copy you saved.',
+          `Hi ${x.first}, use this code to get a new security key for ${x.email}.`,
+          'Copy it and paste it into the “Get a new security key” window. It expires in 10 minutes and works only once.',
+          'Didn’t ask for this? Ignore this message — your current key keeps working.',
         ],
-        rows: [['Time', fmtDateTime(Date.now())]],
+        code: { value: code, exp },
       });
     });
+    return { ok: true };
+  }
+
+  function tickKeyReset() {
+    const kr = currentUser()?.keyReset;
+    const exp = $('[data-kr="expiry"]');
+    const resend = $('#krResend');
+    if (!kr) { exp.textContent = 'No active code'; resend.disabled = false; resend.textContent = 'Send code'; return; }
+    const left = kr.exp - Date.now();
+    exp.textContent = left > 0
+      ? `Code expires in ${Math.floor(left / 60000)}:${String(Math.floor(left / 1000) % 60).padStart(2, '0')}`
+      : 'Code expired';
+    const wait = KR_RESEND - (Date.now() - kr.sentAt);
+    resend.disabled = wait > 0;
+    resend.textContent = wait > 0 ? `Resend in ${Math.ceil(wait / 1000)}s` : 'Resend code';
+  }
+
+  async function startKeyReset() {
+    const u = currentUser();
+    if (!u) return;
+    // The inbox lives in the account window, which must open on top of this one.
+    if (dlg.account.open) closeDialog(dlg.account);
+    const res = await sendKeyResetCode();
+    keyResetForm.reset();
+    $$('[data-kr="email"]').forEach((el) => { el.textContent = u.email; });
+    setMsg($('.form-error', keyResetForm), res.ok ? '' : `A code was sent moments ago — check your inbox (resend in ${res.wait}s).`);
+    openDialog(dlg.keyReset);
+    if (res.ok) toast('Reset code sent to your BDAI inbox.', 'mail');
+    tickKeyReset();
+    clearInterval(krTimer);
+    krTimer = setInterval(tickKeyReset, 1000);
+    $('#krOpenInbox').focus();
+  }
+
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-lost-key]')) startKeyReset();
+  });
+  dlg.keyReset.addEventListener('close', () => clearInterval(krTimer));
+  $('#krResend').addEventListener('click', async () => {
+    const r = await sendKeyResetCode();
+    if (r.ok) {
+      keyResetForm.reset();
+      setMsg($('.form-error', keyResetForm), '');
+      toast('New code sent — older codes no longer work.', 'mail');
+    }
+    tickKeyReset();
+  });
+  $('#krOpenInbox').addEventListener('click', () => {
+    krWantsCodeMail = true;
+    openAccount('inbox');
+  });
+  // Back from the inbox: put the cursor where the code goes.
+  dlg.account.addEventListener('close', () => {
+    if (!dlg.keyReset.open) return;
+    setTimeout(() => keyResetForm.elements.code.focus(), 50);
+    if (lastCopiedCode) toast('Now paste the code (Ctrl/⌘ + V) and verify.');
+  });
+
+  keyResetForm.elements.code.addEventListener('input', (e) => e.target.removeAttribute('aria-invalid'));
+  keyResetForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const u = currentUser();
+    if (!u) return;
+    const code = keyResetForm.elements.code.value.replace(/\D/g, '');
+    const kr = u.keyReset;
+    if (code.length !== 6) { fieldError(keyResetForm, 'code', 'Enter the 6-digit code from your inbox.'); return; }
+    if (!kr) { fieldError(keyResetForm, 'code', 'No active code — tap “Send code”.'); return; }
+    if (Date.now() > kr.exp) { fieldError(keyResetForm, 'code', 'This code has expired — tap “Resend code”.'); return; }
+    if (kr.tries >= KR_MAX_TRIES) { fieldError(keyResetForm, 'code', 'Too many wrong codes — tap “Resend code” for a new one.'); return; }
+    const btn = $('button[type="submit"]', keyResetForm);
+    btn.classList.add('is-loading');
+    const hash = await deriveHash(code, kr.salt, 20000);
+    if (!safeEqual(hash, kr.hash)) {
+      btn.classList.remove('is-loading');
+      updateUserSilently((x) => {
+        if (x.keyReset) x.keyReset.tries += 1;
+        logActivity(x, 'Wrong security-key reset code', true);
+      });
+      const left = KR_MAX_TRIES - kr.tries - 1;
+      fieldError(keyResetForm, 'code', left > 0 ? `That code isn’t right. ${left} tr${left === 1 ? 'y' : 'ies'} left.` : 'Too many wrong codes — tap “Resend code” for a new one.');
+      return;
+    }
+    // Code is valid: issue a brand-new security key.
+    const key = generateRecoveryKey();
+    const salt = randomHex();
+    const keyHash = await deriveHash(normalizeKey(key), salt);
+    btn.classList.remove('is-loading');
+    updateUser((x) => {
+      x.keyReset = null;
+      (x.inbox || []).forEach((m) => { if (m.code) m.code.exp = Math.min(m.code.exp, Date.now()); });
+      x.recovery = { salt, hash: keyHash, createdAt: Date.now() };
+      logActivity(x, 'New security key issued via inbox code');
+      sendMail(x, 'security', 'You have a new security key', {
+        paras: [
+          `Hi ${x.first}, a new security key was issued for ${x.email} after you verified the code from your inbox. Your old key no longer works.`,
+          'We never email the key itself — keep the copy you just saved.',
+        ],
+        rows: [['Time', fmtDateTime(Date.now())]],
+        actions: [{ label: 'Open security settings', tab: 'security' }],
+      });
+    });
+    recoveryLimits.delete(state.email);
+    lastCopiedCode = '';
+    closeDialog(dlg.keyReset);
     ps.mode = 'change';
     ps.completed = true;
-    showRecoveryKey(key, 'Your new recovery security key');
+    showRecoveryKey(key, 'Your new security key');
+    dlg.pinSetup.addEventListener('close', () => {
+      if (dlg.checkout.open && co.step === 3) {
+        toast('Now enter your new security key to finish your purchase.');
+        coKeyForm.elements.key.focus();
+      }
+    }, { once: true });
   });
+
   $('#autoLockSelect').addEventListener('change', (e) => {
     const v = +e.target.value;
     updateUser((u) => { u.settings = { ...u.settings, autoLock: v }; logActivity(u, v ? `Auto-lock set to ${v} min` : 'Auto-lock turned off'); });
@@ -2223,12 +2375,11 @@
     const cur = w.currency;
     const cfg = WALLET_CFG[cur];
     const d = ensureDaily(w);
-    const streak = liveStreak(w);
     setW('cash', fmtMoney(w.cash, cur));
     setW('points', w.points.toLocaleString());
     setW('pointsValue', `Worth ${fmtMoney(round2(w.points * cfg.pointValue), cur)} off subscriptions`);
-    setW('streak', `${streak} day${streak === 1 ? '' : 's'}`);
-    setW('today', `Earned today: ${fmtMoney(d.cash, cur)} of ${fmtMoney(cfg.dailyCap, cur)}`);
+    setW('todayCash', fmtMoney(d.cash, cur));
+    setW('today', `of ${fmtMoney(cfg.dailyCap, cur)} daily limit · ${fmtPts(d.points)}`);
     $('[data-w="todayBar"]', dlg.account).style.width = `${clamp(d.cash / cfg.dailyCap * 100, 0, 100)}%`;
 
     // Daily tasks
@@ -2407,6 +2558,11 @@
   function renderInbox() {
     const u = currentUser();
     if (!u) return;
+    const locked = !state.inboxUnlocked;
+    $('#inboxLocked').hidden = !locked;
+    $('#inboxContent').hidden = locked;
+    $('#markAllRead').hidden = locked;
+    if (locked) return;
     const mails = filteredMail(u);
     mailList.innerHTML = mails.length
       ? mails.map((m) => {
@@ -2446,7 +2602,12 @@
         <time datetime="${new Date(open.t).toISOString()}">${escapeHtml(fmtDateTime(open.t))}</time>
       </div>
       <div class="mail-body">
+        ${open.code ? `<div class="mail-code${open.code.exp < Date.now() ? ' is-expired' : ''}">
+            <div><small>${open.code.exp < Date.now() ? 'Expired' : `Valid until ${escapeHtml(new Date(open.code.exp).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }))}`}</small><strong>${escapeHtml(open.code.value)}</strong></div>
+            <button class="btn btn-primary btn-sm" type="button" data-copy-code="${escapeHtml(open.code.value)}"${open.code.exp < Date.now() ? ' disabled' : ''}><svg class="i"><use href="#i-copy"/></svg> Copy code</button>
+          </div>` : ''}
         ${open.paras.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}
+
         ${open.rows.length ? `<dl class="mail-rows">${open.rows.map(([k, v]) => `<div><dt>${escapeHtml(k)}</dt><dd>${escapeHtml(v)}</dd></div>`).join('')}</dl>` : ''}
         ${open.actions.length ? `<div class="mail-actions">${open.actions.map((a, i) => `<button class="btn ${i === 0 ? 'btn-primary' : 'btn-outline'} btn-sm" type="button" data-mail-action="${i}">${escapeHtml(a.label)}</button>`).join('')}</div>` : ''}
         <p class="mail-sign">— Sent by ${escapeHtml(s.name)} · BDAI Sports &amp; Health, powered by BDAIWellness</p>
@@ -2500,6 +2661,15 @@
       renderBadges();
       renderInbox();
       toast('Message deleted.');
+      return;
+    }
+    const cb = e.target.closest('[data-copy-code]');
+    if (cb) {
+      const code = cb.dataset.copyCode;
+      copyText(code).then((ok) => {
+        toast(ok ? 'Code copied — paste it in the “Get a new security key” window.' : 'Copy failed — type the code instead.', ok ? 'success' : 'error');
+      });
+      lastCopiedCode = code;
       return;
     }
     const ab = e.target.closest('[data-mail-action]');
