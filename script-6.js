@@ -189,6 +189,8 @@
     starter: { name: 'Starter', tier: 0, price: { INR: { monthly: 0, yearly: 0 }, USD: { monthly: 0, yearly: 0 } } },
     pro: { name: 'Pro', tier: 1, price: { INR: { monthly: 499, yearly: 4790 }, USD: { monthly: 9, yearly: 86 } } },
     elite: { name: 'Elite', tier: 2, price: { INR: { monthly: 999, yearly: 9590 }, USD: { monthly: 19, yearly: 182 } } },
+    // Internal plan for the BDAI team (founder/admin): complimentary, not sold on the pricing page.
+    team: { name: 'BDAI Team', tier: 3, internal: true, price: { INR: { monthly: 0, yearly: 0 }, USD: { monthly: 0, yearly: 0 } } },
   };
   const TIER_PLAN = ['starter', 'pro', 'elite'];
   const PROMOS = {
@@ -381,6 +383,40 @@
     });
     walletToasts.push(`👑 Founder bonus${corrected ? ' updated' : ''}: ${cashText} + ${ptsText} in your wallet`);
     return true;
+  }
+
+  /**
+   * The founder/admin account is always on the complimentary BDAI Team
+   * subscription: every feature and program, never billed, never expires.
+   * Returns true if the subscription was (re)applied now.
+   */
+  function ensureTeamSub(user) {
+    if (!isAdmin(user) || !user.wallet) return false;
+    if (user.sub && user.sub.plan === 'team' && user.sub.status === 'active') return false;
+    const prev = user.sub && user.sub.status === 'active' ? PLANS[user.sub.plan]?.name : '';
+    user.sub = {
+      plan: 'team', cycle: 'lifetime', currency: user.wallet.currency, amount: 0,
+      status: 'active', startedAt: Date.now(), renewsAt: null,
+      cancelAtPeriodEnd: false, complimentary: true, method: { type: 'complimentary' },
+    };
+    logActivity(user, 'BDAI Team subscription activated');
+    sendMail(user, 'billing', 'You’re on the BDAI Team subscription', {
+      paras: [
+        `Hi ${user.first}, your founder/admin account is subscribed to the BDAI Team subscription.`,
+        'It includes everything in Starter, Pro and Elite — every program and feature — at no cost. It is never billed to your wallet and never expires.',
+        prev ? `It replaces your previous ${prev} plan; nothing more will be charged for it.` : 'Your wallet cash and points stay yours to use however you like.',
+      ],
+      rows: [['Plan', 'BDAI Team'], ['Price', 'Complimentary'], ['Renews', 'Never — included for the BDAI team'], ['Account', `${user.email} · Founder / Admin`]],
+      actions: [{ label: 'View subscription', tab: 'subscription' }],
+    });
+    walletToasts.push('🏆 You’re on the BDAI Team subscription — everything unlocked.');
+    return true;
+  }
+  /** All admin perks: founder bonus + BDAI Team subscription. */
+  function ensureAdminPerks(user) {
+    const a = ensureFounder(user);
+    const b = ensureTeamSub(user);
+    return a || b;
   }
 
   /** Credit points (and cash derived from them) within daily caps. Mutates the user. */
@@ -1122,7 +1158,7 @@
       actions: [{ label: 'Open security settings', tab: 'security' }],
     });
     grantWelcome(user);
-    ensureFounder(user);
+    ensureAdminPerks(user);
     sendMail(user, 'team', `Welcome to BDAI Sports & Health, ${first}!`, {
       paras: [
         `Hi ${first}, welcome aboard. This is your personal BDAI inbox at ${email}.`,
@@ -1324,7 +1360,7 @@
   function completeLogin(email, remember, method = 'PIN') {
     updateUserSilently((u) => {
       ensureWallet(u);
-      ensureFounder(u);
+      ensureAdminPerks(u);
       logActivity(u, `Signed in with ${method}`);
       sendMail(u, 'security', 'New sign-in to your BDAI account', {
         paras: [
@@ -1526,7 +1562,7 @@
   /** Apply renewals / endings that fell due. Renewals are paid from the wallet. */
   function syncSubscription() {
     const u = currentUser();
-    if (!u || !u.sub) return;
+    if (!u || !u.sub || u.sub.complimentary) return;
     const now = Date.now();
     let changed = false;
     while (u.sub && now >= u.sub.renewsAt) {
@@ -1597,6 +1633,10 @@
     if (!u) {
       state.pending = () => openCheckout(plan);
       openAuth('signup', `Create a free account to subscribe to BDAI ${PLANS[plan].name} — your welcome bonus covers it.`);
+      return;
+    }
+    if (u.sub?.complimentary) {
+      toast(`Your ${PLANS[u.sub.plan].name} subscription already includes ${PLANS[plan].name} — nothing to buy.`);
       return;
     }
     if (u.sub && u.sub.status === 'active' && u.sub.plan === plan && u.sub.cycle === state.billing && !u.sub.cancelAtPeriodEnd) {
@@ -1889,7 +1929,7 @@
   /* ---------- Pricing section ---------- */
   function renderPricing(animate = false) {
     const u = currentUser();
-    Object.entries(PLANS).forEach(([key, plan]) => {
+    Object.entries(PLANS).filter(([, plan]) => !plan.internal).forEach(([key, plan]) => {
       const amountEl = $(`[data-price="${key}"]`);
       const perEl = $(`[data-per="${key}"]`);
       const billedEl = $(`[data-billed="${key}"]`);
@@ -1921,6 +1961,8 @@
       card.classList.toggle('is-current', !!isCurrent);
       if (!u) {
         btn.textContent = key === 'starter' ? 'Get started free' : `Choose ${plan.name}`;
+      } else if (u.sub?.complimentary) {
+        btn.textContent = `Included in ${PLANS[u.sub.plan].name}`;
       } else if (key === 'starter') {
         btn.textContent = activeTier === 0 ? 'Your current plan' : 'Included';
       } else if (u.sub?.status === 'active' && u.sub.plan === key) {
@@ -1966,12 +2008,14 @@
     const u = currentUser();
     if (plan === 'starter') {
       if (!u) { openAuth('signup'); return; }
+      if (u.sub?.complimentary) { openAccount('subscription'); toast(`You’re on ${PLANS[u.sub.plan].name}, which already includes everything.`); return; }
       if (userTier(u) > 0) { openAccount('subscription'); toast('To move to Starter, cancel your paid plan — you keep access until the period ends.'); return; }
       toast('You’re on Starter. Explore the free programs below!');
       scrollToId('programs');
       return;
     }
-    if (u?.sub?.status === 'active' && u.sub.plan === plan && u.sub.cycle === state.billing) {
+    if (u?.sub?.complimentary || (u?.sub?.status === 'active' && u.sub.plan === plan && u.sub.cycle === state.billing)) {
+      if (u.sub.complimentary) toast(`${PLANS[plan].name} is already included in your ${PLANS[u.sub.plan].name} subscription.`);
       openAccount('subscription');
       return;
     }
@@ -2085,6 +2129,24 @@
 
   function renderSubscriptionPanel(u) {
     const subView = $('#subView');
+    if (u.sub?.complimentary) {
+      const s = u.sub;
+      subView.innerHTML = `
+        <div class="sub-card" data-plan="${escapeHtml(s.plan)}">
+          <div class="sub-top">
+            <div><small>Current subscription</small><h3>${escapeHtml(PLANS[s.plan].name)} <span class="pill ok">Active</span> <span class="pill team-pill">Complimentary</span></h3></div>
+            <div class="sub-price">${escapeHtml(fmtMoney(0, s.currency))}<small>/forever</small></div>
+          </div>
+          <dl class="sub-meta">
+            <div><dt>Includes</dt><dd>Everything in Starter, Pro &amp; Elite</dd></div>
+            <div><dt>Renews</dt><dd>Never — no charges</dd></div>
+            <div><dt>Since</dt><dd>${escapeHtml(fmtDate(s.startedAt))}</dd></div>
+          </dl>
+          <p class="muted small" style="margin:0">Included for the BDAI team (founder / admin account). Your wallet is never charged for it.</p>
+        </div>`;
+      $('#invoiceView').innerHTML = (u.invoices || []).length ? $('#invoiceView').innerHTML : '<p class="empty">No invoices — the BDAI Team subscription is complimentary.</p>';
+      return;
+    }
     if (u.sub && u.sub.status === 'active') {
       const s = u.sub;
       const p = PLANS[s.plan];
@@ -3316,7 +3378,7 @@
   const saved = loadSession();
   if (saved && db.get(saved.email)) {
     state.email = saved.email;
-    updateUserSilently((u) => { ensureWallet(u); ensureFounder(u); });
+    updateUserSilently((u) => { ensureWallet(u); ensureAdminPerks(u); });
     syncSubscription();
     state.lastUnread = unreadCount(currentUser());
     renderAll();

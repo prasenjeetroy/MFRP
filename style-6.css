@@ -700,6 +700,7 @@ dialog { color: var(--text); }
 .plan-badge { margin-top: 6px; padding: 4px 12px; border-radius: 999px; font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; background: var(--surface-3); }
 .plan-badge[data-plan="pro"] { background: var(--grad); color: var(--primary-ink); }
 .plan-badge[data-plan="elite"] { background: linear-gradient(135deg, #8b7bff, #f07cff); color: #fff; }
+.plan-badge[data-plan="team"] { background: linear-gradient(135deg, #ffd24b, #ff6b4a); color: #2a1600; }
 .account-tabs { display: grid; gap: 4px; width: 100%; margin: 22px 0 auto; }
 .account-tabs button { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border: 0; border-radius: 12px; background: none; color: var(--muted); font-weight: 600; cursor: pointer; text-align: left; transition: background-color .2s, color .2s; }
 .account-tabs button:hover { color: var(--text); }
@@ -718,6 +719,8 @@ dialog { color: var(--text); }
 .sub-card::before { content: ""; position: absolute; inset: 0 0 auto; height: 4px; background: var(--surface-3); }
 .sub-card[data-plan="pro"]::before { background: var(--grad); }
 .sub-card[data-plan="elite"]::before { background: linear-gradient(90deg, #8b7bff, #f07cff); }
+.sub-card[data-plan="team"]::before { background: linear-gradient(90deg, #ffd24b, #ff6b4a); }
+.pill.team-pill { color: #ff9a3c; background: color-mix(in srgb, #ff9a3c 16%, transparent); }
 .sub-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
 .sub-top small { color: var(--muted); }
 .sub-top h3 { display: flex; align-items: center; gap: 10px; font-size: 1.5rem; margin: 2px 0 0; flex-wrap: wrap; }
