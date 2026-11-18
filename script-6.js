@@ -205,7 +205,10 @@
   const MAX_POINTS_SHARE = 0.5; // points can cover up to 50% of a price
   // Founder / admin account(s): get a one-time Wellness Points bonus.
   const ADMIN_EMAILS = ['bhavyam.roy@wellness.inbox.bdai'];
-  const FOUNDER_BONUS_POINTS = 15000;
+  // Founder bonus: BDAI Cash (₹15,000; scaled for USD wallets like the welcome bonus) + Wellness Points.
+  const FOUNDER_BONUS_CASH = { INR: 15000, USD: 225 };
+  const FOUNDER_BONUS_POINTS = 4500;
+  const FOUNDER_V1_POINTS = 15000; // earlier version paid the whole bonus as points
   const DAILY_POINTS_CAP = 1500;
   const ACTIVITIES = {
     run: { label: 'Running', rate: 3 },
@@ -341,26 +344,42 @@
     return !!user && ADMIN_EMAILS.includes(String(user.email).toLowerCase());
   }
   /**
-   * One-time founder bonus for the admin account. Granted the first time the
-   * account is used on this device (sign-up, sign-in or opening the site) and
-   * again after a progress reset. Returns true if it was granted now.
+   * One-time founder bonus for the admin account: BDAI Cash + Wellness Points.
+   * Granted the first time the account is used on this device (sign-up, sign-in
+   * or opening the site) and again after a progress reset. Accounts that got the
+   * earlier all-points bonus are corrected once. Returns true if anything changed.
    */
   function ensureFounder(user) {
-    if (!isAdmin(user) || !user.wallet || user.founderBonusAt) return false;
+    if (!isAdmin(user) || !user.wallet || user.founderBonusV === 2) return false;
+    const w = user.wallet;
+    const cash = FOUNDER_BONUS_CASH[w.currency];
+    const cashText = fmtMoney(cash, w.currency);
+    const ptsText = fmtPts(FOUNDER_BONUS_POINTS);
+    const corrected = !!user.founderBonusAt; // had the old 15,000-point bonus
+    if (corrected) {
+      const take = Math.min(w.points, FOUNDER_V1_POINTS - FOUNDER_BONUS_POINTS);
+      w.points -= take;
+      w.cash = round2(w.cash + cash);
+      addTx(w, { cash, points: -take, desc: 'Founder bonus updated: points → cash', kind: 'bonus' });
+    } else {
+      w.cash = round2(w.cash + cash);
+      w.points += FOUNDER_BONUS_POINTS;
+      addTx(w, { cash, points: FOUNDER_BONUS_POINTS, desc: 'Founder bonus (admin account)', kind: 'bonus' });
+    }
     user.founderBonusAt = Date.now();
-    user.wallet.points += FOUNDER_BONUS_POINTS;
-    addTx(user.wallet, { points: FOUNDER_BONUS_POINTS, desc: 'Founder bonus (admin account)', kind: 'bonus' });
-    logActivity(user, `Founder bonus: ${FOUNDER_BONUS_POINTS.toLocaleString()} points`);
-    const value = fmtMoney(FOUNDER_BONUS_POINTS * WALLET_CFG[user.wallet.currency].pointValue, user.wallet.currency);
-    sendMail(user, 'wallet', `Founder bonus: ${FOUNDER_BONUS_POINTS.toLocaleString()} Wellness Points`, {
+    user.founderBonusV = 2;
+    logActivity(user, `Founder bonus${corrected ? ' updated' : ''}: ${cashText} + ${ptsText}`);
+    sendMail(user, 'wallet', `Founder bonus: ${cashText} + ${ptsText}`, {
       paras: [
-        `Welcome back, ${user.first}! As the founder of BDAI Sports & Health, your admin account has received ${FOUNDER_BONUS_POINTS.toLocaleString()} Wellness Points.`,
-        `They’re worth up to ${value} off subscriptions (points can cover up to 50% of any plan’s price).`,
+        corrected
+          ? `Hi ${user.first}, your founder bonus has been updated: it is now ${cashText} of BDAI Cash plus ${ptsText}, instead of 15,000 points.`
+          : `Welcome back, ${user.first}! As the founder of BDAI Sports & Health, your admin account has received ${cashText} of BDAI Cash and ${ptsText}.`,
+        'Use the cash to pay for subscriptions and renewals; points take up to 50% off any plan’s price.',
       ],
-      rows: [['Bonus', fmtPts(FOUNDER_BONUS_POINTS)], ['Points balance', fmtPts(user.wallet.points)], ['Account', `${user.email} · Founder / Admin`]],
+      rows: [['Cash bonus', cashText], ['Points bonus', ptsText], ['Cash balance', fmtMoney(w.cash, w.currency)], ['Points balance', fmtPts(w.points)], ['Account', `${user.email} · Founder / Admin`]],
       actions: [{ label: 'Open wallet', tab: 'wallet' }],
     });
-    walletToasts.push(`👑 Founder bonus: +${fmtPts(FOUNDER_BONUS_POINTS)} added to your wallet`);
+    walletToasts.push(`👑 Founder bonus${corrected ? ' updated' : ''}: ${cashText} + ${ptsText} in your wallet`);
     return true;
   }
 
@@ -433,6 +452,7 @@
     addTx(user.wallet, { cash: cfg.welcome, desc: 'Starting balance (progress reset)', kind: 'bonus' });
     user.programs = [];
     delete user.founderBonusAt;
+    delete user.founderBonusV;
     logActivity(user, `Progress reset (${reason})`);
     sendMail(user, 'wallet', 'Your progress has been reset', {
       paras: [
