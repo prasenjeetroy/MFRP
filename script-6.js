@@ -237,6 +237,7 @@
     devices: 'bdai6.v2.devices',
     theme: 'bdai6.theme',
     currency: 'bdai6.currency',
+    progressReset: 'bdai6.progressReset.v1',
   };
 
   const db = {
@@ -387,6 +388,30 @@
     walletToasts.splice(0).forEach((msg, i) => setTimeout(() => toast(msg, 'success', 4500), 400 + i * 600));
   }
   const earnedText = (r, currency) => [r.points ? `+${fmtPts(r.points)}` : '', r.cash ? `+${fmtMoney(r.cash, currency)}` : ''].filter(Boolean).join(' · ');
+
+  /**
+   * Start a user's progress over: fresh wallet at the starting balance, no points,
+   * activities, milestones, daily tasks, transactions or started programs.
+   * Account, PIN, security key, inbox, subscription and invoices are kept.
+   */
+  function resetProgress(user, reason) {
+    const currency = user.wallet?.currency || state.currency;
+    const cfg = WALLET_CFG[currency];
+    user.wallet = newWallet(currency);
+    user.wallet.cash = cfg.welcome;
+    addTx(user.wallet, { cash: cfg.welcome, desc: 'Starting balance (progress reset)', kind: 'bonus' });
+    user.programs = [];
+    logActivity(user, `Progress reset (${reason})`);
+    sendMail(user, 'wallet', 'Your progress has been reset', {
+      paras: [
+        `Hi ${user.first}, your BDAI progress was reset${reason === 'update' ? ' as part of this update' : ''} — you’re starting fresh.`,
+        `Your wallet is back to ${fmtMoney(cfg.welcome, currency)} with 0 points, and activities, milestones, daily tasks and programs have been cleared.`,
+        'Your account, PIN, security key, inbox and any active subscription are unchanged.',
+      ],
+      rows: [['BDAI Cash', fmtMoney(cfg.welcome, currency)], ['Wellness Points', '0'], ['Reset on', fmtDateTime(Date.now())]],
+      actions: [{ label: 'Open wallet', tab: 'wallet' }],
+    });
+  }
 
   /* ---------------------------------------------------------
      Mail (the @wellness.inbox.bdai inbox)
@@ -2376,6 +2401,7 @@
     const cfg = WALLET_CFG[cur];
     const d = ensureDaily(w);
     setW('cash', fmtMoney(w.cash, cur));
+    setW('welcomeAmt', fmtMoney(cfg.welcome, cur));
     setW('points', w.points.toLocaleString());
     setW('pointsValue', `Worth ${fmtMoney(round2(w.points * cfg.pointValue), cur)} off subscriptions`);
     setW('todayCash', fmtMoney(d.cash, cur));
@@ -2522,6 +2548,16 @@
     btn.setAttribute('aria-label', `Open wallet: ${cashText} and ${u.wallet.points} points`);
   }
   $('#walletBtn').addEventListener('click', () => openAccount('wallet'));
+  $('#resetProgressBtn').addEventListener('click', async () => {
+    const u = currentUser();
+    if (!u?.wallet) return;
+    // eslint-disable-next-line no-alert
+    if (!window.confirm('Reset all your progress? Points, activities, milestones, daily tasks, transactions and programs will be cleared. This cannot be undone.')) return;
+    const ok = await pinPrompt({ title: 'Reset progress', sub: 'Enter your PIN to start your progress over.', danger: true });
+    if (!ok) return;
+    updateUser((x) => resetProgress(x, 'manual'));
+    toast('Progress reset — you’re starting fresh.', 'success');
+  });
   document.addEventListener('click', (e) => {
     if (!e.target.closest('[data-open-wallet]')) return;
     if (currentUser()) openAccount('wallet');
@@ -3209,6 +3245,14 @@
   /* ---------------------------------------------------------
      Boot: restore session (accounts start locked behind the PIN)
      --------------------------------------------------------- */
+  // One-time reset of everyone's progress on this device for this release.
+  if (!local.get(KEYS.progressReset, false)) {
+    const all = db.all();
+    Object.values(all).forEach((u) => { if (u.wallet || u.programs?.length) resetProgress(u, 'update'); });
+    local.set(KEYS.users, all);
+    local.set(KEYS.progressReset, true);
+  }
+
   const saved = loadSession();
   if (saved && db.get(saved.email)) {
     state.email = saved.email;
