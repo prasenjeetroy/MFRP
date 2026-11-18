@@ -2,13 +2,18 @@
    BDAI Sports & Health — script-6.js
    Powered by BDAIWellness
 
-   Front-end demo: accounts, PIN security key, lock screen,
-   subscriptions and health tools. All data is stored in this
-   browser only. Secrets (passwords, PINs, recovery keys) are
-   salted + hashed with PBKDF2-SHA-256 before storage; card
-   numbers and CVCs are never stored.
-   For production, move auth, PIN verification and payments
-   to a server and a real payment provider.
+   Front-end demo of a password-free account system:
+   - Sign up with first + last name → a personal address is
+     generated: firstname.lastname@wellness.inbox.bdai
+   - Sign in with that address + a PIN security key (no password)
+   - Recovery security key, lock screen, auto-lock, cooldowns
+   - Subscriptions with PIN-authorized checkout
+   - A personal BDAI inbox (welcome, security, billing, coach mail)
+
+   All data is stored in this browser only. PINs and recovery keys
+   are salted + hashed with PBKDF2-SHA-256; card numbers and CVCs are
+   never stored. For production, move accounts, PIN verification,
+   mail and payments to a server and a real payment provider.
    ========================================================= */
 (() => {
   'use strict';
@@ -24,13 +29,16 @@
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
   const round2 = (n) => Math.round(n * 100) / 100;
-  const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(s);
-  const normEmail = (s) => String(s || '').trim().toLowerCase();
   const initials = (name) => (String(name || '').trim().split(/\s+/).slice(0, 2).map((p) => p[0] || '').join('') || 'BD').toUpperCase();
-  const firstName = (name) => String(name || 'Athlete').trim().split(/\s+/)[0];
   const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const fmtDate = (ts) => new Date(ts).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
   const fmtDateTime = (ts) => new Date(ts).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const fmtMailTime = (ts) => {
+    const d = new Date(ts);
+    return d.toDateString() === new Date().toDateString()
+      ? d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+      : d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+  };
   const fmtMoney = (amount, currency) => {
     const frac = amount % 1 !== 0;
     return new Intl.NumberFormat(currency === 'INR' ? 'en-IN' : 'en-US', {
@@ -75,6 +83,32 @@
       return ok;
     }
   };
+
+  /* ---------------------------------------------------------
+     Names & generated email addresses
+     --------------------------------------------------------- */
+  const DOMAIN = 'wellness.inbox.bdai';
+  const NAME_RE = /^\p{L}[\p{L}\p{M}' .-]{0,29}$/u;
+  const cleanName = (s) => String(s || '').trim().replace(/\s+/g, ' ');
+  const titleCase = (s) => cleanName(s).replace(/(^|[\s'-])(\p{L})/gu, (m, sep, ch) => sep + ch.toUpperCase());
+  const slugify = (s) => String(s || '').normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  const fullName = (u) => `${u.first} ${u.last}`.trim();
+
+  /** firstname.lastname@wellness.inbox.bdai — numbered if already taken on this device. */
+  function generateEmail(first, last) {
+    const base = [slugify(first), slugify(last)].filter(Boolean).join('.') || 'athlete';
+    let local = base;
+    let n = 2;
+    while (db.get(`${local}@${DOMAIN}`)) local = `${base}${n++}`;
+    return `${local}@${DOMAIN}`;
+  }
+  /** Accepts "first.last" or the full address. */
+  function normalizeLoginEmail(raw) {
+    const s = String(raw || '').trim().toLowerCase();
+    if (!s) return '';
+    return s.includes('@') ? s : `${s}@${DOMAIN}`;
+  }
+  const isBdaiEmail = (s) => new RegExp(`^[a-z0-9]+(\\.[a-z0-9]+)*@${DOMAIN.replace(/\./g, '\\.')}$`).test(s);
 
   /* ---------------------------------------------------------
      Safe storage (falls back to memory when blocked)
@@ -162,16 +196,29 @@
     WELLNESS10: { pct: 10, label: '10% off your first payment' },
     ATHLETE50: { pct: 50, label: '50% off your first year', yearlyOnly: true },
   };
-  const PIN_MAX_FAILS = 15; // full sign-out after this many wrong PINs
+  const PIN_MAX_FAILS = 15; // account frozen after this many wrong PINs
   const PIN_BATCH = 5; // cooldown after every N wrong PINs
 
-  const KEYS = { users: 'bdai6.users', session: 'bdai6.session', theme: 'bdai6.theme', currency: 'bdai6.currency' };
+  const KEYS = {
+    users: 'bdai6.v2.users',
+    session: 'bdai6.v2.session',
+    devices: 'bdai6.v2.devices',
+    theme: 'bdai6.theme',
+    currency: 'bdai6.currency',
+  };
 
   const db = {
     all() { return local.get(KEYS.users, {}) || {}; },
-    get(email) { return this.all()[email] || null; },
+    get(email) { return email ? this.all()[email] || null : null; },
     save(user) { const all = this.all(); all[user.email] = user; local.set(KEYS.users, all); },
     remove(email) { const all = this.all(); delete all[email]; local.set(KEYS.users, all); },
+  };
+
+  // Accounts that have signed in on this device (for quick sign-in)
+  const devices = {
+    list() { return (local.get(KEYS.devices, []) || []).filter((e) => db.get(e)); },
+    add(email) { local.set(KEYS.devices, [email, ...this.list().filter((e) => e !== email)].slice(0, 5)); },
+    remove(email) { local.set(KEYS.devices, this.list().filter((e) => e !== email)); },
   };
 
   const state = {
@@ -180,9 +227,10 @@
     billing: 'monthly',
     currency: local.get(KEYS.currency, 'INR') === 'USD' ? 'USD' : 'INR',
     pending: null,
+    lastUnread: 0,
   };
 
-  const currentUser = () => (state.email ? db.get(state.email) : null);
+  const currentUser = () => db.get(state.email);
   const userTier = (u = currentUser()) => (u && u.sub && u.sub.status === 'active' ? PLANS[u.sub.plan].tier : 0);
 
   function logActivity(user, msg, warn = false) {
@@ -198,12 +246,43 @@
     renderAll();
     return u;
   }
+  function updateUserSilently(mutator, email = state.email) {
+    const u = db.get(email);
+    if (!u) return;
+    mutator(u);
+    db.save(u);
+  }
+
+  /* ---------------------------------------------------------
+     Mail (the @wellness.inbox.bdai inbox)
+     --------------------------------------------------------- */
+  const SENDERS = {
+    team: { name: 'BDAIWellness', addr: `hello@${DOMAIN}`, cat: 'general', icon: 'sparkle' },
+    security: { name: 'BDAI Security', addr: `security@${DOMAIN}`, cat: 'security', icon: 'shield-check' },
+    billing: { name: 'BDAI Billing', addr: `billing@${DOMAIN}`, cat: 'billing', icon: 'card' },
+    coach: { name: 'BDAI Coach', addr: `coach@${DOMAIN}`, cat: 'coach', icon: 'trophy' },
+  };
+
+  /**
+   * Deliver a message to a user's inbox (mutates the user object; caller saves).
+   * Bodies are plain text paragraphs + key/value rows, rendered escaped.
+   */
+  function sendMail(user, from, subject, { paras = [], rows = [], actions = [] } = {}) {
+    user.inbox = user.inbox || [];
+    user.inbox.unshift({
+      id: `m${Date.now().toString(36)}${randomHex(3)}`,
+      from, cat: SENDERS[from].cat, subject, paras, rows, actions,
+      t: Date.now(), read: false,
+    });
+    user.inbox.length = Math.min(user.inbox.length, 80);
+  }
+  const unreadCount = (u) => (u?.inbox || []).filter((m) => !m.read).length;
 
   /* ---------------------------------------------------------
      Toasts
      --------------------------------------------------------- */
   function toast(message, type = 'info', ms = 3800) {
-    const icon = type === 'success' ? 'check' : type === 'error' ? 'x' : 'sparkle';
+    const icon = type === 'success' ? 'check' : type === 'error' ? 'x' : type === 'mail' ? 'mail' : 'sparkle';
     const el = document.createElement('div');
     el.className = `toast toast-${type}`;
     el.setAttribute('role', type === 'error' ? 'alert' : 'status');
@@ -231,7 +310,6 @@
   const openDialog = (d) => { if (!d.open) d.showModal(); };
   const closeDialog = (d) => { if (d.open) d.close(); };
 
-  // Close on backdrop click (not for the lock screen)
   $$('dialog.modal').forEach((d) => {
     d.addEventListener('mousedown', (e) => { d._downOnBackdrop = e.target === d; });
     d.addEventListener('click', (e) => {
@@ -242,6 +320,19 @@
     const closer = e.target.closest('[data-close]');
     if (closer) closer.closest('dialog')?.close();
   });
+
+  function setMsg(el, text, tone = '') {
+    if (!el) return;
+    el.textContent = text;
+    el.classList.toggle('is-error', tone === 'error');
+    el.classList.toggle('is-ok', tone === 'ok');
+  }
+  function fieldError(form, name, message) {
+    const input = form.elements[name];
+    if (input) { input.setAttribute('aria-invalid', 'true'); input.focus(); }
+    setMsg($('.form-error', form), message);
+    return false;
+  }
 
   /* ---------------------------------------------------------
      PIN pad component
@@ -295,7 +386,8 @@
     }
 
     renderKeys() {
-      const digits = PinPad.shuffle ? shuffled(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0']) : ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+      const base = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+      const digits = PinPad.shuffle ? shuffled(base) : base;
       const btn = (d) => `<button type="button" class="pin-key" data-key="${d}" tabindex="-1" aria-label="${d}">${d}</button>`;
       this.keys.innerHTML = digits.slice(0, 9).map(btn).join('')
         + '<button type="button" class="pin-key pin-key-fn" data-key="clear" tabindex="-1" aria-label="Clear">Clear</button>'
@@ -369,15 +461,11 @@
       setTimeout(() => this.reset(), 420);
     }
 
-    success() {
-      this.root.classList.add('is-ok');
-    }
+    success() { this.root.classList.add('is-ok'); }
 
-    focus() {
-      this.root.focus({ preventScroll: true });
-    }
+    focus() { this.root.focus({ preventScroll: true }); }
 
-    cooldown(seconds, msgEl, onDone) {
+    cooldown(seconds, msgEl) {
       clearInterval(this.timer);
       this.setDisabled(true);
       let s = seconds;
@@ -387,7 +475,6 @@
           this.setDisabled(false);
           setMsg(msgEl, 'You can try again now.');
           this.focus();
-          onDone?.();
           return;
         }
         setMsg(msgEl, `Too many incorrect attempts. Try again in ${s}s.`, 'error');
@@ -399,15 +486,15 @@
 
     stopCooldown() {
       clearInterval(this.timer);
+      clearTimeout(this.pending);
       this.setDisabled(false);
     }
-  }
 
-  function setMsg(el, text, tone = '') {
-    if (!el) return;
-    el.textContent = text;
-    el.classList.toggle('is-error', tone === 'error');
-    el.classList.toggle('is-ok', tone === 'ok');
+    /** Run fn after ms unless the pad is reset via stopCooldown() first. */
+    later(fn, ms) {
+      clearTimeout(this.pending);
+      this.pending = setTimeout(fn, ms);
+    }
   }
 
   /* ---------------------------------------------------------
@@ -435,17 +522,19 @@
     return s.match(/.{4}/g).join('-');
   }
   const normalizeKey = (k) => String(k || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  const FROZEN_MSG = 'Account frozen after too many incorrect PINs. Unlock it with your recovery security key.';
 
-  /** Verify the current user's PIN with progressive cooldowns. */
-  async function verifyPin(pin) {
-    const u = currentUser();
+  /** Verify a PIN for an account, with progressive cooldowns and freeze. */
+  async function verifyPin(pin, email = state.email) {
+    const u = db.get(email);
     if (!u || !u.pin) return { ok: false, reason: 'nopin' };
+    if (u.pin.frozen) return { ok: false, reason: 'frozen' };
     const now = Date.now();
     if (u.pin.lockUntil && now < u.pin.lockUntil) {
       return { ok: false, reason: 'locked', wait: Math.ceil((u.pin.lockUntil - now) / 1000) };
     }
     const hash = await deriveHash(pin, u.pin.salt);
-    const fresh = currentUser();
+    const fresh = db.get(email);
     if (!fresh || !fresh.pin) return { ok: false, reason: 'nopin' };
 
     if (safeEqual(hash, fresh.pin.hash)) {
@@ -458,48 +547,108 @@
     fresh.pin.fails = (fresh.pin.fails || 0) + 1;
     logActivity(fresh, `Incorrect PIN attempt (${fresh.pin.fails})`, true);
     if (fresh.pin.fails >= PIN_MAX_FAILS) {
+      fresh.pin.frozen = true;
       fresh.pin.fails = 0;
       fresh.pin.lockUntil = 0;
-      logActivity(fresh, 'Signed out after too many incorrect PIN attempts', true);
+      logActivity(fresh, 'Account frozen after too many incorrect PINs', true);
+      sendMail(fresh, 'security', 'Your BDAI account has been frozen', {
+        paras: [
+          `Hi ${fresh.first}, we froze your account after ${PIN_MAX_FAILS} incorrect PIN attempts to keep it safe.`,
+          'To unlock it, choose “Forgot PIN? Use recovery key” and enter the 16-character recovery security key you saved when you created your PIN. You will then choose a new PIN.',
+          'If these attempts weren’t you, someone may know your BDAI email — your data stayed protected.',
+        ],
+        rows: [['Frozen at', fmtDateTime(now)], ['Unlock with', 'Recovery security key']],
+      });
       db.save(fresh);
-      return { ok: false, reason: 'signedout' };
+      return { ok: false, reason: 'frozen' };
     }
     let wait = 0;
     if (fresh.pin.fails % PIN_BATCH === 0) {
       wait = 30 * 2 ** (fresh.pin.fails / PIN_BATCH - 1);
       fresh.pin.lockUntil = now + wait * 1000;
+      sendMail(fresh, 'security', 'Multiple incorrect PIN attempts', {
+        paras: [
+          `Hi ${fresh.first}, there were ${fresh.pin.fails} incorrect PIN attempts on your account. PIN entry is paused for ${wait} seconds.`,
+          `After ${PIN_MAX_FAILS} incorrect attempts your account will be frozen until you use your recovery security key.`,
+        ],
+        rows: [['Time', fmtDateTime(now)], ['Incorrect attempts', String(fresh.pin.fails)], ['Cooldown', `${wait}s`]],
+        actions: [{ label: 'Review security', tab: 'security' }],
+      });
     }
     db.save(fresh);
     return { ok: false, reason: wait ? 'locked' : 'wrong', wait, remaining: PIN_BATCH - (fresh.pin.fails % PIN_BATCH) };
   }
 
-  /** Shared UI handling of a failed verifyPin(). Returns true if the user was signed out. */
-  function handlePinFailure(res, pad, msgEl) {
-    if (res.reason === 'signedout') {
-      forceSignOut('Too many incorrect PIN attempts. Please log in with your password.');
-      return true;
-    }
+  /** Shared UI for a failed verifyPin(). */
+  function handlePinFailure(res, pad, msgEl, { onFrozen } = {}) {
     pad.error();
-    if (res.reason === 'locked') {
-      setTimeout(() => pad.cooldown(res.wait, msgEl), 430);
+    if (res.reason === 'frozen') {
+      setMsg(msgEl, FROZEN_MSG, 'error');
+      pad.later(() => { pad.setDisabled(true); onFrozen?.(); }, 1400);
+    } else if (res.reason === 'locked') {
+      pad.later(() => pad.cooldown(res.wait, msgEl), 430);
     } else if (res.reason === 'wrong') {
       setMsg(msgEl, `Incorrect PIN. ${res.remaining} attempt${res.remaining === 1 ? '' : 's'} left before a cooldown.`, 'error');
     } else {
-      setMsg(msgEl, 'No PIN is set for this account.', 'error');
+      setMsg(msgEl, 'This account has no PIN.', 'error');
+    }
+    renderBadges();
+  }
+
+  /** Reflect an existing cooldown or freeze on a pad. Returns true if the account is frozen. */
+  function applyPinState(pad, msgEl, email = state.email) {
+    const u = db.get(email);
+    pad.stopCooldown();
+    if (u?.pin?.frozen) {
+      pad.setDisabled(true);
+      setMsg(msgEl, FROZEN_MSG, 'error');
+      return true;
+    }
+    if (u?.pin?.lockUntil && u.pin.lockUntil > Date.now()) {
+      pad.cooldown(Math.ceil((u.pin.lockUntil - Date.now()) / 1000), msgEl);
     }
     return false;
   }
 
-  function applyPinCooldownIfAny(pad, msgEl) {
-    const u = currentUser();
-    if (u?.pin?.lockUntil && u.pin.lockUntil > Date.now()) {
-      pad.cooldown(Math.ceil((u.pin.lockUntil - Date.now()) / 1000), msgEl);
-    } else {
-      pad.stopCooldown();
+  /* ---------- Recovery with security key ---------- */
+  const recoveryLimits = new Map(); // email -> { fails, until }
+  async function recoverWithKey(email, rawKey) {
+    const u = db.get(email);
+    if (!u || !u.recovery) return { ok: false, msg: 'No recovery key exists for this account.' };
+    const lim = recoveryLimits.get(email) || { fails: 0, until: 0 };
+    if (Date.now() < lim.until) return { ok: false, msg: `Too many attempts. Try again in ${Math.ceil((lim.until - Date.now()) / 1000)}s.` };
+    const key = normalizeKey(rawKey);
+    if (key.length !== 16) return { ok: false, msg: 'Recovery keys have 16 letters and numbers.' };
+    const hash = await deriveHash(key, u.recovery.salt);
+    if (!safeEqual(hash, u.recovery.hash)) {
+      lim.fails += 1;
+      if (lim.fails % 5 === 0) lim.until = Date.now() + 60000;
+      recoveryLimits.set(email, lim);
+      updateUserSilently((x) => logActivity(x, 'Failed recovery-key attempt', true), email);
+      return { ok: false, msg: 'That recovery key is not correct.' };
     }
+    recoveryLimits.delete(email);
+    updateUserSilently((x) => {
+      if (x.pin) { x.pin.fails = 0; x.pin.lockUntil = 0; x.pin.frozen = false; }
+      logActivity(x, 'Account recovered with security key');
+      sendMail(x, 'security', 'Your recovery security key was used', {
+        paras: [
+          `Hi ${x.first}, your recovery security key was just used to unlock your account.`,
+          'Next you’ll choose a new PIN, which also issues a fresh recovery key — store it safely. If this wasn’t you, change your PIN right away.',
+        ],
+        rows: [['Time', fmtDateTime(Date.now())]],
+        actions: [{ label: 'Open security settings', tab: 'security' }],
+      });
+    }, email);
+    return { ok: true };
+  }
+  function formatKeyInput(e) {
+    const raw = normalizeKey(e.target.value).slice(0, 16);
+    e.target.value = raw.match(/.{1,4}/g)?.join('-') || '';
+    e.target.removeAttribute('aria-invalid');
   }
 
-  /* ---------- PIN prompt (verify) ---------- */
+  /* ---------- PIN prompt (verify for sensitive actions) ---------- */
   const promptMsg = $('#pinPromptMsg');
   let promptResolve = null;
   const promptPad = new PinPad($('#promptPad'), {
@@ -515,7 +664,7 @@
         closeDialog(dlg.pinPrompt);
         r?.(true);
       } else {
-        handlePinFailure(res, pad, promptMsg);
+        handlePinFailure(res, pad, promptMsg, { onFrozen: () => { closeDialog(dlg.pinPrompt); lock(); } });
       }
     },
   });
@@ -527,6 +676,7 @@
   function pinPrompt({ title = 'Enter your PIN', sub = 'Confirm it’s you to continue.', danger = false } = {}) {
     const u = currentUser();
     if (!u || !u.pin) return Promise.resolve(false);
+    if (u.pin.frozen) { lock(); return Promise.resolve(false); }
     return new Promise((resolve) => {
       if (promptResolve) promptResolve(false);
       promptResolve = resolve;
@@ -536,24 +686,13 @@
       setMsg(promptMsg, '');
       promptPad.setLength(u.pin.length);
       openDialog(dlg.pinPrompt);
-      applyPinCooldownIfAny(promptPad, promptMsg);
+      applyPinState(promptPad, promptMsg);
       promptPad.focus();
     });
   }
 
-  /** Require PIN for a sensitive action. If no PIN exists yet, set one up first. */
-  async function requirePin(opts) {
-    const u = currentUser();
-    if (!u) return false;
-    if (!u.pin) {
-      toast('This action needs a PIN security key — let’s create one.');
-      return openPinSetup({ mode: 'create', reason: 'Sensitive actions are protected by your PIN security key. Create one now — it only takes a moment.' });
-    }
-    return pinPrompt(opts);
-  }
-
-  /* ---------- PIN setup (create / change / reset) ---------- */
-  const ps = { first: '', length: 6, completed: false, key: '', resolve: null };
+  /* ---------- PIN setup (signup / change / reset) ---------- */
+  const ps = { mode: 'change', signup: null, first: '', length: 6, completed: false, key: '', resolve: null };
   const setupMsg = $('#setupMsg');
   const confirmMsg = $('#confirmMsg');
 
@@ -586,22 +725,35 @@
         return;
       }
       pad.success();
-      const u = currentUser();
-      if (!u) return;
       const salt = randomHex();
       const hash = await deriveHash(v, salt);
       const key = generateRecoveryKey();
       const keySalt = randomHex();
       const keyHash = await deriveHash(normalizeKey(key), keySalt);
-      const hadPin = !!u.pin;
-      updateUser((x) => {
-        x.pin = { salt, hash, length: ps.length, fails: 0, lockUntil: 0, setAt: Date.now() };
-        x.recovery = { salt: keySalt, hash: keyHash, createdAt: Date.now() };
-        x.settings = x.settings || {};
-        if (x.settings.autoLock === undefined) x.settings.autoLock = 5;
-        logActivity(x, hadPin ? 'PIN security key changed' : 'PIN security key created');
-        logActivity(x, 'New recovery security key generated');
-      });
+      const now = Date.now();
+      const pin = { salt, hash, length: ps.length, fails: 0, lockUntil: 0, frozen: false, setAt: now };
+      const recovery = { salt: keySalt, hash: keyHash, createdAt: now };
+
+      if (ps.mode === 'signup') {
+        createAccount(ps.signup, pin, recovery);
+      } else {
+        if (!currentUser()) return;
+        updateUser((x) => {
+          x.pin = pin;
+          x.recovery = recovery;
+          logActivity(x, ps.mode === 'reset' ? 'PIN reset after recovery' : 'PIN security key changed');
+          logActivity(x, 'New recovery security key generated');
+          sendMail(x, 'security', ps.mode === 'reset' ? 'You set a new PIN' : 'Your PIN was changed', {
+            paras: [
+              `Hi ${x.first}, the PIN security key for ${x.email} was just ${ps.mode === 'reset' ? 'reset' : 'changed'}.`,
+              'A new recovery security key was issued at the same time — your previous recovery key no longer works.',
+              'If you didn’t make this change, use your recovery key to secure your account immediately.',
+            ],
+            rows: [['Time', fmtDateTime(now)], ['PIN length', `${ps.length} digits`]],
+            actions: [{ label: 'Open security settings', tab: 'security' }],
+          });
+        });
+      }
       ps.completed = true;
       ps.first = '';
       await sleep(250);
@@ -667,13 +819,13 @@
       `Recovery key: ${ps.key}`,
       `Created: ${new Date().toLocaleString()}`,
       '',
-      'Use this key to reset your PIN if you forget it.',
+      'Use this key to reset your PIN or unfreeze your account.',
       'Keep it offline and private. It cannot be shown again.',
     ].join('\n'));
   });
   $('#keyDoneBtn').addEventListener('click', () => {
     closeDialog(dlg.pinSetup);
-    toast('PIN security key is active. Your account is protected.', 'success');
+    if (ps.mode !== 'signup') toast('PIN security key is active. Your account is protected.', 'success');
   });
 
   dlg.pinSetup.addEventListener('close', () => {
@@ -682,28 +834,342 @@
     if (ps.resolve) { const r = ps.resolve; ps.resolve = null; r(ps.completed); }
   });
 
-  async function openPinSetup({ mode = 'create', reason = '' } = {}) {
+  /**
+   * mode: 'signup' (creates the account), 'change' (verifies current PIN first),
+   * 'reset' (after recovery-key unlock).
+   */
+  async function openPinSetup({ mode = 'change', reason = '', signup = null } = {}) {
     const u = currentUser();
-    if (!u) return false;
+    if (mode !== 'signup' && !u) return false;
     if (mode === 'change' && u.pin) {
       const ok = await pinPrompt({ title: 'Confirm current PIN', sub: 'Enter your current PIN to set a new one.' });
       if (!ok) return false;
     }
     return new Promise((resolve) => {
       if (ps.resolve) ps.resolve(false);
-      ps.resolve = resolve;
-      ps.completed = false;
-      ps.first = '';
-      $('#pinSetupTitle').textContent = u.pin ? 'Choose a new PIN' : 'Create your PIN security key';
+      Object.assign(ps, { resolve, mode, signup, completed: false, first: '' });
+      $('#pinSetupTitle').textContent = mode === 'signup' ? 'Create your PIN security key' : 'Choose a new PIN';
       $('[data-pin-reason]', dlg.pinSetup).textContent = reason
-        || 'Your PIN unlocks BDAI on this device, auto-locks after inactivity and authorizes payments.';
-      setPinLength(u.pin ? u.pin.length : 6);
+        || 'Your PIN signs you in, unlocks BDAI on this device and authorizes payments.';
+      setPinLength(u?.pin ? u.pin.length : 6);
       setMsg(setupMsg, '');
       showPinStep('enter');
       openDialog(dlg.pinSetup);
       setupPad.focus();
     });
   }
+
+  /* ---------------------------------------------------------
+     Accounts: sign up (names → email → PIN), sign in (email → PIN)
+     --------------------------------------------------------- */
+  function saveSession(email, remember) {
+    const s = { email, at: Date.now() };
+    if (remember) { local.set(KEYS.session, s); session.remove(KEYS.session); } else { session.set(KEYS.session, s); local.remove(KEYS.session); }
+  }
+  const loadSession = () => session.get(KEYS.session) || local.get(KEYS.session);
+  function clearSession() { session.remove(KEYS.session); local.remove(KEYS.session); }
+
+  function createAccount({ first, last }, pin, recovery) {
+    const email = generateEmail(first, last); // re-check uniqueness at creation time
+    const user = {
+      first, last, email,
+      pin, recovery,
+      sub: null, invoices: [], programs: [], inbox: [],
+      settings: { autoLock: 5, shuffle: false, sport: 'running', weeklyGoal: 4 },
+      activity: [], createdAt: Date.now(),
+    };
+    logActivity(user, 'Account created');
+    logActivity(user, 'PIN security key created');
+    sendMail(user, 'coach', 'Your first week with BDAI', {
+      paras: [
+        `${first}, here’s how to get the most from your first 7 days.`,
+        'Log three sessions this week — any sport counts. Your readiness score calibrates after three nights of data, then your AI plan starts adapting load and rest days for you.',
+        'Try a free program to begin: Couch to 5K, Strength Foundations or Mobility Flow Yoga.',
+      ],
+      rows: [['Day 1', 'Easy 20-min session + mobility'], ['Day 3', 'Technique or tempo work'], ['Day 5', 'Longer aerobic session'], ['Daily', 'Check your recovery score']],
+      actions: [{ label: 'Browse programs', href: '#programs' }],
+    });
+    sendMail(user, 'security', 'Your PIN security key is active', {
+      paras: [
+        `Hi ${first}, your account is password-free. You sign in with ${email} and your PIN.`,
+        'Keep your recovery security key somewhere safe — it’s the only way to reset a forgotten PIN or unfreeze your account.',
+        'Tip: turn on “Scramble keypad” in Security if you sign in on shared devices.',
+      ],
+      rows: [['Sign-in address', email], ['PIN length', `${pin.length} digits`], ['Auto-lock', '5 minutes']],
+      actions: [{ label: 'Open security settings', tab: 'security' }],
+    });
+    sendMail(user, 'team', `Welcome to BDAI Sports & Health, ${first}!`, {
+      paras: [
+        `Hi ${first}, welcome aboard. This is your personal BDAI inbox at ${email}.`,
+        'Sign-in alerts, subscription receipts and messages from your coach will arrive here.',
+        'Your Starter plan includes activity and heart-rate tracking, three free coach programs and every health calculator. Upgrade any time for AI adaptive plans.',
+        '— The BDAIWellness team',
+      ],
+      actions: [{ label: 'See plans', href: '#pricing' }],
+    });
+    db.save(user);
+    devices.add(email);
+    saveSession(email, true);
+    state.email = email;
+    state.locked = false;
+    markActive();
+    renderAll();
+    return user;
+  }
+
+  const loginForm = $('#loginForm');
+  const signupForm = $('#signupForm');
+  const loginRecoverForm = $('#loginRecoverForm');
+  const loginMsg = $('#loginMsg');
+  let loginTarget = null;
+
+  function switchAuthTab(tab) {
+    $$('[role="tab"][data-auth-tab]', dlg.auth).forEach((b) => {
+      const on = b.dataset.authTab === tab;
+      b.setAttribute('aria-selected', String(on));
+      b.tabIndex = on ? 0 : -1;
+    });
+    $('#loginPanel').hidden = tab !== 'login';
+    signupForm.hidden = tab !== 'signup';
+    $('#authTitle').textContent = tab === 'login' ? 'Welcome back' : 'Join BDAI Sports & Health';
+    if (!dlg.auth.dataset.customSub) {
+      $('#authSub').textContent = tab === 'login'
+        ? 'Sign in with your BDAI email and PIN — no password.'
+        : 'Just your name and a PIN. We’ll create your BDAI email.';
+    }
+    if (tab === 'login') showLoginStep('email');
+    else {
+      setMsg($('.form-error', signupForm), '');
+      updateEmailPreview();
+      setTimeout(() => signupForm.elements.first.focus(), 30);
+    }
+  }
+  $$('[data-auth-tab]', dlg.auth).forEach((b) => b.addEventListener('click', () => switchAuthTab(b.dataset.authTab)));
+
+  function showLoginStep(step) {
+    $$('[data-login-step]', dlg.auth).forEach((s) => { s.hidden = s.dataset.loginStep !== step; });
+    if (step === 'email') {
+      loginTarget = null;
+      loginPad.stopCooldown();
+      setMsg($('.form-error', loginForm), '');
+      renderDeviceAccounts();
+      setTimeout(() => loginForm.elements.email.focus(), 30);
+    } else if (step === 'pin') {
+      const u = db.get(loginTarget);
+      $('#loginAvatar').textContent = initials(fullName(u));
+      $('#loginName').textContent = fullName(u);
+      $('#loginEmailShow').textContent = u.email;
+      setMsg(loginMsg, '');
+      loginPad.setLength(u.pin.length);
+      const frozen = applyPinState(loginPad, loginMsg, loginTarget);
+      if (frozen) { showLoginStep('recover'); return; }
+      setTimeout(() => loginPad.focus(), 30);
+    } else if (step === 'recover') {
+      const u = db.get(loginTarget);
+      loginRecoverForm.reset();
+      setMsg($('.form-error', loginRecoverForm), '');
+      $('#loginRecoverNote').textContent = u?.pin?.frozen
+        ? `${FROZEN_MSG} Enter it below for ${u.email}.`
+        : 'Enter the 16-character recovery key you saved when you created your PIN.';
+      setTimeout(() => loginRecoverForm.elements.key.focus(), 30);
+    }
+  }
+
+  function renderDeviceAccounts() {
+    const list = devices.list();
+    $('#deviceAccounts').hidden = list.length === 0;
+    $('#acctList').innerHTML = list.map((email) => {
+      const u = db.get(email);
+      return `<button type="button" class="acct-chip" data-acct="${escapeHtml(email)}">
+        <span class="avatar">${escapeHtml(initials(fullName(u)))}</span>
+        <span><strong>${escapeHtml(fullName(u))}</strong><small>${escapeHtml(email)}</small></span>
+        <svg class="i"><use href="#i-arrow-right"/></svg>
+      </button>`;
+    }).join('');
+  }
+  $('#acctList').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-acct]');
+    if (!b) return;
+    loginTarget = b.dataset.acct;
+    loginForm.elements.email.value = loginTarget.split('@')[0];
+    showLoginStep('pin');
+  });
+
+  function openAuth(tab = 'login', subtitle = '') {
+    if (currentUser()) { openAccount(); return; }
+    if (subtitle) { dlg.auth.dataset.customSub = '1'; $('#authSub').textContent = subtitle; } else { delete dlg.auth.dataset.customSub; }
+    loginForm.reset();
+    signupForm.reset();
+    $$('[aria-invalid]', dlg.auth).forEach((i) => i.removeAttribute('aria-invalid'));
+    switchAuthTab(tab);
+    openDialog(dlg.auth);
+  }
+  dlg.auth.addEventListener('close', () => {
+    loginPad.stopCooldown();
+    // Drop a pending action if the visitor dismissed sign-in (but not mid sign-up).
+    if (!currentUser() && !ps.signup) state.pending = null;
+  });
+
+  // ----- Sign up -----
+  function updateEmailPreview() {
+    const f = signupForm.elements;
+    const first = cleanName(f.first.value);
+    const last = cleanName(f.last.value);
+    $('#emailPreview').textContent = first || last
+      ? generateEmail(first, last)
+      : `firstname.lastname@${DOMAIN}`;
+  }
+  signupForm.addEventListener('input', (e) => {
+    e.target.removeAttribute('aria-invalid');
+    if (e.target.name === 'first' || e.target.name === 'last') updateEmailPreview();
+  });
+
+  signupForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = signupForm.elements;
+    const first = titleCase(f.first.value);
+    const last = titleCase(f.last.value);
+    if (!NAME_RE.test(first) || !slugify(first)) return fieldError(signupForm, 'first', 'Please enter your first name (letters only).');
+    if (!NAME_RE.test(last) || !slugify(last)) return fieldError(signupForm, 'last', 'Please enter your last name (letters only).');
+    if (!f.terms.checked) return fieldError(signupForm, 'terms', 'Please accept the Terms to continue.');
+
+    const email = generateEmail(first, last);
+    ps.signup = { first, last };
+    closeDialog(dlg.auth);
+    const done = await openPinSetup({
+      mode: 'signup',
+      signup: { first, last },
+      reason: `Your BDAI email is ${email}. Create a PIN — it’s how you’ll sign in. No password needed.`,
+    });
+    ps.signup = null;
+    if (!done) {
+      state.pending = null;
+      toast('Sign-up cancelled — a PIN is required to create your account.');
+      return;
+    }
+    const u = currentUser();
+    toast(`Welcome, ${u.first}! Your inbox is ${u.email}`, 'success', 5200);
+    setTimeout(() => toast('You have 3 new messages in your BDAI inbox.', 'mail'), 900);
+    runPending();
+    return undefined;
+  });
+
+  // ----- Sign in: step 1 (email) -----
+  loginForm.addEventListener('input', (e) => e.target.removeAttribute('aria-invalid'));
+  loginForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const raw = loginForm.elements.email.value;
+    const email = normalizeLoginEmail(raw);
+    if (!email) return fieldError(loginForm, 'email', 'Enter your BDAI email, e.g. firstname.lastname');
+    if (!email.endsWith(`@${DOMAIN}`)) return fieldError(loginForm, 'email', `BDAI emails end with @${DOMAIN}.`);
+    if (!isBdaiEmail(email)) return fieldError(loginForm, 'email', 'That doesn’t look like a BDAI email address.');
+    if (!db.get(email)) return fieldError(loginForm, 'email', 'No BDAI account with that email on this device. Check the spelling or create an account.');
+    loginTarget = email;
+    showLoginStep('pin');
+    return undefined;
+  });
+  // Paste of full address → keep only the local part (the domain is shown as a suffix)
+  loginForm.elements.email.addEventListener('change', (e) => {
+    const v = e.target.value.trim().toLowerCase();
+    if (v.endsWith(`@${DOMAIN}`)) e.target.value = v.slice(0, -(DOMAIN.length + 1));
+  });
+
+  // ----- Sign in: step 2 (PIN) -----
+  const loginPad = new PinPad($('#loginPad'), {
+    label: 'Sign-in PIN',
+    onComplete: async (v, pad) => {
+      const email = loginTarget;
+      if (!email) return;
+      const res = await verifyPin(v, email);
+      if (res.ok) {
+        pad.success();
+        setMsg(loginMsg, 'PIN verified', 'ok');
+        await sleep(250);
+        completeLogin(email, $('#rememberDevice').checked);
+      } else {
+        handlePinFailure(res, pad, loginMsg, { onFrozen: () => showLoginStep('recover') });
+      }
+    },
+  });
+  $('[data-login-back]', dlg.auth).addEventListener('click', () => showLoginStep('email'));
+  $('[data-login-recover]', dlg.auth).addEventListener('click', () => showLoginStep('recover'));
+  $('[data-login-back-pin]', dlg.auth).addEventListener('click', () => showLoginStep('pin'));
+
+  function completeLogin(email, remember, method = 'PIN') {
+    updateUserSilently((u) => {
+      logActivity(u, `Signed in with ${method}`);
+      sendMail(u, 'security', 'New sign-in to your BDAI account', {
+        paras: [
+          `Hi ${u.first}, your account was just signed in with your ${method}.`,
+          'If this was you, there’s nothing to do. If not, change your PIN from Security right away.',
+        ],
+        rows: [['Account', u.email], ['Time', fmtDateTime(Date.now())], ['Method', method], ['Device', navigator.userAgentData?.platform || navigator.platform || 'This browser']],
+        actions: [{ label: 'Review security', tab: 'security' }],
+      });
+    }, email);
+    devices.add(email);
+    saveSession(email, remember);
+    state.email = email;
+    state.locked = false;
+    markActive();
+    closeDialog(dlg.auth);
+    syncSubscription();
+    renderAll();
+    toast(`Welcome back, ${currentUser().first}!`, 'success');
+    runPending();
+  }
+
+  // ----- Sign in: forgot PIN → recovery key -----
+  loginRecoverForm.elements.key.addEventListener('input', formatKeyInput);
+  loginRecoverForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = $('button[type="submit"]', loginRecoverForm);
+    btn.classList.add('is-loading');
+    const res = await recoverWithKey(loginTarget, loginRecoverForm.elements.key.value);
+    btn.classList.remove('is-loading');
+    if (!res.ok) { fieldError(loginRecoverForm, 'key', res.msg); return; }
+    completeLogin(loginTarget, $('#rememberDevice').checked, 'recovery key');
+    await sleep(300);
+    const done = await openPinSetup({ mode: 'reset', reason: 'Recovery successful. Choose a new PIN — you’ll also get a fresh recovery key.' });
+    if (!done) toast('Your previous PIN is still active. Change it any time in Security.');
+  });
+
+  function runPending() {
+    const fn = state.pending;
+    state.pending = null;
+    if (fn && currentUser()) setTimeout(fn, 200);
+  }
+
+  function logout(message = 'You’ve been signed out.', type = 'info') {
+    if (state.email) updateUserSilently((x) => logActivity(x, 'Signed out'));
+    state.locked = false;
+    state.email = null;
+    state.pending = null;
+    clearSession();
+    clearInterval(clockTimer);
+    $$('dialog[open]').forEach((d) => d.close());
+    renderAll();
+    toast(message, type);
+  }
+
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-open-auth]');
+    if (a) { closeMobileNav(); openAuth(a.dataset.openAuth); }
+    if (e.target.closest('[data-logout]')) logout();
+  });
+
+  // Keep tabs in sync: sign out here if another tab signs out.
+  window.addEventListener('storage', (e) => {
+    if (e.key === KEYS.session && state.email && !loadSession()) {
+      state.locked = false;
+      state.email = null;
+      $$('dialog[open]').forEach((d) => d.close());
+      renderAll();
+      toast('You were signed out in another tab.');
+    } else if (e.key === KEYS.users && state.email) {
+      renderAll();
+    }
+  });
 
   /* ---------------------------------------------------------
      Lock screen
@@ -719,7 +1185,7 @@
         await sleep(300);
         unlock('Unlocked with PIN');
       } else {
-        handlePinFailure(res, pad, lockMsg);
+        handlePinFailure(res, pad, lockMsg, { onFrozen: () => { showLockView('recovery'); setMsg($('#recoveryForm .form-error'), FROZEN_MSG); } });
       }
     },
   });
@@ -741,21 +1207,23 @@
     const u = currentUser();
     if (!u || !u.pin) return;
     state.locked = true;
-    $('#lockName').textContent = firstName(u.name);
-    $('#lockAvatar').textContent = initials(u.name);
+    $('#lockName').textContent = u.first;
+    $('#lockAvatar').textContent = initials(fullName(u));
     setMsg(lockMsg, '');
     lockPad.setLength(u.pin.length);
     $('#recoveryForm').reset();
     setMsg($('#recoveryForm .form-error'), '');
     tickClock();
     clearInterval(clockTimer);
-    clockTimer = setInterval(tickClock, 1000 * 15);
+    clockTimer = setInterval(tickClock, 15000);
     openDialog(dlg.lock);
+    const frozen = applyPinState(lockPad, lockMsg);
     showLockView('pin');
-    applyPinCooldownIfAny(lockPad, lockMsg);
-    if (!quiet) {
-      updateUserSilently((x) => logActivity(x, 'Account locked'));
+    if (frozen) {
+      showLockView('recovery');
+      setMsg($('#recoveryForm .form-error'), FROZEN_MSG);
     }
+    if (!quiet) updateUserSilently((x) => logActivity(x, 'Account locked'));
   }
 
   function unlock(reason) {
@@ -767,14 +1235,7 @@
     updateUserSilently((x) => logActivity(x, reason));
     renderAll();
     const u = currentUser();
-    if (u) toast(`Welcome back, ${firstName(u.name)}!`, 'success');
-  }
-
-  function updateUserSilently(mutator) {
-    const u = currentUser();
-    if (!u) return;
-    mutator(u);
-    db.save(u);
+    if (u) toast(`Welcome back, ${u.first}!`, 'success');
   }
 
   dlg.lock.addEventListener('cancel', (e) => e.preventDefault());
@@ -784,58 +1245,24 @@
   $$('[data-lock-goto]', dlg.lock).forEach((b) => b.addEventListener('click', () => showLockView(b.dataset.lockGoto)));
   $('#lockSignOut').addEventListener('click', () => logout('Signed out.'));
 
-  // Recovery with security key
-  let recoveryFails = 0;
-  let recoveryBlockedUntil = 0;
+  $('#recoveryForm [name="key"]').addEventListener('input', formatKeyInput);
   $('#recoveryForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const form = e.currentTarget;
-    const err = $('.form-error', form);
-    const input = form.elements.key;
     const btn = $('button[type="submit"]', form);
-    const u = currentUser();
-    if (!u || !u.recovery) { setMsg(err, 'No recovery key exists for this account. Sign out and log in with your password.'); return; }
-    if (Date.now() < recoveryBlockedUntil) {
-      setMsg(err, `Too many attempts. Try again in ${Math.ceil((recoveryBlockedUntil - Date.now()) / 1000)}s.`);
-      return;
-    }
-    const key = normalizeKey(input.value);
-    if (key.length !== 16) {
-      input.setAttribute('aria-invalid', 'true');
-      setMsg(err, 'Recovery keys have 16 letters and numbers.');
-      return;
-    }
     btn.classList.add('is-loading');
-    const hash = await deriveHash(key, u.recovery.salt);
+    const res = await recoverWithKey(state.email, form.elements.key.value);
     btn.classList.remove('is-loading');
-    if (!safeEqual(hash, u.recovery.hash)) {
-      recoveryFails += 1;
-      if (recoveryFails % 5 === 0) recoveryBlockedUntil = Date.now() + 60000;
-      input.setAttribute('aria-invalid', 'true');
-      updateUserSilently((x) => logActivity(x, 'Failed recovery-key attempt', true));
-      setMsg(err, 'That recovery key is not correct.');
-      return;
-    }
-    recoveryFails = 0;
-    input.removeAttribute('aria-invalid');
-    updateUserSilently((x) => {
-      if (x.pin) { x.pin.fails = 0; x.pin.lockUntil = 0; }
-      logActivity(x, 'Account recovered with security key');
-    });
+    if (!res.ok) { fieldError(form, 'key', res.msg); return; }
     unlock('Unlocked with recovery key');
     await sleep(200);
     const done = await openPinSetup({ mode: 'reset', reason: 'Recovery successful. Choose a new PIN — you’ll also get a fresh recovery key.' });
-    if (!done) toast('Your previous PIN is still active. You can change it any time in Security.');
-  });
-  $('#recoveryForm [name="key"]').addEventListener('input', (e) => {
-    const raw = normalizeKey(e.target.value).slice(0, 16);
-    e.target.value = raw.match(/.{1,4}/g)?.join('-') || '';
-    e.target.removeAttribute('aria-invalid');
+    if (!done) toast('Your previous PIN is still active. Change it any time in Security.');
   });
 
   /* ---------- Inactivity auto-lock ---------- */
   let lastActive = Date.now();
-  const markActive = () => { lastActive = Date.now(); };
+  function markActive() { lastActive = Date.now(); }
   ['pointerdown', 'keydown', 'scroll', 'touchstart', 'mousemove', 'wheel'].forEach((ev) => window.addEventListener(ev, markActive, { passive: true }));
   function checkIdle() {
     const u = currentUser();
@@ -847,240 +1274,58 @@
   document.addEventListener('visibilitychange', () => { if (!document.hidden) checkIdle(); });
 
   /* ---------------------------------------------------------
-     Authentication
-     --------------------------------------------------------- */
-  const loginForm = $('#loginForm');
-  const signupForm = $('#signupForm');
-
-  function saveSession(email, remember) {
-    const s = { email, at: Date.now() };
-    if (remember) { local.set(KEYS.session, s); session.remove(KEYS.session); } else { session.set(KEYS.session, s); local.remove(KEYS.session); }
-  }
-  const loadSession = () => session.get(KEYS.session) || local.get(KEYS.session);
-  function clearSession() { session.remove(KEYS.session); local.remove(KEYS.session); }
-
-  function switchAuthTab(tab) {
-    $$('[role="tab"][data-auth-tab]', dlg.auth).forEach((b) => {
-      const on = b.dataset.authTab === tab;
-      b.setAttribute('aria-selected', String(on));
-      b.tabIndex = on ? 0 : -1;
-    });
-    loginForm.hidden = tab !== 'login';
-    signupForm.hidden = tab !== 'signup';
-    $('#authTitle').textContent = tab === 'login' ? 'Welcome back' : 'Join BDAI Sports & Health';
-    if (!dlg.auth.dataset.customSub) {
-      $('#authSub').textContent = tab === 'login' ? 'Log in to continue your training.' : 'Create a free account — upgrade any time.';
-    }
-    const form = tab === 'login' ? loginForm : signupForm;
-    setMsg($('.form-error', form), '');
-    setTimeout(() => form.querySelector('input')?.focus(), 30);
-  }
-  $$('[data-auth-tab]', dlg.auth).forEach((b) => b.addEventListener('click', () => switchAuthTab(b.dataset.authTab)));
-
-  function openAuth(tab = 'login', subtitle = '') {
-    if (currentUser()) { openAccount(); return; }
-    if (subtitle) { dlg.auth.dataset.customSub = '1'; $('#authSub').textContent = subtitle; } else { delete dlg.auth.dataset.customSub; }
-    loginForm.reset();
-    signupForm.reset();
-    $('.pw-meter').dataset.score = '0';
-    $$('[aria-invalid]', dlg.auth).forEach((i) => i.removeAttribute('aria-invalid'));
-    switchAuthTab(tab);
-    openDialog(dlg.auth);
-  }
-  dlg.auth.addEventListener('close', () => {
-    // Drop a pending action if the user dismissed sign-in.
-    if (!currentUser()) state.pending = null;
-  });
-
-  // Show/hide password
-  $$('[data-toggle-pw]').forEach((b) => b.addEventListener('click', () => {
-    const input = b.parentElement.querySelector('input');
-    const show = input.type === 'password';
-    input.type = show ? 'text' : 'password';
-    b.setAttribute('aria-pressed', String(show));
-    b.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
-  }));
-
-  function pwStrength(p) {
-    let s = 0;
-    if (p.length >= 8) s++;
-    if (p.length >= 12) s++;
-    if (/[a-z]/.test(p) && /[A-Z]/.test(p)) s++;
-    if (/\d/.test(p)) s++;
-    if (/[^A-Za-z0-9]/.test(p)) s++;
-    if (p.length < 8) s = Math.min(s, 1);
-    return Math.min(4, s);
-  }
-  const PW_LABELS = ['Use 8+ characters with a mix of letters, numbers & symbols.', 'Weak password', 'Fair — add symbols or length', 'Strong password', 'Excellent password'];
-  signupForm.elements.password.addEventListener('input', (e) => {
-    const score = e.target.value ? pwStrength(e.target.value) : 0;
-    $('.pw-meter').dataset.score = String(score);
-    $('#pwMeterLabel').textContent = e.target.value ? PW_LABELS[score] : PW_LABELS[0];
-  });
-
-  function fieldError(form, name, message) {
-    const input = form.elements[name];
-    if (input) { input.setAttribute('aria-invalid', 'true'); input.focus(); }
-    setMsg($('.form-error', form), message);
-    return false;
-  }
-  [loginForm, signupForm].forEach((f) => f.addEventListener('input', (e) => e.target.removeAttribute('aria-invalid')));
-
-  signupForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const f = signupForm.elements;
-    const name = f.name.value.trim().replace(/\s+/g, ' ');
-    const email = normEmail(f.email.value);
-    const pw = f.password.value;
-    if (name.length < 2) return fieldError(signupForm, 'name', 'Please enter your name.');
-    if (!isEmail(email)) return fieldError(signupForm, 'email', 'Please enter a valid email address.');
-    if (db.get(email)) return fieldError(signupForm, 'email', 'An account with this email already exists. Try logging in.');
-    if (pw.length < 8 || pwStrength(pw) < 2) return fieldError(signupForm, 'password', 'Choose a stronger password (8+ characters, mix of letters, numbers or symbols).');
-    if (pw !== f.confirm.value) return fieldError(signupForm, 'confirm', 'Passwords don’t match.');
-    if (!f.terms.checked) return fieldError(signupForm, 'terms', 'Please accept the Terms to continue.');
-
-    const btn = $('button[type="submit"]', signupForm);
-    btn.classList.add('is-loading');
-    const salt = randomHex();
-    const hash = await deriveHash(pw, salt);
-    btn.classList.remove('is-loading');
-
-    const user = {
-      name, email,
-      pw: { salt, hash },
-      pin: null, recovery: null,
-      sub: null, invoices: [], programs: [],
-      settings: { autoLock: 5, shuffle: false, sport: 'running', weeklyGoal: 4 },
-      activity: [], createdAt: Date.now(), loginFails: 0, loginLockUntil: 0,
-    };
-    logActivity(user, 'Account created');
-    db.save(user);
-    saveSession(email, true);
-    state.email = email;
-    closeDialog(dlg.auth);
-    renderAll();
-    toast(`Welcome to BDAI, ${firstName(name)}!`, 'success');
-    await sleep(250);
-    await openPinSetup({ mode: 'create', reason: 'Secure your new account with a PIN security key. It unlocks BDAI on this device and authorizes subscriptions.' });
-    runPending();
-  });
-
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const f = loginForm.elements;
-    const email = normEmail(f.email.value);
-    const pw = f.password.value;
-    if (!isEmail(email)) return fieldError(loginForm, 'email', 'Please enter a valid email address.');
-    if (!pw) return fieldError(loginForm, 'password', 'Please enter your password.');
-    const u = db.get(email);
-    const generic = 'Email or password is incorrect.';
-    const btn = $('button[type="submit"]', loginForm);
-    btn.classList.add('is-loading');
-    // Hash even for unknown emails to keep timing similar.
-    const hash = await deriveHash(pw, u ? u.pw.salt : 'bdai-dummy-salt');
-    btn.classList.remove('is-loading');
-    if (!u) return fieldError(loginForm, 'password', generic);
-    if (u.loginLockUntil && Date.now() < u.loginLockUntil) {
-      return fieldError(loginForm, 'password', `Too many attempts. Try again in ${Math.ceil((u.loginLockUntil - Date.now()) / 1000)}s.`);
-    }
-    if (!safeEqual(hash, u.pw.hash)) {
-      u.loginFails = (u.loginFails || 0) + 1;
-      if (u.loginFails % 5 === 0) u.loginLockUntil = Date.now() + 60000;
-      logActivity(u, 'Failed password login', true);
-      db.save(u);
-      return fieldError(loginForm, 'password', u.loginFails % 5 === 0 ? 'Too many attempts. Login paused for 60 seconds.' : generic);
-    }
-    u.loginFails = 0;
-    u.loginLockUntil = 0;
-    if (u.pin) { u.pin.fails = 0; u.pin.lockUntil = 0; }
-    logActivity(u, 'Logged in with password');
-    db.save(u);
-    saveSession(email, f.remember.checked);
-    state.email = email;
-    state.locked = false;
-    markActive();
-    closeDialog(dlg.auth);
-    syncSubscription();
-    renderAll();
-    toast(`Welcome back, ${firstName(u.name)}!`, 'success');
-    if (!u.pin) {
-      setTimeout(() => toast('Tip: set up a PIN security key in Account → Security.'), 900);
-    }
-    runPending();
-  });
-
-  function runPending() {
-    const fn = state.pending;
-    state.pending = null;
-    if (fn && currentUser()) setTimeout(fn, 200);
-  }
-
-  function logout(message = 'You’ve been signed out.', type = 'info') {
-    if (state.email) updateUserSilently((x) => logActivity(x, 'Signed out'));
-    state.locked = false;
-    state.email = null;
-    state.pending = null;
-    clearSession();
-    clearInterval(clockTimer);
-    $$('dialog[open]').forEach((d) => d.close());
-    renderAll();
-    toast(message, type);
-  }
-
-  function forceSignOut(message) {
-    logout(message, 'error');
-    setTimeout(() => openAuth('login', 'For your security, please log in with your password.'), 300);
-  }
-
-  document.addEventListener('click', (e) => {
-    const a = e.target.closest('[data-open-auth]');
-    if (a) { closeMobileNav(); openAuth(a.dataset.openAuth); }
-    if (e.target.closest('[data-logout]')) logout();
-  });
-
-  // Keep tabs in sync: sign out here if another tab signs out.
-  window.addEventListener('storage', (e) => {
-    if (e.key === KEYS.session && state.email && !loadSession()) {
-      state.locked = false;
-      state.email = null;
-      $$('dialog[open]').forEach((d) => d.close());
-      renderAll();
-      toast('You were signed out in another tab.');
-    }
-  });
-
-  /* ---------------------------------------------------------
      Subscriptions & checkout
      --------------------------------------------------------- */
-  function syncSubscription() {
-    const u = currentUser();
-    if (!u || !u.sub) return;
-    const now = Date.now();
-    let changed = false;
-    while (u.sub && now >= u.sub.renewsAt) {
-      if (u.sub.cancelAtPeriodEnd) {
-        logActivity(u, `${PLANS[u.sub.plan].name} subscription ended`);
-        u.sub = null;
-      } else {
-        const date = u.sub.renewsAt;
-        u.invoices.unshift({
-          id: makeInvoiceId(date), date, plan: u.sub.plan, cycle: u.sub.cycle, currency: u.sub.currency,
-          amount: u.sub.amount, discount: 0, method: describeMethod(u.sub.method), status: 'Paid',
-        });
-        u.sub.renewsAt = addPeriod(date, u.sub.cycle);
-        logActivity(u, `${PLANS[u.sub.plan].name} renewed`);
-      }
-      changed = true;
-    }
-    if (changed) db.save(u);
-  }
-
   const makeInvoiceId = (ts) => `BDAI-${ts.toString(36).toUpperCase().slice(-6)}${randomHex(1).toUpperCase()}`;
   function describeMethod(m) {
     if (!m) return '—';
     if (m.type === 'card') return `${m.brand || 'Card'} •••• ${m.last4}`;
     if (m.type === 'upi') return `UPI ${m.vpa}`;
     return '—';
+  }
+  function receiptRows(inv, renewsAt) {
+    return [
+      ['Receipt', inv.id],
+      ['Plan', `BDAI ${PLANS[inv.plan].name} · ${inv.cycle}`],
+      inv.discount ? ['Discount', `−${fmtMoney(inv.discount, inv.currency)}${inv.promo ? ` (${inv.promo})` : ''}`] : null,
+      ['Total paid', fmtMoney(inv.amount, inv.currency)],
+      ['Paid with', inv.method],
+      renewsAt ? ['Next billing', fmtDate(renewsAt)] : null,
+    ].filter(Boolean);
+  }
+
+  function syncSubscription() {
+    const u = currentUser();
+    if (!u || !u.sub) return;
+    const now = Date.now();
+    let changed = false;
+    while (u.sub && now >= u.sub.renewsAt) {
+      const planName = PLANS[u.sub.plan].name;
+      if (u.sub.cancelAtPeriodEnd) {
+        logActivity(u, `${planName} subscription ended`);
+        sendMail(u, 'billing', `Your ${planName} subscription has ended`, {
+          paras: [`Hi ${u.first}, your BDAI ${planName} plan ended today and your account is back on Starter. Your history and programs are saved — resubscribe any time.`],
+          actions: [{ label: 'See plans', href: '#pricing' }],
+        });
+        u.sub = null;
+      } else {
+        const date = u.sub.renewsAt;
+        const inv = {
+          id: makeInvoiceId(date), date, plan: u.sub.plan, cycle: u.sub.cycle, currency: u.sub.currency,
+          amount: u.sub.amount, discount: 0, method: describeMethod(u.sub.method), status: 'Paid',
+        };
+        u.invoices.unshift(inv);
+        u.sub.renewsAt = addPeriod(date, u.sub.cycle);
+        logActivity(u, `${planName} renewed`);
+        sendMail(u, 'billing', `Receipt: BDAI ${planName} renewed`, {
+          paras: [`Hi ${u.first}, your ${planName} subscription renewed. Thanks for training with BDAI.`],
+          rows: receiptRows(inv, u.sub.renewsAt),
+          actions: [{ label: 'Download receipt', invoice: inv.id }],
+        });
+      }
+      changed = true;
+    }
+    if (changed) db.save(u);
   }
 
   const co = { plan: 'pro', cycle: 'monthly', currency: 'INR', promo: null, method: 'card', payment: null, step: 1, busy: false };
@@ -1107,7 +1352,8 @@
     Object.assign(co, { plan, cycle: state.billing, currency: state.currency, promo: null, method: 'card', payment: null, busy: false });
     $('#promoForm').reset();
     setMsg($('#promoMsg'), '');
-    $('#payForm').reset();
+    payForm.reset();
+    payForm.elements.ccName.value = fullName(u);
     updateCardPreview();
     setPayMethod('card');
     goStep(1);
@@ -1124,7 +1370,7 @@
       const p = PLANS[el.dataset.coPrice].price[co.currency][co.cycle];
       el.textContent = `${fmtMoney(p, co.currency)} / ${co.cycle === 'yearly' ? 'year' : 'month'}`;
     });
-    setCo('line', `${plan.name} · ${co.cycle === 'yearly' ? 'yearly' : 'monthly'}`);
+    setCo('line', `${plan.name} · ${co.cycle}`);
     setCo('subtotal', fmtMoney(subtotal, co.currency));
     coEl('discountRow')[0].hidden = !co.promo;
     if (co.promo) {
@@ -1133,7 +1379,7 @@
     }
     setCo('total', fmtMoney(total, co.currency));
     const renewDate = fmtDate(addPeriod(Date.now(), co.cycle));
-    setCo('renews', `Renews ${renewDate} at ${fmtMoney(subtotal, co.currency)}/${co.cycle === 'yearly' ? 'year' : 'month'}. Cancel anytime from your account.`);
+    setCo('renews', `Renews ${renewDate} at ${fmtMoney(subtotal, co.currency)}/${co.cycle === 'yearly' ? 'year' : 'month'}. Your receipt will be sent to your BDAI inbox.`);
     setCo('authLine', `BDAI ${plan.name} · ${co.cycle}`);
     setCo('authTotal', fmtMoney(total, co.currency));
     setCo('authMethod', co.payment ? `Paying with ${describeMethod(co.payment)}` : '');
@@ -1181,7 +1427,6 @@
     goStep(Math.max(1, co.step - 1));
   }));
 
-  // Payment method tabs
   function setPayMethod(m) {
     co.method = m;
     $$('[data-pay-method]', dlg.checkout).forEach((b) => {
@@ -1197,7 +1442,6 @@
     $(`[data-pay-panel="${co.method}"] input`, dlg.checkout)?.focus();
   }));
 
-  // Card helpers
   function luhn(num) {
     let sum = 0;
     let dbl = false;
@@ -1280,24 +1524,27 @@
     return undefined;
   });
 
-  // Authorize with PIN
   const checkoutPinMsg = $('#checkoutPinMsg');
   const checkoutPad = new PinPad($('#checkoutPad'), {
     label: 'Authorize payment PIN',
     onComplete: async (v, pad) => {
       const res = await verifyPin(v);
-      if (!res.ok) { handlePinFailure(res, pad, checkoutPinMsg); return; }
+      if (!res.ok) {
+        handlePinFailure(res, pad, checkoutPinMsg, { onFrozen: () => { closeDialog(dlg.checkout); lock(); } });
+        return;
+      }
       pad.success();
       setMsg(checkoutPinMsg, 'PIN verified', 'ok');
       await sleep(250);
+      const back = $('[data-co-back]', $('[data-co-step="3"]', dlg.checkout));
       co.busy = true;
       coEl('pinArea')[0].hidden = true;
       coEl('processing')[0].hidden = false;
-      $('[data-co-back]', $('[data-co-step="3"]', dlg.checkout)).disabled = true;
+      back.disabled = true;
       await sleep(1400);
       activateSubscription();
       co.busy = false;
-      $('[data-co-back]', $('[data-co-step="3"]', dlg.checkout)).disabled = false;
+      back.disabled = false;
       goStep(4);
       confetti();
     },
@@ -1312,12 +1559,12 @@
     if (hasPin) {
       checkoutPad.setLength(u.pin.length);
       setMsg(checkoutPinMsg, '');
-      applyPinCooldownIfAny(checkoutPad, checkoutPinMsg);
+      applyPinState(checkoutPad, checkoutPinMsg);
       setTimeout(() => checkoutPad.focus(), 30);
     }
   }
   $('#coSetupPin').addEventListener('click', async () => {
-    const ok = await openPinSetup({ mode: 'create', reason: 'Create a PIN to authorize this subscription and protect your account.' });
+    const ok = await openPinSetup({ mode: 'change', reason: 'Create a PIN to authorize this subscription.' });
     if (ok && dlg.checkout.open) prepareAuthorizeStep();
   });
 
@@ -1325,24 +1572,44 @@
     const now = Date.now();
     const { total, discount } = coAmounts();
     const plan = PLANS[co.plan];
+    const renewsAt = addPeriod(now, co.cycle);
     updateUser((u) => {
       const prev = u.sub;
       u.sub = {
         plan: co.plan, cycle: co.cycle, currency: co.currency,
         amount: plan.price[co.currency][co.cycle],
-        status: 'active', startedAt: now, renewsAt: addPeriod(now, co.cycle),
+        status: 'active', startedAt: now, renewsAt,
         cancelAtPeriodEnd: false, method: co.payment,
       };
-      u.invoices = u.invoices || [];
-      u.invoices.unshift({
+      const inv = {
         id: makeInvoiceId(now), date: now, plan: co.plan, cycle: co.cycle, currency: co.currency,
         amount: total, discount, promo: co.promo?.code || '', method: describeMethod(co.payment), status: 'Paid',
-      });
-      logActivity(u, prev && prev.status === 'active'
+      };
+      u.invoices = u.invoices || [];
+      u.invoices.unshift(inv);
+      const changed = prev && prev.status === 'active';
+      logActivity(u, changed
         ? `Plan changed: ${PLANS[prev.plan].name} → ${plan.name} (${co.cycle})`
         : `Subscribed to ${plan.name} (${co.cycle}) — authorized with PIN`);
+      sendMail(u, 'billing', `Receipt: you’re on BDAI ${plan.name}`, {
+        paras: [
+          `Hi ${u.first}, thanks for ${changed ? 'switching to' : 'subscribing to'} BDAI ${plan.name}! This payment was authorized with your PIN security key.`,
+          `All ${plan.name} programs and features are unlocked now. You can manage or cancel your plan any time from your account.`,
+        ],
+        rows: receiptRows(inv, renewsAt),
+        actions: [{ label: 'Download receipt', invoice: inv.id }, { label: 'Manage subscription', tab: 'subscription' }],
+      });
+      sendMail(u, 'coach', `Let’s make ${plan.name} count`, {
+        paras: [
+          `${u.first}, your AI plan now adapts daily to your readiness score.`,
+          plan.tier >= 2
+            ? 'As an Elite member you can book your first 1:1 coach check-in this week and invite your team to the coach hub.'
+            : 'Start with Half-Marathon Builder or Hypertrophy Pro — both sync with your nutrition targets.',
+        ],
+        actions: [{ label: 'Browse programs', href: '#programs' }],
+      });
     });
-    setCo('successText', `${fmtMoney(total, co.currency)} paid with ${describeMethod(co.payment)}. Your next billing date is ${fmtDate(addPeriod(now, co.cycle))}. All ${plan.name} programs are now unlocked.`);
+    setCo('successText', `${fmtMoney(total, co.currency)} paid with ${describeMethod(co.payment)}. Your next billing date is ${fmtDate(renewsAt)}. A receipt was sent to your BDAI inbox.`);
     co.payment = null;
   }
 
@@ -1357,7 +1624,6 @@
     payForm.reset();
   });
 
-  // Confetti
   function confetti() {
     if (reducedMotion) return;
     const canvas = $('#confetti');
@@ -1366,7 +1632,7 @@
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
-    ctx.scale(dpr, dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     const colors = ['#3ef0a8', '#22c3ee', '#ff6b4a', '#ffc24b', '#8b7bff', '#f07cff'];
     const parts = Array.from({ length: 140 }, () => ({
       x: rect.width / 2 + (Math.random() - 0.5) * 80,
@@ -1483,7 +1749,7 @@
       if (!u) { openAuth('signup'); return; }
       if (userTier(u) > 0) { openAccount('subscription'); toast('To move to Starter, cancel your paid plan — you keep access until the period ends.'); return; }
       toast('You’re on Starter. Explore the free programs below!');
-      document.getElementById('programs').scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
+      scrollToId('programs');
       return;
     }
     if (u?.sub?.status === 'active' && u.sub.plan === plan && u.sub.cycle === state.billing) {
@@ -1492,6 +1758,10 @@
     }
     openCheckout(plan);
   });
+
+  function scrollToId(id) {
+    document.getElementById(id)?.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
+  }
 
   /* ---------------------------------------------------------
      Account dialog
@@ -1503,6 +1773,7 @@
       b.tabIndex = on ? 0 : -1;
     });
     $$('[data-acc-panel]', dlg.account).forEach((p) => { p.hidden = p.dataset.accPanel !== tab; });
+    if (tab === 'inbox') renderInbox();
   }
   $$('[data-acc-tab]', dlg.account).forEach((b) => b.addEventListener('click', () => switchAccountTab(b.dataset.accTab)));
   $('.account-tabs', dlg.account).addEventListener('keydown', (e) => {
@@ -1519,12 +1790,14 @@
     const u = currentUser();
     if (!u) { openAuth('login'); return; }
     syncSubscription();
+    if (tab === 'inbox') inboxState.openId = null;
     renderAccount();
     fillProfileForm();
     switchAccountTab(tab);
     openDialog(dlg.account);
   }
-  $('#userChip').addEventListener('click', () => openAccount());
+  $('#userChip').addEventListener('click', () => openAccount('profile'));
+  $('#inboxBtn').addEventListener('click', () => openAccount('inbox'));
 
   const accEl = (k) => $$(`[data-acc="${k}"]`, dlg.account);
   const setAcc = (k, text) => accEl(k).forEach((el) => { el.textContent = text; });
@@ -1533,7 +1806,8 @@
     const u = currentUser();
     if (!u) return;
     const f = $('#profileForm').elements;
-    f.name.value = u.name;
+    f.first.value = u.first;
+    f.last.value = u.last;
     f.email.value = u.email;
     f.sport.value = u.settings?.sport || 'running';
     f.weeklyGoal.value = u.settings?.weeklyGoal || 4;
@@ -1544,16 +1818,23 @@
     const u = currentUser();
     if (!u) return;
     const planKey = u.sub?.status === 'active' ? u.sub.plan : 'starter';
-    setAcc('avatar', initials(u.name));
-    setAcc('name', u.name);
-    setAcc('email', u.email);
+    setAcc('avatar', initials(fullName(u)));
+    setAcc('name', fullName(u));
+    const [localPart] = u.email.split('@');
+    accEl('email').forEach((el) => { el.innerHTML = `${escapeHtml(localPart)}<wbr>@${DOMAIN}`; });
+    setAcc('emailAddr', u.email);
     setAcc('planBadge', PLANS[planKey].name);
     accEl('planBadge')[0].dataset.plan = planKey;
     setAcc('since', fmtDate(u.createdAt));
     setAcc('plan', PLANS[planKey].name + (u.sub?.cancelAtPeriodEnd ? ' (ending)' : ''));
     setAcc('programs', String((u.programs || []).length));
 
-    // Subscription
+    renderSubscriptionPanel(u);
+    renderSecurityPanel(u);
+    if (!$('[data-acc-panel="inbox"]', dlg.account).hidden) renderInbox();
+  }
+
+  function renderSubscriptionPanel(u) {
     const subView = $('#subView');
     if (u.sub && u.sub.status === 'active') {
       const s = u.sub;
@@ -1609,15 +1890,15 @@
               <td><span class="pill ok">${escapeHtml(x.status)}</span></td>
               <td><button class="icon-btn" type="button" data-invoice="${escapeHtml(x.id)}" aria-label="Download receipt ${escapeHtml(x.id)}"><svg class="i"><use href="#i-download"/></svg></button></td>
             </tr>`).join('')}</tbody></table></div>`
-      : '<p class="empty">No invoices yet. Your receipts will appear here.</p>';
+      : '<p class="empty">No invoices yet. Receipts will also arrive in your BDAI inbox.</p>';
+  }
 
-    // Security
+  function renderSecurityPanel(u) {
     const hasPin = !!u.pin;
     setAcc('pinStatus', hasPin
-      ? `Enabled · ${u.pin.length}-digit · set ${fmtDate(u.pin.setAt)}`
-      : 'Not set — your account is protected by password only.');
+      ? `${u.pin.frozen ? 'Frozen' : 'Enabled'} · ${u.pin.length}-digit · set ${fmtDate(u.pin.setAt)}`
+      : 'Not set');
     $('#pinSetupBtn').textContent = hasPin ? 'Change PIN' : 'Set up PIN';
-    $('#pinRemoveBtn').hidden = !hasPin;
     setAcc('keyStatus', u.recovery ? `Created ${fmtDate(u.recovery.createdAt)} · stored hashed` : 'Not created');
     $$('[data-needs-pin]', dlg.account).forEach((row) => {
       row.classList.toggle('is-disabled', !hasPin);
@@ -1641,37 +1922,52 @@
     if (act === 'change-plan' || act === 'upgrade') {
       closeDialog(dlg.account);
       if (act === 'upgrade') { openCheckout(b.dataset.plan); return; }
-      document.getElementById('pricing').scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth' });
+      scrollToId('pricing');
     } else if (act === 'cancel-sub') {
-      const ok = await requirePin({
+      const ok = await pinPrompt({
         title: 'Cancel subscription?',
         sub: `Enter your PIN to confirm. You keep ${PLANS[u.sub.plan].name} until ${fmtDate(u.sub.renewsAt)}.`,
         danger: true,
       });
       if (!ok) return;
-      updateUser((x) => { x.sub.cancelAtPeriodEnd = true; logActivity(x, `${PLANS[x.sub.plan].name} set to cancel at period end`); });
-      renderAccount();
+      updateUser((x) => {
+        const name = PLANS[x.sub.plan].name;
+        x.sub.cancelAtPeriodEnd = true;
+        logActivity(x, `${name} set to cancel at period end`);
+        sendMail(x, 'billing', `Your ${name} subscription is cancelled`, {
+          paras: [
+            `Hi ${x.first}, we’ve cancelled your BDAI ${name} renewal. You keep full ${name} access until ${fmtDate(x.sub.renewsAt)}, then your account moves to Starter.`,
+            'Changed your mind? Resume any time before then — nothing is lost.',
+          ],
+          rows: [['Plan', `BDAI ${name}`], ['Access until', fmtDate(x.sub.renewsAt)]],
+          actions: [{ label: 'Resume subscription', tab: 'subscription' }],
+        });
+      });
       toast(`Subscription cancelled. Access continues until ${fmtDate(u.sub.renewsAt)}.`);
     } else if (act === 'resume-sub') {
-      updateUser((x) => { x.sub.cancelAtPeriodEnd = false; logActivity(x, `${PLANS[x.sub.plan].name} subscription resumed`); });
-      renderAccount();
+      updateUser((x) => {
+        const name = PLANS[x.sub.plan].name;
+        x.sub.cancelAtPeriodEnd = false;
+        logActivity(x, `${name} subscription resumed`);
+        sendMail(x, 'billing', `Welcome back to ${name}`, {
+          paras: [`Hi ${x.first}, your ${name} subscription is active again and will renew on ${fmtDate(x.sub.renewsAt)}.`],
+        });
+      });
       toast('Welcome back — your subscription will renew as normal.', 'success');
     }
   });
 
-  $('#invoiceView').addEventListener('click', (e) => {
-    const b = e.target.closest('[data-invoice]');
-    if (!b) return;
+  function downloadInvoice(id) {
     const u = currentUser();
-    const x = (u?.invoices || []).find((i) => i.id === b.dataset.invoice);
-    if (!x) return;
+    const x = (u?.invoices || []).find((i) => i.id === id);
+    if (!x) { toast('Receipt not found.', 'error'); return; }
     downloadText(`${x.id}.txt`, [
       'BDAI Sports & Health — Receipt',
       'Powered by BDAIWellness',
       '----------------------------------------',
       `Receipt:   ${x.id}`,
       `Date:      ${new Date(x.date).toLocaleString()}`,
-      `Customer:  ${u.name} <${u.email}>`,
+      `Customer:  ${fullName(u)} <${u.email}>`,
       `Plan:      BDAI ${PLANS[x.plan].name} (${x.cycle})`,
       x.discount ? `Discount:  -${fmtMoney(x.discount, x.currency)}${x.promo ? ` (${x.promo})` : ''}` : null,
       `Total:     ${fmtMoney(x.amount, x.currency)}`,
@@ -1680,39 +1976,39 @@
       '----------------------------------------',
       'Demo receipt — no real payment was processed.',
     ].filter(Boolean).join('\n'));
+  }
+  $('#invoiceView').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-invoice]');
+    if (b) downloadInvoice(b.dataset.invoice);
   });
 
   // Profile
   $('#profileForm').addEventListener('input', (e) => {
+    e.target.removeAttribute('aria-invalid');
     if (e.target.name === 'weeklyGoal') e.currentTarget.elements.goalOut.value = e.target.value;
   });
   $('#profileForm').addEventListener('submit', (e) => {
     e.preventDefault();
-    const f = e.currentTarget.elements;
-    const name = f.name.value.trim().replace(/\s+/g, ' ');
-    if (name.length < 2) { f.name.setAttribute('aria-invalid', 'true'); f.name.focus(); toast('Please enter your name.', 'error'); return; }
-    f.name.removeAttribute('aria-invalid');
+    const form = e.currentTarget;
+    const f = form.elements;
+    const first = titleCase(f.first.value);
+    const last = titleCase(f.last.value);
+    if (!NAME_RE.test(first)) { f.first.setAttribute('aria-invalid', 'true'); f.first.focus(); toast('Please enter a valid first name.', 'error'); return; }
+    if (!NAME_RE.test(last)) { f.last.setAttribute('aria-invalid', 'true'); f.last.focus(); toast('Please enter a valid last name.', 'error'); return; }
     updateUser((u) => {
-      u.name = name;
+      u.first = first;
+      u.last = last;
       u.settings = { ...u.settings, sport: f.sport.value, weeklyGoal: +f.weeklyGoal.value };
       logActivity(u, 'Profile updated');
     });
-    renderAccount();
-    toast('Profile saved.', 'success');
+    fillProfileForm();
+    toast('Profile saved. Your BDAI email stays the same.', 'success');
   });
 
   // Security actions
   $('#pinSetupBtn').addEventListener('click', async () => {
-    const u = currentUser();
-    const ok = await openPinSetup({ mode: u?.pin ? 'change' : 'create' });
+    const ok = await openPinSetup({ mode: 'change' });
     if (ok && dlg.account.open) renderAccount();
-  });
-  $('#pinRemoveBtn').addEventListener('click', async () => {
-    const ok = await pinPrompt({ title: 'Remove PIN security key?', sub: 'Your account will be protected by password only, and paid upgrades will ask you to set a PIN again.', danger: true });
-    if (!ok) return;
-    updateUser((u) => { u.pin = null; u.recovery = null; logActivity(u, 'PIN security key removed', true); });
-    renderAccount();
-    toast('PIN security key removed.');
   });
   $('#regenKeyBtn').addEventListener('click', async () => {
     const ok = await pinPrompt({ title: 'Regenerate recovery key', sub: 'Your old recovery key will stop working.' });
@@ -1720,68 +2016,213 @@
     const key = generateRecoveryKey();
     const salt = randomHex();
     const hash = await deriveHash(normalizeKey(key), salt);
-    updateUser((u) => { u.recovery = { salt, hash, createdAt: Date.now() }; logActivity(u, 'Recovery security key regenerated'); });
-    renderAccount();
+    updateUser((u) => {
+      u.recovery = { salt, hash, createdAt: Date.now() };
+      logActivity(u, 'Recovery security key regenerated');
+      sendMail(u, 'security', 'New recovery security key issued', {
+        paras: [
+          `Hi ${u.first}, a new recovery security key was generated for ${u.email}. The previous key no longer works.`,
+          'For your safety we never email the key itself — keep the copy you saved.',
+        ],
+        rows: [['Time', fmtDateTime(Date.now())]],
+      });
+    });
+    ps.mode = 'change';
     ps.completed = true;
     showRecoveryKey(key, 'Your new recovery security key');
   });
   $('#autoLockSelect').addEventListener('change', (e) => {
     const v = +e.target.value;
     updateUser((u) => { u.settings = { ...u.settings, autoLock: v }; logActivity(u, v ? `Auto-lock set to ${v} min` : 'Auto-lock turned off'); });
-    renderAccount();
     toast(v ? `BDAI will lock after ${v} minute${v === 1 ? '' : 's'} of inactivity.` : 'Auto-lock turned off.');
   });
   $('#shuffleToggle').addEventListener('change', (e) => {
     const on = e.target.checked;
     updateUser((u) => { u.settings = { ...u.settings, shuffle: on }; logActivity(u, on ? 'Scrambled keypad enabled' : 'Scrambled keypad disabled'); });
-    renderAccount();
   });
   const lockNow = () => {
-    const u = currentUser();
-    if (!u?.pin) { toast('Set up a PIN security key first.'); openAccount('security'); return; }
+    if (!currentUser()?.pin) return;
     closeDialog(dlg.account);
     lock();
   };
   $('#lockNowInline').addEventListener('click', lockNow);
   $('#lockNowBtn').addEventListener('click', lockNow);
 
-  $('#passwordForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const form = e.currentTarget;
-    const f = form.elements;
-    const u = currentUser();
-    if (!u) return;
-    const btn = $('button[type="submit"]', form);
-    btn.classList.add('is-loading');
-    const hash = await deriveHash(f.current.value, u.pw.salt);
-    btn.classList.remove('is-loading');
-    if (!safeEqual(hash, u.pw.hash)) { fieldError(form, 'current', 'Current password is incorrect.'); return; }
-    if (f.next.value.length < 8 || pwStrength(f.next.value) < 2) { fieldError(form, 'next', 'Choose a stronger new password.'); return; }
-    if (f.next.value !== f.confirm.value) { fieldError(form, 'confirm', 'New passwords don’t match.'); return; }
-    const salt = randomHex();
-    const newHash = await deriveHash(f.next.value, salt);
-    updateUser((x) => { x.pw = { salt, hash: newHash }; logActivity(x, 'Password changed'); });
-    form.reset();
-    setMsg($('.form-error', form), '');
-    form.closest('details').open = false;
-    renderAccount();
-    toast('Password updated.', 'success');
-  });
-  $('#passwordForm').addEventListener('input', (e) => e.target.removeAttribute('aria-invalid'));
-
   $('#deleteAccountBtn').addEventListener('click', async () => {
     const u = currentUser();
     if (!u) return;
     // eslint-disable-next-line no-alert
-    if (!window.confirm(`Permanently delete the BDAI account for ${u.email}? This cannot be undone.`)) return;
-    const ok = u.pin
-      ? await pinPrompt({ title: 'Delete account', sub: 'Enter your PIN to permanently delete your account.', danger: true })
-      : true;
+    if (!window.confirm(`Permanently delete ${u.email} and its inbox? This cannot be undone.`)) return;
+    const ok = await pinPrompt({ title: 'Delete account', sub: 'Enter your PIN to permanently delete your account and inbox.', danger: true });
     if (!ok) return;
     const email = u.email;
-    logout('Your account has been deleted.');
+    logout('Your account and inbox have been deleted.');
     db.remove(email);
+    devices.remove(email);
   });
+
+  /* ---------------------------------------------------------
+     Inbox
+     --------------------------------------------------------- */
+  const inboxState = { filter: 'all', query: '', openId: null };
+  const inboxEl = $('#inbox');
+  const mailList = $('#mailList');
+  const mailView = $('#mailView');
+
+  function filteredMail(u) {
+    const q = inboxState.query.trim().toLowerCase();
+    return (u.inbox || []).filter((m) => {
+      if (inboxState.filter === 'unread' && m.read) return false;
+      if (!['all', 'unread'].includes(inboxState.filter) && m.cat !== inboxState.filter) return false;
+      if (!q) return true;
+      const hay = [m.subject, SENDERS[m.from].name, ...m.paras, ...m.rows.flat()].join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+  }
+
+  function renderInbox() {
+    const u = currentUser();
+    if (!u) return;
+    const mails = filteredMail(u);
+    mailList.innerHTML = mails.length
+      ? mails.map((m) => {
+        const s = SENDERS[m.from];
+        return `<li><button type="button" class="mail-item${m.read ? '' : ' is-unread'}${m.id === inboxState.openId ? ' is-active' : ''}" data-mail-id="${m.id}">
+            <span class="mail-avatar cat-${s.cat}"><svg class="i"><use href="#i-${s.icon}"/></svg></span>
+            <span class="mail-meta">
+              <span class="mail-top"><strong>${escapeHtml(s.name)}</strong><time datetime="${new Date(m.t).toISOString()}">${escapeHtml(fmtMailTime(m.t))}</time></span>
+              <span class="mail-subject">${escapeHtml(m.subject)}</span>
+              <span class="mail-snippet">${escapeHtml(m.paras[0] || '')}</span>
+            </span>
+            ${m.read ? '' : '<span class="sr-only">Unread</span>'}
+          </button></li>`;
+      }).join('')
+      : `<li class="empty">${inboxState.query || inboxState.filter !== 'all' ? 'No messages match.' : 'Your inbox is empty.'}</li>`;
+
+    const open = (u.inbox || []).find((m) => m.id === inboxState.openId);
+    inboxEl.classList.toggle('is-reading', !!open);
+    if (!open) {
+      mailView.innerHTML = `<div class="mail-empty"><div><svg class="i"><use href="#i-mail"/></svg>
+        <p><strong>${unreadCount(u)} unread</strong><br>Select a message to read it.</p></div></div>`;
+      return;
+    }
+    const s = SENDERS[open.from];
+    mailView.innerHTML = `
+      <div class="mail-toolbar">
+        <button class="icon-btn mail-back" type="button" data-mail-act="back" aria-label="Back to inbox"><svg class="i"><use href="#i-arrow-left"/></svg></button>
+        <span class="pill pill-cat">${escapeHtml(s.cat)}</span>
+        <span class="spacer"></span>
+        <button class="icon-btn" type="button" data-mail-act="unread" aria-label="Mark as unread" title="Mark as unread"><svg class="i"><use href="#i-mail-dot"/></svg></button>
+        <button class="icon-btn" type="button" data-mail-act="delete" aria-label="Delete message" title="Delete"><svg class="i"><use href="#i-trash"/></svg></button>
+      </div>
+      <h3>${escapeHtml(open.subject)}</h3>
+      <div class="mail-from">
+        <span class="mail-avatar cat-${s.cat}"><svg class="i"><use href="#i-${s.icon}"/></svg></span>
+        <div><strong>${escapeHtml(s.name)}</strong><small>${escapeHtml(s.addr)}<br>to ${escapeHtml(u.email.split('@')[0])}<wbr>@${DOMAIN}</small></div>
+        <time datetime="${new Date(open.t).toISOString()}">${escapeHtml(fmtDateTime(open.t))}</time>
+      </div>
+      <div class="mail-body">
+        ${open.paras.map((p) => `<p>${escapeHtml(p)}</p>`).join('')}
+        ${open.rows.length ? `<dl class="mail-rows">${open.rows.map(([k, v]) => `<div><dt>${escapeHtml(k)}</dt><dd>${escapeHtml(v)}</dd></div>`).join('')}</dl>` : ''}
+        ${open.actions.length ? `<div class="mail-actions">${open.actions.map((a, i) => `<button class="btn ${i === 0 ? 'btn-primary' : 'btn-outline'} btn-sm" type="button" data-mail-action="${i}">${escapeHtml(a.label)}</button>`).join('')}</div>` : ''}
+        <p class="mail-sign">— Sent by ${escapeHtml(s.name)} · BDAI Sports &amp; Health, powered by BDAIWellness</p>
+      </div>`;
+  }
+
+  function setMailRead(id, read) {
+    updateUserSilently((u) => {
+      const m = (u.inbox || []).find((x) => x.id === id);
+      if (m) m.read = read;
+    });
+    renderBadges();
+  }
+
+  mailList.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-mail-id]');
+    if (!b) return;
+    inboxState.openId = b.dataset.mailId;
+    setMailRead(inboxState.openId, true);
+    renderInbox();
+    if (inboxEl.classList.contains('is-reading')) mailView.focus?.();
+  });
+  mailList.addEventListener('keydown', (e) => {
+    if (!['ArrowDown', 'ArrowUp'].includes(e.key)) return;
+    const items = $$('[data-mail-id]', mailList);
+    const i = items.indexOf(document.activeElement);
+    if (i < 0) return;
+    e.preventDefault();
+    items[clamp(i + (e.key === 'ArrowDown' ? 1 : -1), 0, items.length - 1)].focus();
+  });
+
+  mailView.addEventListener('click', (e) => {
+    const u = currentUser();
+    const open = (u?.inbox || []).find((m) => m.id === inboxState.openId);
+    const act = e.target.closest('[data-mail-act]')?.dataset.mailAct;
+    if (act === 'back') {
+      inboxState.openId = null;
+      renderInbox();
+      return;
+    }
+    if (act === 'unread' && open) {
+      setMailRead(open.id, false);
+      inboxState.openId = null;
+      renderInbox();
+      toast('Marked as unread.');
+      return;
+    }
+    if (act === 'delete' && open) {
+      updateUserSilently((x) => { x.inbox = (x.inbox || []).filter((m) => m.id !== open.id); });
+      inboxState.openId = null;
+      renderBadges();
+      renderInbox();
+      toast('Message deleted.');
+      return;
+    }
+    const ab = e.target.closest('[data-mail-action]');
+    if (ab && open) {
+      const a = open.actions[+ab.dataset.mailAction];
+      if (!a) return;
+      if (a.invoice) downloadInvoice(a.invoice);
+      else if (a.tab) switchAccountTab(a.tab);
+      else if (a.href) { closeDialog(dlg.account); scrollToId(a.href.slice(1)); }
+    }
+  });
+
+  $$('[data-mail-filter]', dlg.account).forEach((chip) => chip.addEventListener('click', () => {
+    inboxState.filter = chip.dataset.mailFilter;
+    $$('[data-mail-filter]', dlg.account).forEach((c) => {
+      const on = c === chip;
+      c.classList.toggle('is-active', on);
+      c.setAttribute('aria-pressed', String(on));
+    });
+    renderInbox();
+  }));
+  $('#inboxSearch').addEventListener('input', (e) => { inboxState.query = e.target.value; renderInbox(); });
+  $('#markAllRead').addEventListener('click', () => {
+    const u = currentUser();
+    if (!u || !unreadCount(u)) { toast('No unread messages.'); return; }
+    updateUserSilently((x) => (x.inbox || []).forEach((m) => { m.read = true; }));
+    renderBadges();
+    renderInbox();
+    toast('All messages marked as read.', 'success');
+  });
+
+  function renderBadges() {
+    const u = currentUser();
+    const n = unreadCount(u);
+    const badge = $('#inboxBadge');
+    const btn = $('#inboxBtn');
+    badge.hidden = n === 0;
+    badge.textContent = n > 99 ? '99+' : String(n);
+    btn.setAttribute('aria-label', n ? `Open inbox, ${n} unread` : 'Open inbox');
+    accEl('unread').forEach((el) => { el.hidden = n === 0; el.textContent = String(n); });
+    if (u && n > state.lastUnread) {
+      btn.classList.remove('ping');
+      void btn.offsetWidth;
+      btn.classList.add('ping');
+    }
+    state.lastUnread = n;
+  }
 
   /* ---------------------------------------------------------
      Programs
@@ -1822,8 +2263,21 @@
       toast(`“${name}” is already in your training plan.`);
       return;
     }
-    updateUser((x) => { x.programs = [...(x.programs || []), name]; logActivity(x, `Started program: ${name}`); });
-    toast(`“${name}” added to your training plan. Day 1 starts tomorrow!`, 'success');
+    const start = new Date();
+    start.setDate(start.getDate() + 1);
+    updateUser((x) => {
+      x.programs = [...(x.programs || []), name];
+      logActivity(x, `Started program: ${name}`);
+      sendMail(x, 'coach', `You’re in: ${name}`, {
+        paras: [
+          `Great choice, ${x.first}! “${name}” starts tomorrow and is now part of your daily plan.`,
+          'Each session adapts to your readiness score — on low-recovery days we’ll swap intensity for technique or mobility work.',
+        ],
+        rows: [['Starts', fmtDate(start.getTime())], ['Week 1', 'Easy intro sessions + baseline test'], ['Check-in', 'End of week 1 with your AI coach']],
+        actions: [{ label: 'Browse more programs', href: '#programs' }],
+      });
+    });
+    toast(`“${name}” added to your plan. Your coach sent details to your inbox.`, 'success');
   }
 
   document.addEventListener('click', (e) => {
@@ -1857,10 +2311,11 @@
     $('#lockNowBtn').hidden = !u?.pin;
     if (u) {
       const planKey = u.sub?.status === 'active' ? u.sub.plan : 'starter';
-      $('#chipAvatar').textContent = initials(u.name);
-      $('#chipName').textContent = firstName(u.name);
+      $('#chipAvatar').textContent = initials(fullName(u));
+      $('#chipName').textContent = u.first;
       $('#chipPlan').textContent = `${PLANS[planKey].name} plan`;
     }
+    renderBadges();
     renderPricing();
     renderPrograms();
     if (dlg.account.open) renderAccount();
@@ -1986,7 +2441,6 @@
   /* ---------------------------------------------------------
      Page chrome: theme, header, nav, reveal, counters, hero
      --------------------------------------------------------- */
-  // Theme
   const storedTheme = local.get(KEYS.theme, null);
   const prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
   function applyTheme(t) {
@@ -2001,13 +2455,11 @@
     local.set(KEYS.theme, next);
   });
 
-  // Header shadow on scroll
   const header = $('#siteHeader');
   const onScroll = () => header.classList.toggle('is-scrolled', window.scrollY > 8);
   window.addEventListener('scroll', onScroll, { passive: true });
   onScroll();
 
-  // Mobile nav
   const navLinks = $('#navLinks');
   const menuBtn = $('#menuBtn');
   function closeMobileNav() {
@@ -2027,7 +2479,6 @@
     if (navLinks.classList.contains('is-open') && !e.target.closest('#navLinks, #menuBtn')) closeMobileNav();
   });
 
-  // Active nav link
   if ('IntersectionObserver' in window) {
     const links = $$('#navLinks a');
     const navObs = new IntersectionObserver((entries) => {
@@ -2039,7 +2490,6 @@
     links.forEach((a) => { const s = $(a.getAttribute('href')); if (s) navObs.observe(s); });
   }
 
-  // Reveal on scroll (with stagger inside grids)
   const revealEls = $$('.reveal');
   revealEls.forEach((el) => {
     const siblings = [...el.parentElement.children].filter((c) => c.classList.contains('reveal'));
@@ -2057,14 +2507,12 @@
     revealEls.forEach((el) => el.classList.add('is-visible'));
   }
 
-  // Feature card spotlight
   $$('.feature-card').forEach((card) => card.addEventListener('pointermove', (e) => {
     const r = card.getBoundingClientRect();
     card.style.setProperty('--mx', `${e.clientX - r.left}px`);
     card.style.setProperty('--my', `${e.clientY - r.top}px`);
   }));
 
-  // Count-up stats
   function countUp(el) {
     const target = parseFloat(el.dataset.count);
     const decimals = +(el.dataset.decimals || 0);
@@ -2089,7 +2537,6 @@
     counters.forEach((c) => cObs.observe(c));
   } else counters.forEach(countUp);
 
-  // Hero: date, rings, live heart-rate sparkline
   $('#dashDate').textContent = new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short' });
   setTimeout(() => $('#rings').classList.add('is-drawn'), 350);
 
@@ -2117,12 +2564,13 @@
   $('#year').textContent = String(new Date().getFullYear());
 
   /* ---------------------------------------------------------
-     Boot: restore session (PIN users start locked)
+     Boot: restore session (accounts start locked behind the PIN)
      --------------------------------------------------------- */
   const saved = loadSession();
   if (saved && db.get(saved.email)) {
     state.email = saved.email;
     syncSubscription();
+    state.lastUnread = unreadCount(currentUser());
     renderAll();
     if (currentUser()?.pin) lock({ quiet: true });
   } else {
