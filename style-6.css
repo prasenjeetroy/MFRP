@@ -355,6 +355,7 @@ code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-si
 
 .gauge { position: relative; padding-bottom: 26px; margin-bottom: 8px; }
 .gauge-bar { display: flex; height: 12px; border-radius: 999px; overflow: hidden; gap: 2px; }
+.gseg { display: block; height: 100%; flex-shrink: 0; }
 .seg-under { background: #22c3ee; } .seg-normal { background: #3ef0a8; } .seg-over { background: #ffc24b; } .seg-obese { background: #ff5370; }
 .gauge-marker {
   position: absolute; top: -5px; width: 22px; height: 22px; margin-left: -11px; border-radius: 50%;
@@ -362,7 +363,7 @@ code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-si
   transition: left .8s var(--ease);
 }
 .gauge-labels { position: absolute; left: 0; right: 0; top: 18px; height: 20px; font-size: .74rem; color: var(--muted); }
-.gauge-labels span { position: absolute; transform: translateX(-50%); }
+.gauge-labels span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
 .gauge-labels span:first-child { transform: none; }
 .gauge-labels span:last-child { transform: translateX(-100%); }
 
@@ -1016,6 +1017,16 @@ dialog { color: var(--text); }
 .mail-code strong { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 1.6rem; letter-spacing: .18em; color: var(--primary); }
 .mail-code small { display: block; color: var(--muted); font-size: .75rem; }
 .mail-code.is-expired strong { color: var(--muted); text-decoration: line-through; }
+
+/* ---------- BMI for all ages ---------- */
+.age-presets { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.age-presets .chip { padding: 4px 12px; font-size: .78rem; }
+.bmi-hint { grid-column: 1 / -1; margin: 0; }
+.tool-inputs-wide .span-2 { grid-column: 1 / -1; }
+.seg-severe { background: #b0123b; }
+.gauge-caption { margin: 2px 0 8px; }
+.bmi-source { margin: 10px 0 0; padding-top: 10px; border-top: 1px dashed var(--border-strong); font-size: .76rem; color: var(--muted); }
+.result-tag[data-tone="info"] { color: var(--primary-2); background: color-mix(in srgb, var(--primary-2) 15%, transparent); }
 
 /* ---------- Reveal on scroll ---------- */
 .reveal { opacity: 0; transform: translateY(26px); transition: opacity .8s var(--ease), transform .8s var(--ease); transition-delay: var(--d, 0s); }

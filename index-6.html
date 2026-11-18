@@ -250,27 +250,37 @@
             <button class="tab" type="button" role="tab" id="tab-water" aria-controls="panel-water" aria-selected="false" tabindex="-1"><svg class="i"><use href="#i-drop"/></svg> Hydration</button>
           </div>
 
-          <!-- BMI -->
+          <!-- BMI (adults: WHO cut-offs · ages 2–19: CDC BMI-for-age · under 2: WHO standards) -->
           <form class="tool-panel" role="tabpanel" id="panel-bmi" aria-labelledby="tab-bmi" data-tool="bmi" novalidate>
-            <div class="tool-inputs">
-              <label class="field"><span>Height (cm)</span><input type="number" name="height" min="100" max="250" value="175" inputmode="decimal" required></label>
-              <label class="field"><span>Weight (kg)</span><input type="number" name="weight" min="25" max="300" value="72" step="0.1" inputmode="decimal" required></label>
+            <div class="tool-inputs tool-inputs-wide">
+              <label class="field span-2"><span>Sex</span>
+                <select name="sex"><option value="1">Male</option><option value="2">Female</option></select>
+              </label>
+              <label class="field"><span>Age (years)</span><input type="number" name="ageYears" min="0" max="120" value="30" step="1" inputmode="numeric" required></label>
+              <label class="field"><span>+ Months</span><input type="number" name="ageMonths" min="0" max="11" value="0" step="1" inputmode="numeric" required></label>
+              <label class="field"><span data-out="heightLabel">Height (cm)</span><input type="number" name="height" min="40" max="250" value="175" step="0.1" inputmode="decimal" required></label>
+              <label class="field"><span>Weight (kg)</span><input type="number" name="weight" min="1.5" max="300" value="72" step="0.1" inputmode="decimal" required></label>
+              <div class="age-presets" role="group" aria-label="Quick age examples">
+                <span class="muted small">Try:</span>
+                <button type="button" class="chip" data-bmi-preset="0,9,1,72,8.9">Baby 9 mo</button>
+                <button type="button" class="chip" data-bmi-preset="6,0,2,116,21">Child 6 yrs</button>
+                <button type="button" class="chip" data-bmi-preset="14,0,1,163,52">Teen 14 yrs</button>
+                <button type="button" class="chip" data-bmi-preset="30,0,1,175,72">Adult</button>
+              </div>
               <button class="btn btn-primary" type="submit">Calculate BMI</button>
+              <p class="muted small bmi-hint" data-out="bmiHint">Children and teens are compared with others of the same age and sex.</p>
             </div>
             <div class="tool-result" aria-live="polite">
-              <div class="big-num"><span data-out="bmi">—</span><small>Body Mass Index</small></div>
+              <div class="big-num"><span data-out="bmi">—</span><small data-out="bmiSub">Body Mass Index</small></div>
               <p class="result-tag" data-out="bmiCat">Enter your details</p>
               <div class="gauge">
-                <div class="gauge-bar">
-                  <span class="seg seg-under" style="flex-basis:10.4%"></span>
-                  <span class="seg seg-normal" style="flex-basis:27.1%"></span>
-                  <span class="seg seg-over" style="flex-basis:20.8%"></span>
-                  <span class="seg seg-obese" style="flex-basis:41.7%"></span>
-                </div>
+                <div class="gauge-bar" data-out="gaugeBar"></div>
                 <span class="gauge-marker" data-out="bmiMarker" style="left:0%"></span>
-                <div class="gauge-labels"><span style="left:0%">16</span><span style="left:10.4%">18.5</span><span style="left:37.5%">25</span><span style="left:58.3%">30</span><span style="left:100%">40</span></div>
+                <div class="gauge-labels" data-out="gaugeLabels"></div>
               </div>
+              <p class="gauge-caption muted small" data-out="gaugeCaption"></p>
               <p class="muted small" data-out="bmiNote"></p>
+              <p class="bmi-source" data-out="bmiSource"></p>
             </div>
           </form>
 
