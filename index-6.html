@@ -57,6 +57,11 @@
     <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.5 5h13L22 12v6a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-6z"/></symbol>
     <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
     <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h12v4"/><path d="M3 7v11a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2z"/><circle cx="16" cy="14.5" r="1.2"/></symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 22c4 0 7-3 7-7 0-5-5-7-5-12-3 2-5 5-5 8-1-1-2-2-2-4-2 2-3 5-3 8 0 4 3 7 8 7z"/></symbol>
+    <symbol id="i-coin" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9.5a3 3 0 0 0-3-1.5c-1.7 0-3 .9-3 2s1.3 1.7 3 2 3 .9 3 2-1.3 2-3 2a3 3 0 0 1-3-1.5M12 6v2M12 16v2"/></symbol>
+    <symbol id="i-wind" viewBox="0 0 24 24"><path d="M3 8h11a3 3 0 1 0-3-3M3 12h16a3 3 0 1 1-3 3M3 16h7"/></symbol>
+    <symbol id="i-medal" viewBox="0 0 24 24"><circle cx="12" cy="15" r="6"/><path d="M8.5 3h7L14 9.5h-4z"/><path d="m12 12.5.9 1.8 2 .3-1.4 1.4.3 2-1.8-1-1.8 1 .3-2-1.4-1.4 2-.3z"/></symbol>
     <symbol id="i-mail-dot" viewBox="0 0 24 24"><path d="M21 11v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h9"/><path d="m3 7 9 6 4-2.7"/><circle cx="19" cy="6" r="3"/></symbol>
   </svg>
 
@@ -72,6 +77,7 @@
         <a href="#features">Features</a>
         <a href="#tools">Health Tools</a>
         <a href="#programs">Programs</a>
+        <a href="#rewards">Rewards</a>
         <a href="#pricing">Pricing</a>
         <a href="#faq">FAQ</a>
       </nav>
@@ -83,6 +89,9 @@
         </button>
         <button class="icon-btn" id="lockNowBtn" type="button" aria-label="Lock account with PIN" title="Lock now" hidden>
           <svg class="i"><use href="#i-lock"/></svg>
+        </button>
+        <button class="wallet-pill" id="walletBtn" type="button" data-member hidden aria-label="Open wallet">
+          <svg class="i"><use href="#i-wallet"/></svg><span id="walletPillCash">₹0</span><span class="wp-points"><svg class="i"><use href="#i-star"/></svg><span id="walletPillPoints">0</span></span>
         </button>
         <button class="icon-btn inbox-btn" id="inboxBtn" type="button" data-member hidden aria-label="Open inbox">
           <svg class="i"><use href="#i-inbox"/></svg>
@@ -424,13 +433,42 @@
       </div>
     </section>
 
+    <!-- ===================== REWARDS ===================== -->
+    <section class="section" id="rewards">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="eyebrow"><svg class="i"><use href="#i-wallet"/></svg> BDAI Wallet &amp; Rewards</span>
+          <h2>Get rewarded for staying active</h2>
+          <p>Every account comes with a BDAI Wallet. Train, earn cash and Wellness Points, then use them to pay for your subscription.</p>
+        </header>
+        <div class="reward-grid">
+          <article class="reward-card reveal">
+            <span class="feature-icon fi-1"><svg class="i"><use href="#i-wallet"/></svg></span>
+            <h3>Welcome bonus</h3>
+            <p><strong data-wcfg="welcome">₹1,000</strong> of BDAI Cash lands in your wallet the moment you sign up.</p>
+          </article>
+          <article class="reward-card reveal">
+            <span class="feature-icon fi-2"><svg class="i"><use href="#i-bolt"/></svg></span>
+            <h3>Earn for every workout</h3>
+            <p>Log runs, rides, matches or yoga, finish daily tasks and hit milestones to earn cash — up to <strong data-wcfg="dailyCap">₹200</strong> a day — plus Wellness Points.</p>
+          </article>
+          <article class="reward-card reveal">
+            <span class="feature-icon fi-3"><svg class="i"><use href="#i-star"/></svg></span>
+            <h3>Points cut your price</h3>
+            <p>Redeem points at checkout for up to 50% off any subscription. <strong data-wcfg="hundred">100 points = ₹10</strong> off.</p>
+          </article>
+        </div>
+        <div class="center reveal"><button class="btn btn-primary btn-lg" type="button" data-open-wallet><svg class="i"><use href="#i-wallet"/></svg> Open my wallet</button></div>
+      </div>
+    </section>
+
     <!-- ===================== PRICING ===================== -->
     <section class="section section-alt" id="pricing">
       <div class="container">
         <header class="section-head reveal">
           <span class="eyebrow">Subscriptions</span>
           <h2>Simple plans. Serious results.</h2>
-          <p>Start free. Upgrade when you're ready. Every payment is authorized with your PIN security key.</p>
+          <p>Start free. Upgrade with your BDAI Wallet — every purchase is confirmed with your PIN and security key.</p>
         </header>
 
         <div class="pricing-controls reveal">
@@ -493,7 +531,7 @@
           </article>
         </div>
 
-        <p class="pricing-note"><svg class="i"><use href="#i-lock"/></svg> Demo checkout — no real charges are made. Promo codes to try: <code>BDAI20</code>, <code>WELLNESS10</code>, <code>ATHLETE50</code> (yearly).</p>
+        <p class="pricing-note"><svg class="i"><use href="#i-wallet"/></svg> Paid from your BDAI Wallet — no card needed. Use Wellness Points for up to 50% off. Promo codes: <code>BDAI20</code>, <code>WELLNESS10</code>, <code>ATHLETE50</code> (yearly).</p>
       </div>
     </section>
 
@@ -546,12 +584,20 @@
             <p>Every 5 incorrect attempts trigger a cooldown that doubles each time (30s, 60s, 120s…). After 15 incorrect attempts your account is frozen and can only be unlocked with your recovery security key. Each alert is also sent to your BDAI inbox.</p>
           </details>
           <details>
+            <summary>How does the BDAI Wallet work?</summary>
+            <p>You get a welcome bonus in BDAI Cash when you sign up. Log workouts, finish daily tasks and reach milestones to earn more cash plus Wellness Points. Subscriptions are paid from your wallet balance, and points can be redeemed at checkout for up to 50% off. Renewals are paid from your wallet automatically.</p>
+          </details>
+          <details>
+            <summary>What do I need to buy a subscription?</summary>
+            <p>Only your PIN and your recovery security key. No card details are needed — the plan is paid from your BDAI Wallet, and both keys are required so nobody can spend your balance with just your PIN.</p>
+          </details>
+          <details>
             <summary>Can I cancel my subscription anytime?</summary>
             <p>Yes. Cancel from Account → Subscription. You keep access until the end of your current billing period, and you can resume before then with one click.</p>
           </details>
           <details>
             <summary>Is my data secure?</summary>
-            <p>There are no passwords to leak. PINs and recovery keys are never stored in plain text — they're salted and hashed with PBKDF2-SHA-256. Card numbers and CVCs are never stored; only the brand and last four digits are kept for your receipt.</p>
+            <p>There are no passwords to leak. PINs and recovery keys are never stored in plain text — they're salted and hashed with PBKDF2-SHA-256. No card details are ever collected — purchases use your BDAI Wallet and need both your PIN and security key.</p>
           </details>
           <details>
             <summary>Who is BDAIWellness?</summary>
@@ -775,12 +821,12 @@
       <h2 class="modal-title" id="checkoutTitle">Subscribe to BDAI <span data-co="planName">Pro</span></h2>
       <ol class="stepper">
         <li data-stepper="1"><span>1</span>Plan</li>
-        <li data-stepper="2"><span>2</span>Payment</li>
-        <li data-stepper="3"><span>3</span>Authorize</li>
+        <li data-stepper="2"><span>2</span>PIN</li>
+        <li data-stepper="3"><span>3</span>Security key</li>
         <li data-stepper="4"><span>4</span>Done</li>
       </ol>
 
-      <!-- Step 1 -->
+      <!-- Step 1: plan, promo, points, wallet -->
       <section data-co-step="1">
         <fieldset class="radio-cards">
           <legend class="sr-only">Plan</legend>
@@ -792,69 +838,67 @@
           <label class="radio-card"><input type="radio" name="coCycle" value="monthly"><span><strong>Monthly</strong><small>Flexible</small></span></label>
           <label class="radio-card"><input type="radio" name="coCycle" value="yearly"><span><strong>Yearly</strong><small>Save 20%</small></span></label>
         </fieldset>
+
+        <div class="points-redeem">
+          <div class="pr-head">
+            <label for="pointsRange"><svg class="i"><use href="#i-star"/></svg> Use Wellness Points</label>
+            <strong data-co="pointsOff">−₹0</strong>
+          </div>
+          <input type="range" id="pointsRange" min="0" max="0" step="10" value="0">
+          <small class="muted" data-co="pointsNote">You have 0 points</small>
+        </div>
+
         <form class="promo" id="promoForm" novalidate>
           <label class="sr-only" for="promoInput">Promo code</label>
           <input id="promoInput" name="promo" placeholder="Promo code (try BDAI20)" autocomplete="off" autocapitalize="characters">
           <button class="btn btn-outline btn-sm" type="submit">Apply</button>
         </form>
         <p class="promo-msg" id="promoMsg" aria-live="polite"></p>
+
         <dl class="summary">
           <div><dt data-co="line">Pro · monthly</dt><dd data-co="subtotal"></dd></div>
-          <div data-co="discountRow" hidden><dt data-co="discountLabel">Discount</dt><dd data-co="discount"></dd></div>
-          <div class="total"><dt>Total due today</dt><dd data-co="total"></dd></div>
+          <div data-co="discountRow" hidden><dt data-co="discountLabel">Promo</dt><dd data-co="discount"></dd></div>
+          <div data-co="pointsRow" hidden><dt data-co="pointsLabel">Wellness Points</dt><dd data-co="pointsDiscount"></dd></div>
+          <div class="total"><dt>Total from wallet</dt><dd data-co="total"></dd></div>
+          <div class="wallet-line"><dt><svg class="i"><use href="#i-wallet"/></svg> Wallet balance</dt><dd data-co="balance"></dd></div>
+          <div class="wallet-line"><dt>Balance after purchase</dt><dd data-co="balanceAfter"></dd></div>
         </dl>
+        <p class="co-warn" data-co="insufficient" hidden>
+          <svg class="i"><use href="#i-wallet"/></svg>
+          <span>Not enough BDAI Cash for this plan. Use more points or earn cash by logging activities.</span>
+          <button class="btn btn-outline btn-sm" type="button" data-co-wallet>Open wallet</button>
+        </p>
         <p class="muted small" data-co="renews"></p>
-        <div class="modal-actions"><button class="btn btn-primary" type="button" data-co-next>Continue to payment <svg class="i"><use href="#i-arrow-right"/></svg></button></div>
+        <div class="modal-actions"><button class="btn btn-primary" type="button" data-co-next>Continue <svg class="i"><use href="#i-arrow-right"/></svg></button></div>
       </section>
 
-      <!-- Step 2 -->
+      <!-- Step 2: PIN -->
       <section data-co-step="2" hidden>
-        <div class="seg" role="tablist" aria-label="Payment method">
-          <button type="button" role="tab" data-pay-method="card" aria-selected="true"><svg class="i"><use href="#i-card"/></svg> Card</button>
-          <button type="button" role="tab" data-pay-method="upi" aria-selected="false" tabindex="-1"><svg class="i"><use href="#i-phone"/></svg> UPI</button>
-        </div>
-        <form id="payForm" class="form" novalidate>
-          <div data-pay-panel="card">
-            <div class="card-preview" aria-hidden="true">
-              <div class="cp-top"><span class="cp-chip"></span><span class="cp-brand" data-cp="brand">CARD</span></div>
-              <div class="cp-number" data-cp="number">•••• •••• •••• ••••</div>
-              <div class="cp-row"><span data-cp="name">YOUR NAME</span><span data-cp="exp">MM/YY</span></div>
-            </div>
-            <label class="field"><span>Name on card</span><input name="ccName" autocomplete="cc-name" maxlength="40"></label>
-            <label class="field"><span>Card number</span><input name="ccNumber" inputmode="numeric" autocomplete="cc-number" placeholder="1234 5678 9012 3456" maxlength="23"></label>
-            <div class="field-row">
-              <label class="field"><span>Expiry</span><input name="ccExp" inputmode="numeric" autocomplete="cc-exp" placeholder="MM/YY" maxlength="5"></label>
-              <label class="field"><span>CVC</span><input name="ccCvc" inputmode="numeric" autocomplete="cc-csc" placeholder="123" maxlength="4"></label>
-            </div>
-          </div>
-          <div data-pay-panel="upi" hidden>
-            <label class="field"><span>UPI ID</span><input name="upi" autocomplete="off" placeholder="yourname@bank" spellcheck="false"></label>
-            <p class="muted small">You'll authorize the mandate with your BDAI PIN in the next step.</p>
-          </div>
-          <p class="form-error" role="alert"></p>
-          <p class="demo-note"><svg class="i"><use href="#i-shield"/></svg> Demo mode — no real charge. Test card <code>4242 4242 4242 4242</code>, any future expiry, any CVC. Card numbers are never stored.</p>
-          <div class="modal-actions">
-            <button type="button" class="btn btn-ghost" data-co-back>Back</button>
-            <button class="btn btn-primary" type="submit">Review &amp; authorize</button>
-          </div>
-        </form>
-      </section>
-
-      <!-- Step 3 -->
-      <section data-co-step="3" hidden>
         <div class="auth-summary">
-          <div><small>You're subscribing to</small><strong data-co="authLine"></strong><small data-co="authMethod"></small></div>
+          <div><small>You're paying for</small><strong data-co="authLine"></strong><small data-co="authMethod"></small></div>
           <strong class="auth-total" data-co="authTotal"></strong>
         </div>
-        <div data-co="pinArea">
-          <p class="muted center">Enter your PIN security key to authorize this payment</p>
-          <div id="checkoutPad"></div>
-          <p class="pin-msg" id="checkoutPinMsg" role="alert"></p>
+        <p class="muted center"><strong>Step 1 of 2</strong> — enter your PIN security key</p>
+        <div id="checkoutPad"></div>
+        <p class="pin-msg" id="checkoutPinMsg" role="alert"></p>
+        <div class="modal-actions"><button type="button" class="btn btn-ghost" data-co-back>Back</button></div>
+      </section>
+
+      <!-- Step 3: security key -->
+      <section data-co-step="3" hidden>
+        <div class="auth-summary">
+          <div><small>You're paying for</small><strong data-co="authLine"></strong><small data-co="authMethod"></small></div>
+          <strong class="auth-total" data-co="authTotal"></strong>
         </div>
-        <div data-co="noPinArea" class="center" hidden>
-          <p>For your security, subscriptions are authorized with a PIN security key. Set one up to continue.</p>
-          <button class="btn btn-primary" type="button" id="coSetupPin"><svg class="i"><use href="#i-key"/></svg> Set up PIN security key</button>
-        </div>
+        <form id="coKeyForm" class="form center" novalidate>
+          <span class="icon-badge"><svg class="i"><use href="#i-key"/></svg></span>
+          <p class="muted"><strong>Step 2 of 2</strong> — enter your 16-character recovery security key to confirm this purchase.</p>
+          <label class="field"><span class="sr-only">Security key</span>
+            <input type="text" name="key" class="key-input" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" required>
+          </label>
+          <p class="form-error" role="alert"></p>
+          <button class="btn btn-primary btn-block" type="submit" data-co="payBtn">Pay from wallet</button>
+        </form>
         <div class="processing" data-co="processing" hidden><span class="spinner"></span> Processing securely…</div>
         <div class="modal-actions"><button type="button" class="btn btn-ghost" data-co-back>Back</button></div>
       </section>
@@ -884,6 +928,7 @@
         <nav class="account-tabs" role="tablist" aria-label="Account sections" aria-orientation="vertical">
           <button type="button" role="tab" data-acc-tab="profile" aria-selected="true"><svg class="i"><use href="#i-user"/></svg> Profile</button>
           <button type="button" role="tab" data-acc-tab="inbox" aria-selected="false" tabindex="-1"><svg class="i"><use href="#i-inbox"/></svg> Inbox <span class="tab-badge" data-acc="unread" hidden>0</span></button>
+          <button type="button" role="tab" data-acc-tab="wallet" aria-selected="false" tabindex="-1"><svg class="i"><use href="#i-wallet"/></svg> Wallet</button>
           <button type="button" role="tab" data-acc-tab="subscription" aria-selected="false" tabindex="-1"><svg class="i"><use href="#i-card"/></svg> Subscription</button>
           <button type="button" role="tab" data-acc-tab="security" aria-selected="false" tabindex="-1"><svg class="i"><use href="#i-shield"/></svg> Security</button>
         </nav>
@@ -937,12 +982,53 @@
               <button class="chip" type="button" data-mail-filter="security" aria-pressed="false">Security</button>
               <button class="chip" type="button" data-mail-filter="billing" aria-pressed="false">Billing</button>
               <button class="chip" type="button" data-mail-filter="coach" aria-pressed="false">Coach</button>
+              <button class="chip" type="button" data-mail-filter="wallet" aria-pressed="false">Wallet</button>
             </div>
           </div>
           <div class="inbox" id="inbox">
             <ul class="mail-list" id="mailList" aria-label="Messages"></ul>
             <article class="mail-view" id="mailView" aria-live="polite"></article>
           </div>
+        </section>
+
+        <section data-acc-panel="wallet" hidden>
+          <h2>Wallet</h2>
+          <div class="wallet-cards">
+            <div class="wallet-card wc-cash">
+              <small><svg class="i"><use href="#i-wallet"/></svg> BDAI Cash</small>
+              <strong data-w="cash">₹0</strong>
+              <span>Pays for subscriptions &amp; renewals</span>
+            </div>
+            <div class="wallet-card wc-points">
+              <small><svg class="i"><use href="#i-star"/></svg> Wellness Points</small>
+              <strong data-w="points">0</strong>
+              <span data-w="pointsValue">Worth ₹0 off subscriptions</span>
+            </div>
+            <div class="wallet-card wc-streak">
+              <small><svg class="i"><use href="#i-flame"/></svg> Activity streak</small>
+              <strong data-w="streak">0 days</strong>
+              <span data-w="today">Earned today: ₹0 of ₹200</span>
+              <div class="today-bar"><i data-w="todayBar"></i></div>
+            </div>
+          </div>
+
+          <h3 class="sub-h">Daily tasks <small class="muted" data-w="tasksDone">0/4 done</small></h3>
+          <div class="tasks" id="dailyTasks"></div>
+
+          <h3 class="sub-h">Log an activity</h3>
+          <form id="activityForm" class="activity-form" novalidate>
+            <label class="field"><span>Activity</span><select name="type" id="activityType"></select></label>
+            <label class="field"><span>Duration (minutes)</span><input type="number" name="minutes" min="5" max="240" value="30" inputmode="numeric" required></label>
+            <div class="earn-preview" aria-live="polite"><small>You'll earn</small><strong data-w="earnPreview">+0 pts</strong></div>
+            <button class="btn btn-primary" type="submit"><svg class="i"><use href="#i-bolt"/></svg> Log &amp; earn</button>
+            <p class="form-error" role="alert"></p>
+          </form>
+
+          <h3 class="sub-h">Milestones</h3>
+          <ul class="milestones" id="milestoneList"></ul>
+
+          <h3 class="sub-h">Transactions</h3>
+          <ul class="tx-list" id="txList"></ul>
         </section>
 
         <section data-acc-panel="subscription" hidden>

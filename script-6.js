@@ -196,6 +196,39 @@
     WELLNESS10: { pct: 10, label: '10% off your first payment' },
     ATHLETE50: { pct: 50, label: '50% off your first year', yearlyOnly: true },
   };
+  /* ---------- Wallet & rewards ---------- */
+  // Per-currency wallet rules. Cash earned per point; points' value at checkout.
+  const WALLET_CFG = {
+    INR: { welcome: 1000, dailyCap: 200, cashPerPoint: 0.2, pointValue: 0.1 },
+    USD: { welcome: 15, dailyCap: 4, cashPerPoint: 0.004, pointValue: 0.002 },
+  };
+  const MAX_POINTS_SHARE = 0.5; // points can cover up to 50% of a price
+  const DAILY_POINTS_CAP = 1500;
+  const ACTIVITIES = {
+    run: { label: 'Running', rate: 3 },
+    football: { label: 'Football', rate: 3 },
+    swim: { label: 'Swimming', rate: 3 },
+    cycle: { label: 'Cycling', rate: 2.5 },
+    strength: { label: 'Strength training', rate: 2.5 },
+    cricket: { label: 'Cricket', rate: 2 },
+    yoga: { label: 'Yoga', rate: 1.5 },
+    walk: { label: 'Walking', rate: 1 },
+    meditation: { label: 'Meditation', rate: 1 },
+  };
+  const DAILY_TASKS = [
+    { id: 'checkin', icon: 'check', title: 'Daily check-in', desc: 'Open BDAI and check in', points: 10 },
+    { id: 'water', icon: 'drop', title: 'Hydration goal', desc: 'Drank 8 glasses of water', points: 10 },
+    { id: 'breathe', icon: 'wind', title: 'Breathing break', desc: '30-second guided breathing', points: 15, timer: 30 },
+    { id: 'tool', icon: 'chart', title: 'Know your numbers', desc: 'Use any health tool on the page', points: 10, auto: true },
+  ];
+  const MILESTONES = [
+    { id: 'first', title: 'First workout', desc: 'Log your first activity', goal: 1, metric: 'workouts', points: 50, cash: 0 },
+    { id: 'five', title: 'Getting serious', desc: 'Log 5 activities', goal: 5, metric: 'workouts', points: 150, cashMul: 25 },
+    { id: 'streak3', title: '3-day streak', desc: 'Earn 3 days in a row', goal: 3, metric: 'streak', points: 100, cash: 0 },
+    { id: 'streak7', title: 'Week warrior', desc: 'Earn 7 days in a row', goal: 7, metric: 'streak', points: 300, cashMul: 50 },
+    { id: 'pts1k', title: 'Point collector', desc: 'Earn 1,000 lifetime points', goal: 1000, metric: 'lifetime', points: 0, cashMul: 50 },
+    { id: 'minutes', title: '10 hours active', desc: 'Log 600 active minutes', goal: 600, metric: 'minutes', points: 250, cashMul: 75 },
+  ];
   const PIN_MAX_FAILS = 15; // account frozen after this many wrong PINs
   const PIN_BATCH = 5; // cooldown after every N wrong PINs
 
@@ -228,6 +261,7 @@
     currency: local.get(KEYS.currency, 'INR') === 'USD' ? 'USD' : 'INR',
     pending: null,
     lastUnread: 0,
+    lastCash: null,
   };
 
   const currentUser = () => db.get(state.email);
@@ -254,6 +288,115 @@
   }
 
   /* ---------------------------------------------------------
+     Wallet engine: BDAI Cash + Wellness Points
+     --------------------------------------------------------- */
+  const dayKey = (d = new Date()) => d.toLocaleDateString('en-CA'); // local YYYY-MM-DD
+  const yesterdayKey = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dayKey(d); };
+  const fmtPts = (n) => `${Math.round(n).toLocaleString()} pts`;
+  const walletToasts = [];
+
+  function newWallet(currency) {
+    return {
+      currency, cash: 0, points: 0, lifetime: 0, workouts: 0, minutes: 0,
+      tx: [], milestones: {}, streak: { count: 0, last: '' },
+      daily: { date: dayKey(), cash: 0, points: 0, logs: 0, tasks: {} },
+    };
+  }
+  function ensureDaily(w) {
+    if (!w.daily || w.daily.date !== dayKey()) w.daily = { date: dayKey(), cash: 0, points: 0, logs: 0, tasks: {} };
+    return w.daily;
+  }
+  const liveStreak = (w) => (w.streak.last === dayKey() || w.streak.last === yesterdayKey() ? w.streak.count : 0);
+  function addTx(w, { cash = 0, points = 0, desc, kind = 'earn' }) {
+    w.tx.unshift({ t: Date.now(), cash: round2(cash), points: Math.round(points), desc, kind });
+    w.tx.length = Math.min(w.tx.length, 150);
+  }
+  /** Give a new wallet its welcome bonus (also used to migrate older accounts). */
+  function grantWelcome(user) {
+    const w = user.wallet;
+    const cfg = WALLET_CFG[w.currency];
+    w.cash = round2(w.cash + cfg.welcome);
+    addTx(w, { cash: cfg.welcome, desc: 'Welcome bonus', kind: 'bonus' });
+    sendMail(user, 'wallet', `${fmtMoney(cfg.welcome, w.currency)} welcome bonus added to your wallet`, {
+      paras: [
+        `Hi ${user.first}, we’ve added ${fmtMoney(cfg.welcome, w.currency)} of BDAI Cash to your wallet — use it to try Pro or Elite.`,
+        `Earn more by logging workouts, finishing daily tasks and unlocking milestones (up to ${fmtMoney(cfg.dailyCap, w.currency)} a day). Every activity also earns Wellness Points, which take up to 50% off any subscription.`,
+      ],
+      rows: [['Balance', fmtMoney(w.cash, w.currency)], ['Daily earning cap', fmtMoney(cfg.dailyCap, w.currency)], ['100 points', `${fmtMoney(cfg.pointValue * 100, w.currency)} off`]],
+      actions: [{ label: 'Open wallet', tab: 'wallet' }],
+    });
+  }
+  /** Older accounts get a wallet the first time they're used. Returns true if changed. */
+  function ensureWallet(user) {
+    if (user.wallet) return false;
+    user.wallet = newWallet(state.currency);
+    grantWelcome(user);
+    return true;
+  }
+
+  /** Credit points (and cash derived from them) within daily caps. Mutates the user. */
+  function earn(user, { points = 0, cash: fixedCash, desc, capped = true, kind = 'earn' }) {
+    const w = user.wallet;
+    const cfg = WALLET_CFG[w.currency];
+    const d = ensureDaily(w);
+    let pts = Math.max(0, Math.round(points));
+    if (capped) pts = Math.min(pts, Math.max(0, DAILY_POINTS_CAP - d.points));
+    let cash = fixedCash !== undefined ? fixedCash : round2(pts * cfg.cashPerPoint);
+    if (capped) cash = round2(Math.min(cash, Math.max(0, cfg.dailyCap - d.cash)));
+    if (!pts && !cash) return { cash: 0, points: 0 };
+    w.cash = round2(w.cash + cash);
+    w.points += pts;
+    w.lifetime += pts;
+    if (capped) { d.cash = round2(d.cash + cash); d.points += pts; }
+    const today = dayKey();
+    if (w.streak.last !== today) {
+      w.streak.count = w.streak.last === yesterdayKey() ? w.streak.count + 1 : 1;
+      w.streak.last = today;
+    }
+    addTx(w, { cash, points: pts, desc, kind });
+    checkMilestones(user);
+    return { cash, points: pts };
+  }
+
+  /** Debit cash and points. Returns false (and changes nothing) if the balance is too low. */
+  function spend(user, { cash = 0, points = 0, desc }) {
+    const w = user.wallet;
+    if (!w || cash > w.cash + 1e-9 || points > w.points) return false;
+    w.cash = round2(w.cash - cash);
+    w.points -= points;
+    addTx(w, { cash: -cash, points: -points, desc, kind: 'spend' });
+    return true;
+  }
+
+  function milestoneValue(w, m) {
+    if (m.metric === 'workouts') return w.workouts;
+    if (m.metric === 'streak') return liveStreak(w);
+    if (m.metric === 'lifetime') return w.lifetime;
+    return w.minutes;
+  }
+  const milestoneCash = (m, currency) => (m.cashMul ? round2(m.cashMul * WALLET_CFG[currency].welcome / 1000) : 0);
+  function checkMilestones(user) {
+    const w = user.wallet;
+    MILESTONES.forEach((m) => {
+      if (w.milestones[m.id] || milestoneValue(w, m) < m.goal) return;
+      w.milestones[m.id] = Date.now(); // mark first: earn() below re-enters checkMilestones
+      const cash = milestoneCash(m, w.currency);
+      earn(user, { points: m.points, cash, desc: `Milestone: ${m.title}`, capped: false, kind: 'milestone' });
+      const reward = [m.points ? fmtPts(m.points) : '', cash ? fmtMoney(cash, w.currency) : ''].filter(Boolean).join(' + ');
+      sendMail(user, 'wallet', `Milestone unlocked: ${m.title}`, {
+        paras: [`Nice work, ${user.first}! You unlocked “${m.title}” — ${m.desc.toLowerCase()}.`, `${reward} has been added to your wallet.`],
+        rows: [['Reward', reward], ['Cash balance', fmtMoney(w.cash, w.currency)], ['Points balance', fmtPts(w.points)]],
+        actions: [{ label: 'Open wallet', tab: 'wallet' }],
+      });
+      walletToasts.push(`🏅 Milestone unlocked: ${m.title} (+${reward})`);
+    });
+  }
+  function flushWalletToasts() {
+    walletToasts.splice(0).forEach((msg, i) => setTimeout(() => toast(msg, 'success', 4500), 400 + i * 600));
+  }
+  const earnedText = (r, currency) => [r.points ? `+${fmtPts(r.points)}` : '', r.cash ? `+${fmtMoney(r.cash, currency)}` : ''].filter(Boolean).join(' · ');
+
+  /* ---------------------------------------------------------
      Mail (the @wellness.inbox.bdai inbox)
      --------------------------------------------------------- */
   const SENDERS = {
@@ -261,6 +404,7 @@
     security: { name: 'BDAI Security', addr: `security@${DOMAIN}`, cat: 'security', icon: 'shield-check' },
     billing: { name: 'BDAI Billing', addr: `billing@${DOMAIN}`, cat: 'billing', icon: 'card' },
     coach: { name: 'BDAI Coach', addr: `coach@${DOMAIN}`, cat: 'coach', icon: 'trophy' },
+    wallet: { name: 'BDAI Wallet', addr: `wallet@${DOMAIN}`, cat: 'wallet', icon: 'wallet' },
   };
 
   /**
@@ -612,22 +756,29 @@
 
   /* ---------- Recovery with security key ---------- */
   const recoveryLimits = new Map(); // email -> { fails, until }
-  async function recoverWithKey(email, rawKey) {
+  /** Check a security (recovery) key without side effects, rate-limited per account. */
+  async function checkRecoveryKey(email, rawKey, context = 'recovery') {
     const u = db.get(email);
-    if (!u || !u.recovery) return { ok: false, msg: 'No recovery key exists for this account.' };
+    if (!u || !u.recovery) return { ok: false, msg: 'No security key exists for this account.' };
     const lim = recoveryLimits.get(email) || { fails: 0, until: 0 };
     if (Date.now() < lim.until) return { ok: false, msg: `Too many attempts. Try again in ${Math.ceil((lim.until - Date.now()) / 1000)}s.` };
     const key = normalizeKey(rawKey);
-    if (key.length !== 16) return { ok: false, msg: 'Recovery keys have 16 letters and numbers.' };
+    if (key.length !== 16) return { ok: false, msg: 'Security keys have 16 letters and numbers.' };
     const hash = await deriveHash(key, u.recovery.salt);
     if (!safeEqual(hash, u.recovery.hash)) {
       lim.fails += 1;
       if (lim.fails % 5 === 0) lim.until = Date.now() + 60000;
       recoveryLimits.set(email, lim);
-      updateUserSilently((x) => logActivity(x, 'Failed recovery-key attempt', true), email);
-      return { ok: false, msg: 'That recovery key is not correct.' };
+      updateUserSilently((x) => logActivity(x, `Wrong security key (${context})`, true), email);
+      return { ok: false, msg: lim.until > Date.now() ? 'Too many wrong keys. Try again in 60s.' : 'That security key is not correct.' };
     }
     recoveryLimits.delete(email);
+    return { ok: true };
+  }
+
+  async function recoverWithKey(email, rawKey) {
+    const res = await checkRecoveryKey(email, rawKey);
+    if (!res.ok) return res;
     updateUserSilently((x) => {
       if (x.pin) { x.pin.fails = 0; x.pin.lockUntil = 0; x.pin.frozen = false; }
       logActivity(x, 'Account recovered with security key');
@@ -875,6 +1026,7 @@
       first, last, email,
       pin, recovery,
       sub: null, invoices: [], programs: [], inbox: [],
+      wallet: newWallet(state.currency),
       settings: { autoLock: 5, shuffle: false, sport: 'running', weeklyGoal: 4 },
       activity: [], createdAt: Date.now(),
     };
@@ -898,6 +1050,7 @@
       rows: [['Sign-in address', email], ['PIN length', `${pin.length} digits`], ['Auto-lock', '5 minutes']],
       actions: [{ label: 'Open security settings', tab: 'security' }],
     });
+    grantWelcome(user);
     sendMail(user, 'team', `Welcome to BDAI Sports & Health, ${first}!`, {
       paras: [
         `Hi ${first}, welcome aboard. This is your personal BDAI inbox at ${email}.`,
@@ -1049,7 +1202,7 @@
     }
     const u = currentUser();
     toast(`Welcome, ${u.first}! Your inbox is ${u.email}`, 'success', 5200);
-    setTimeout(() => toast('You have 3 new messages in your BDAI inbox.', 'mail'), 900);
+    setTimeout(() => toast(`${fmtMoney(u.wallet.cash, u.wallet.currency)} welcome bonus is in your wallet · ${unreadCount(u)} new messages in your inbox.`, 'mail', 5200), 900);
     runPending();
     return undefined;
   });
@@ -1097,6 +1250,7 @@
 
   function completeLogin(email, remember, method = 'PIN') {
     updateUserSilently((u) => {
+      ensureWallet(u);
       logActivity(u, `Signed in with ${method}`);
       sendMail(u, 'security', 'New sign-in to your BDAI account', {
         paras: [
@@ -1277,49 +1431,59 @@
      Subscriptions & checkout
      --------------------------------------------------------- */
   const makeInvoiceId = (ts) => `BDAI-${ts.toString(36).toUpperCase().slice(-6)}${randomHex(1).toUpperCase()}`;
-  function describeMethod(m) {
-    if (!m) return '—';
-    if (m.type === 'card') return `${m.brand || 'Card'} •••• ${m.last4}`;
-    if (m.type === 'upi') return `UPI ${m.vpa}`;
-    return '—';
-  }
+  const describeMethod = (m) => (m && m.type === 'wallet' ? 'BDAI Wallet' : '—');
   function receiptRows(inv, renewsAt) {
     return [
       ['Receipt', inv.id],
       ['Plan', `BDAI ${PLANS[inv.plan].name} · ${inv.cycle}`],
-      inv.discount ? ['Discount', `−${fmtMoney(inv.discount, inv.currency)}${inv.promo ? ` (${inv.promo})` : ''}`] : null,
-      ['Total paid', fmtMoney(inv.amount, inv.currency)],
-      ['Paid with', inv.method],
-      renewsAt ? ['Next billing', fmtDate(renewsAt)] : null,
+      ['Price', fmtMoney(inv.price ?? inv.amount, inv.currency)],
+      inv.discount ? ['Promo', `−${fmtMoney(inv.discount, inv.currency)}${inv.promo ? ` (${inv.promo})` : ''}`] : null,
+      inv.pointsUsed ? ['Points redeemed', `${fmtPts(inv.pointsUsed)} (−${fmtMoney(inv.pointsOff, inv.currency)})`] : null,
+      ['Paid from wallet', fmtMoney(inv.amount, inv.currency)],
+      ['Authorized with', inv.auth],
+      renewsAt ? ['Next renewal', fmtDate(renewsAt)] : null,
     ].filter(Boolean);
   }
 
+  /** Apply renewals / endings that fell due. Renewals are paid from the wallet. */
   function syncSubscription() {
     const u = currentUser();
     if (!u || !u.sub) return;
     const now = Date.now();
     let changed = false;
     while (u.sub && now >= u.sub.renewsAt) {
-      const planName = PLANS[u.sub.plan].name;
-      if (u.sub.cancelAtPeriodEnd) {
+      const s = u.sub;
+      const planName = PLANS[s.plan].name;
+      if (s.cancelAtPeriodEnd) {
         logActivity(u, `${planName} subscription ended`);
         sendMail(u, 'billing', `Your ${planName} subscription has ended`, {
-          paras: [`Hi ${u.first}, your BDAI ${planName} plan ended today and your account is back on Starter. Your history and programs are saved — resubscribe any time.`],
+          paras: [`Hi ${u.first}, your BDAI ${planName} plan ended and your account is back on Starter. Your history and programs are saved — resubscribe any time from your wallet.`],
           actions: [{ label: 'See plans', href: '#pricing' }],
         });
         u.sub = null;
+      } else if (!spend(u, { cash: s.amount, desc: `BDAI ${planName} renewal · ${s.cycle}` })) {
+        logActivity(u, `${planName} renewal failed — wallet balance too low`, true);
+        sendMail(u, 'billing', `We couldn’t renew ${planName}`, {
+          paras: [
+            `Hi ${u.first}, your ${planName} renewal of ${fmtMoney(s.amount, s.currency)} couldn’t be paid — your BDAI Wallet has ${fmtMoney(u.wallet.cash, s.currency)}.`,
+            'Your account is now on Starter. Log activities to earn more cash, then subscribe again — Wellness Points can cover up to 50% of the price.',
+          ],
+          actions: [{ label: 'Open wallet', tab: 'wallet' }],
+        });
+        u.sub = null;
       } else {
-        const date = u.sub.renewsAt;
+        const date = s.renewsAt;
         const inv = {
-          id: makeInvoiceId(date), date, plan: u.sub.plan, cycle: u.sub.cycle, currency: u.sub.currency,
-          amount: u.sub.amount, discount: 0, method: describeMethod(u.sub.method), status: 'Paid',
+          id: makeInvoiceId(date), date, plan: s.plan, cycle: s.cycle, currency: s.currency,
+          price: s.amount, amount: s.amount, discount: 0, pointsUsed: 0, pointsOff: 0,
+          method: 'BDAI Wallet', auth: 'Auto-renewal', status: 'Paid',
         };
         u.invoices.unshift(inv);
-        u.sub.renewsAt = addPeriod(date, u.sub.cycle);
-        logActivity(u, `${planName} renewed`);
+        s.renewsAt = addPeriod(date, s.cycle);
+        logActivity(u, `${planName} renewed from wallet`);
         sendMail(u, 'billing', `Receipt: BDAI ${planName} renewed`, {
-          paras: [`Hi ${u.first}, your ${planName} subscription renewed. Thanks for training with BDAI.`],
-          rows: receiptRows(inv, u.sub.renewsAt),
+          paras: [`Hi ${u.first}, your ${planName} subscription renewed and was paid from your BDAI Wallet.`],
+          rows: receiptRows(inv, s.renewsAt),
           actions: [{ label: 'Download receipt', invoice: inv.id }],
         });
       }
@@ -1328,61 +1492,96 @@
     if (changed) db.save(u);
   }
 
-  const co = { plan: 'pro', cycle: 'monthly', currency: 'INR', promo: null, method: 'card', payment: null, step: 1, busy: false };
+  /* ---------- Checkout: plan → PIN → security key → done ---------- */
+  const co = { plan: 'pro', cycle: 'monthly', currency: 'INR', promo: null, points: 0, autoMax: true, step: 1, busy: false, pinOk: false };
   const coEl = (key) => $$(`[data-co="${key}"]`, dlg.checkout);
   const setCo = (key, text) => coEl(key).forEach((el) => { el.textContent = text; });
+  const pointsRange = $('#pointsRange');
+  const coKeyForm = $('#coKeyForm');
 
   function coAmounts() {
-    const subtotal = PLANS[co.plan].price[co.currency][co.cycle];
-    const discount = co.promo ? round2(subtotal * co.promo.pct / 100) : 0;
-    return { subtotal, discount, total: round2(subtotal - discount) };
+    const w = currentUser()?.wallet;
+    const cfg = WALLET_CFG[co.currency];
+    const price = PLANS[co.plan].price[co.currency][co.cycle];
+    const promoOff = co.promo ? round2(price * co.promo.pct / 100) : 0;
+    const afterPromo = round2(price - promoOff);
+    const maxByShare = Math.floor((afterPromo * MAX_POINTS_SHARE) / cfg.pointValue / 10) * 10;
+    const maxPoints = Math.max(0, Math.min(Math.floor((w?.points || 0) / 10) * 10, maxByShare));
+    const points = clamp(co.autoMax ? maxPoints : co.points, 0, maxPoints);
+    const pointsOff = round2(points * cfg.pointValue);
+    const total = round2(Math.max(0, afterPromo - pointsOff));
+    const balance = w?.cash || 0;
+    return { price, promoOff, maxPoints, points, pointsOff, total, balance, after: round2(balance - total) };
   }
 
   function openCheckout(plan) {
     const u = currentUser();
     if (!u) {
       state.pending = () => openCheckout(plan);
-      openAuth('signup', `Create a free account to subscribe to BDAI ${PLANS[plan].name}.`);
+      openAuth('signup', `Create a free account to subscribe to BDAI ${PLANS[plan].name} — your welcome bonus covers it.`);
       return;
     }
     if (u.sub && u.sub.status === 'active' && u.sub.plan === plan && u.sub.cycle === state.billing && !u.sub.cancelAtPeriodEnd) {
       toast(`You’re already on ${PLANS[plan].name} (${state.billing}).`);
       return;
     }
-    Object.assign(co, { plan, cycle: state.billing, currency: state.currency, promo: null, method: 'card', payment: null, busy: false });
+    Object.assign(co, { plan, cycle: state.billing, currency: u.wallet.currency, promo: null, points: 0, autoMax: true, busy: false, pinOk: false });
     $('#promoForm').reset();
     setMsg($('#promoMsg'), '');
-    payForm.reset();
-    payForm.elements.ccName.value = fullName(u);
-    updateCardPreview();
-    setPayMethod('card');
     goStep(1);
     openDialog(dlg.checkout);
   }
 
   function renderCheckout() {
-    const { subtotal, discount, total } = coAmounts();
+    const u = currentUser();
+    if (!u) return;
+    const a = coAmounts();
+    const cur = co.currency;
+    const cfg = WALLET_CFG[cur];
     const plan = PLANS[co.plan];
+    co.points = a.points;
     setCo('planName', plan.name);
     $$('input[name="coPlan"]', dlg.checkout).forEach((r) => { r.checked = r.value === co.plan; });
     $$('input[name="coCycle"]', dlg.checkout).forEach((r) => { r.checked = r.value === co.cycle; });
     $$('[data-co-price]', dlg.checkout).forEach((el) => {
-      const p = PLANS[el.dataset.coPrice].price[co.currency][co.cycle];
-      el.textContent = `${fmtMoney(p, co.currency)} / ${co.cycle === 'yearly' ? 'year' : 'month'}`;
+      const p = PLANS[el.dataset.coPrice].price[cur][co.cycle];
+      el.textContent = `${fmtMoney(p, cur)} / ${co.cycle === 'yearly' ? 'year' : 'month'}`;
     });
+
+    // Points slider
+    pointsRange.max = String(a.maxPoints);
+    pointsRange.value = String(a.points);
+    pointsRange.disabled = a.maxPoints === 0;
+    pointsRange.setAttribute('aria-valuetext', `${a.points} points, ${fmtMoney(a.pointsOff, cur)} off`);
+    setCo('pointsOff', `${fmtPts(a.points)} · −${fmtMoney(a.pointsOff, cur)}`);
+    setCo('pointsNote', u.wallet.points
+      ? `You have ${fmtPts(u.wallet.points)} · 100 pts = ${fmtMoney(cfg.pointValue * 100, cur)} · up to 50% of the price (max ${fmtPts(a.maxPoints)} here)`
+      : 'No points yet — earn them by logging activities in your Wallet.');
+
+    // Summary
     setCo('line', `${plan.name} · ${co.cycle}`);
-    setCo('subtotal', fmtMoney(subtotal, co.currency));
+    setCo('subtotal', fmtMoney(a.price, cur));
     coEl('discountRow')[0].hidden = !co.promo;
     if (co.promo) {
-      setCo('discountLabel', `${co.promo.code} · ${co.promo.pct}% off`);
-      setCo('discount', `−${fmtMoney(discount, co.currency)}`);
+      setCo('discountLabel', `Promo ${co.promo.code} · ${co.promo.pct}% off`);
+      setCo('discount', `−${fmtMoney(a.promoOff, cur)}`);
     }
-    setCo('total', fmtMoney(total, co.currency));
+    coEl('pointsRow')[0].hidden = !a.points;
+    setCo('pointsLabel', `Wellness Points (${fmtPts(a.points)})`);
+    setCo('pointsDiscount', `−${fmtMoney(a.pointsOff, cur)}`);
+    setCo('total', fmtMoney(a.total, cur));
+    setCo('balance', fmtMoney(a.balance, cur));
+    setCo('balanceAfter', fmtMoney(a.after, cur));
+    coEl('balanceAfter')[0].classList.toggle('is-negative', a.after < 0);
+    coEl('insufficient')[0].hidden = a.after >= 0;
+    $('[data-co-next]', dlg.checkout).disabled = a.after < 0;
     const renewDate = fmtDate(addPeriod(Date.now(), co.cycle));
-    setCo('renews', `Renews ${renewDate} at ${fmtMoney(subtotal, co.currency)}/${co.cycle === 'yearly' ? 'year' : 'month'}. Your receipt will be sent to your BDAI inbox.`);
+    setCo('renews', `Renews ${renewDate} at ${fmtMoney(a.price, cur)}/${co.cycle === 'yearly' ? 'year' : 'month'}, paid from your wallet. Receipt goes to your BDAI inbox.`);
+
     setCo('authLine', `BDAI ${plan.name} · ${co.cycle}`);
-    setCo('authTotal', fmtMoney(total, co.currency));
-    setCo('authMethod', co.payment ? `Paying with ${describeMethod(co.payment)}` : '');
+    setCo('authTotal', fmtMoney(a.total, cur));
+    setCo('authMethod', `From BDAI Wallet${a.points ? ` + ${fmtPts(a.points)}` : ''}`);
+    setCo('payBtn', `Pay ${fmtMoney(a.total, cur)} from wallet`);
   }
 
   function goStep(n) {
@@ -1394,8 +1593,21 @@
       li.classList.toggle('is-done', i < n);
     });
     renderCheckout();
-    if (n === 3) prepareAuthorizeStep();
-    if (n === 2) setTimeout(() => $(`[data-pay-panel="${co.method}"] input`, dlg.checkout)?.focus(), 30);
+    if (n <= 2) co.pinOk = false;
+    if (n === 2) {
+      const u = currentUser();
+      checkoutPad.setLength(u.pin.length);
+      setMsg(checkoutPinMsg, '');
+      applyPinState(checkoutPad, checkoutPinMsg);
+      setTimeout(() => checkoutPad.focus(), 30);
+    }
+    if (n === 3) {
+      coKeyForm.reset();
+      coKeyForm.hidden = false;
+      coEl('processing')[0].hidden = true;
+      setMsg($('.form-error', coKeyForm), '');
+      setTimeout(() => coKeyForm.elements.key.focus(), 30);
+    }
     $('.modal-card', dlg.checkout).scrollTop = 0;
   }
 
@@ -1408,6 +1620,11 @@
     }
     renderCheckout();
   }));
+  pointsRange.addEventListener('input', () => {
+    co.autoMax = false;
+    co.points = +pointsRange.value;
+    renderCheckout();
+  });
   $('#promoForm').addEventListener('submit', (e) => {
     e.preventDefault();
     const code = e.currentTarget.elements.promo.value.trim().toUpperCase();
@@ -1420,113 +1637,24 @@
     setMsg(msg, `${code} applied — ${p.label}.`, 'ok');
     renderCheckout();
   });
-  $('[data-co-next]', dlg.checkout).addEventListener('click', () => goStep(2));
+  $('[data-co-next]', dlg.checkout).addEventListener('click', () => {
+    if (coAmounts().after < 0) return;
+    goStep(2);
+  });
   $$('[data-co-back]', dlg.checkout).forEach((b) => b.addEventListener('click', () => {
     if (co.busy) return;
     checkoutPad.stopCooldown();
     goStep(Math.max(1, co.step - 1));
   }));
-
-  function setPayMethod(m) {
-    co.method = m;
-    $$('[data-pay-method]', dlg.checkout).forEach((b) => {
-      const on = b.dataset.payMethod === m;
-      b.setAttribute('aria-selected', String(on));
-      b.tabIndex = on ? 0 : -1;
-    });
-    $$('[data-pay-panel]', dlg.checkout).forEach((p) => { p.hidden = p.dataset.payPanel !== m; });
-    setMsg($('#payForm .form-error'), '');
-  }
-  $$('[data-pay-method]', dlg.checkout).forEach((b) => b.addEventListener('click', () => {
-    setPayMethod(b.dataset.payMethod);
-    $(`[data-pay-panel="${co.method}"] input`, dlg.checkout)?.focus();
-  }));
-
-  function luhn(num) {
-    let sum = 0;
-    let dbl = false;
-    for (let i = num.length - 1; i >= 0; i--) {
-      let d = +num[i];
-      if (dbl) { d *= 2; if (d > 9) d -= 9; }
-      sum += d;
-      dbl = !dbl;
-    }
-    return sum % 10 === 0;
-  }
-  function cardBrand(n) {
-    if (/^4/.test(n)) return 'Visa';
-    if (/^(5[1-5]|2(2[2-9]|[3-6]\d|7[01]|720))/.test(n)) return 'Mastercard';
-    if (/^3[47]/.test(n)) return 'Amex';
-    if (/^(6011|64[4-9])/.test(n)) return 'Discover';
-    if (/^(60|65|81|82|508)/.test(n)) return 'RuPay';
-    return '';
-  }
-  function formatCardNumber(digits) {
-    if (cardBrand(digits) === 'Amex') {
-      return [digits.slice(0, 4), digits.slice(4, 10), digits.slice(10, 15)].filter(Boolean).join(' ');
-    }
-    return digits.slice(0, 19).match(/.{1,4}/g)?.join(' ') || '';
-  }
-  const payForm = $('#payForm');
-  function updateCardPreview() {
-    const f = payForm.elements;
-    const digits = f.ccNumber.value.replace(/\D/g, '');
-    const brand = cardBrand(digits);
-    const preview = $('.card-preview', dlg.checkout);
-    preview.dataset.brand = brand;
-    $('[data-cp="brand"]', preview).textContent = brand || 'CARD';
-    const masked = (digits + '•'.repeat(Math.max(0, 16 - digits.length))).slice(0, Math.max(16, digits.length));
-    $('[data-cp="number"]', preview).textContent = masked.match(/.{1,4}/g).join(' ');
-    $('[data-cp="name"]', preview).textContent = f.ccName.value.trim() || 'YOUR NAME';
-    $('[data-cp="exp"]', preview).textContent = f.ccExp.value || 'MM/YY';
-  }
-  payForm.elements.ccNumber.addEventListener('input', (e) => {
-    const digits = e.target.value.replace(/\D/g, '').slice(0, 19);
-    e.target.value = formatCardNumber(digits);
-    payForm.elements.ccCvc.maxLength = cardBrand(digits) === 'Amex' ? 4 : 3;
-    updateCardPreview();
-  });
-  payForm.elements.ccExp.addEventListener('input', (e) => {
-    let d = e.target.value.replace(/\D/g, '').slice(0, 4);
-    if (d.length === 1 && +d > 1) d = `0${d}`;
-    e.target.value = d.length > 2 ? `${d.slice(0, 2)}/${d.slice(2)}` : d;
-    updateCardPreview();
-  });
-  payForm.elements.ccCvc.addEventListener('input', (e) => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4); });
-  payForm.elements.ccName.addEventListener('input', updateCardPreview);
-  payForm.addEventListener('input', (e) => e.target.removeAttribute('aria-invalid'));
-
-  payForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const f = payForm.elements;
-    if (co.method === 'card') {
-      const digits = f.ccNumber.value.replace(/\D/g, '');
-      const brand = cardBrand(digits);
-      if (f.ccName.value.trim().length < 2) return fieldError(payForm, 'ccName', 'Enter the name on your card.');
-      if (digits.length < 13 || digits.length > 19 || !luhn(digits)) return fieldError(payForm, 'ccNumber', 'That card number doesn’t look right.');
-      const m = f.ccExp.value.match(/^(\d{2})\/(\d{2})$/);
-      if (!m || +m[1] < 1 || +m[1] > 12) return fieldError(payForm, 'ccExp', 'Enter expiry as MM/YY.');
-      const expEnd = new Date(2000 + +m[2], +m[1], 0, 23, 59, 59);
-      if (expEnd < new Date()) return fieldError(payForm, 'ccExp', 'This card has expired.');
-      const cvcLen = brand === 'Amex' ? 4 : 3;
-      if (f.ccCvc.value.length !== cvcLen) return fieldError(payForm, 'ccCvc', `Enter the ${cvcLen}-digit security code.`);
-      co.payment = { type: 'card', brand: brand || 'Card', last4: digits.slice(-4), exp: f.ccExp.value };
-    } else {
-      const vpa = f.upi.value.trim();
-      if (!/^[a-zA-Z0-9._-]{2,256}@[a-zA-Z][a-zA-Z0-9]{1,63}$/.test(vpa)) return fieldError(payForm, 'upi', 'Enter a valid UPI ID, e.g. name@bank.');
-      const [user, handle] = vpa.split('@');
-      co.payment = { type: 'upi', vpa: `${user.slice(0, 2)}${'•'.repeat(Math.max(2, user.length - 2))}@${handle}` };
-    }
-    // Never keep raw card data around.
-    f.ccNumber.value = '';
-    f.ccCvc.value = '';
-    goStep(3);
-    return undefined;
+  $('[data-co-wallet]', dlg.checkout).addEventListener('click', () => {
+    closeDialog(dlg.checkout);
+    openAccount('wallet');
   });
 
+  // Step 2: PIN
   const checkoutPinMsg = $('#checkoutPinMsg');
   const checkoutPad = new PinPad($('#checkoutPad'), {
-    label: 'Authorize payment PIN',
+    label: 'Purchase PIN',
     onComplete: async (v, pad) => {
       const res = await verifyPin(v);
       if (!res.ok) {
@@ -1535,66 +1663,76 @@
       }
       pad.success();
       setMsg(checkoutPinMsg, 'PIN verified', 'ok');
-      await sleep(250);
-      const back = $('[data-co-back]', $('[data-co-step="3"]', dlg.checkout));
-      co.busy = true;
-      coEl('pinArea')[0].hidden = true;
-      coEl('processing')[0].hidden = false;
-      back.disabled = true;
-      await sleep(1400);
-      activateSubscription();
-      co.busy = false;
-      back.disabled = false;
-      goStep(4);
-      confetti();
+      await sleep(300);
+      goStep(3);
+      co.pinOk = true;
     },
   });
 
-  function prepareAuthorizeStep() {
-    const u = currentUser();
-    coEl('processing')[0].hidden = true;
-    const hasPin = !!u?.pin;
-    coEl('pinArea')[0].hidden = !hasPin;
-    coEl('noPinArea')[0].hidden = hasPin;
-    if (hasPin) {
-      checkoutPad.setLength(u.pin.length);
-      setMsg(checkoutPinMsg, '');
-      applyPinState(checkoutPad, checkoutPinMsg);
-      setTimeout(() => checkoutPad.focus(), 30);
+  // Step 3: security key → pay
+  coKeyForm.elements.key.addEventListener('input', formatKeyInput);
+  coKeyForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (co.busy) return;
+    if (!co.pinOk) { goStep(2); return; }
+    const btn = $('button[type="submit"]', coKeyForm);
+    btn.classList.add('is-loading');
+    const res = await checkRecoveryKey(state.email, coKeyForm.elements.key.value, 'purchase');
+    btn.classList.remove('is-loading');
+    if (!res.ok) { fieldError(coKeyForm, 'key', res.msg); return; }
+    if (coAmounts().after < 0) { fieldError(coKeyForm, 'key', 'Your wallet balance changed and is now too low.'); return; }
+    co.busy = true;
+    coKeyForm.hidden = true;
+    coEl('processing')[0].hidden = false;
+    $$('[data-co-back]', dlg.checkout).forEach((b) => { b.disabled = true; });
+    await sleep(1200);
+    const done = activateSubscription();
+    co.busy = false;
+    $$('[data-co-back]', dlg.checkout).forEach((b) => { b.disabled = false; });
+    if (!done) {
+      coKeyForm.hidden = false;
+      coEl('processing')[0].hidden = true;
+      fieldError(coKeyForm, 'key', 'Payment failed — not enough wallet balance.');
+      return;
     }
-  }
-  $('#coSetupPin').addEventListener('click', async () => {
-    const ok = await openPinSetup({ mode: 'change', reason: 'Create a PIN to authorize this subscription.' });
-    if (ok && dlg.checkout.open) prepareAuthorizeStep();
+    goStep(4);
+    confetti();
+    flushWalletToasts();
   });
 
   function activateSubscription() {
+    const a = coAmounts();
     const now = Date.now();
-    const { total, discount } = coAmounts();
     const plan = PLANS[co.plan];
+    const cur = co.currency;
     const renewsAt = addPeriod(now, co.cycle);
+    let ok = false;
     updateUser((u) => {
+      if (!spend(u, { cash: a.total, points: a.points, desc: `BDAI ${plan.name} · ${co.cycle}` })) return;
+      ok = true;
       const prev = u.sub;
       u.sub = {
-        plan: co.plan, cycle: co.cycle, currency: co.currency,
-        amount: plan.price[co.currency][co.cycle],
+        plan: co.plan, cycle: co.cycle, currency: cur,
+        amount: plan.price[cur][co.cycle],
         status: 'active', startedAt: now, renewsAt,
-        cancelAtPeriodEnd: false, method: co.payment,
+        cancelAtPeriodEnd: false, method: { type: 'wallet' },
       };
       const inv = {
-        id: makeInvoiceId(now), date: now, plan: co.plan, cycle: co.cycle, currency: co.currency,
-        amount: total, discount, promo: co.promo?.code || '', method: describeMethod(co.payment), status: 'Paid',
+        id: makeInvoiceId(now), date: now, plan: co.plan, cycle: co.cycle, currency: cur,
+        price: a.price, discount: a.promoOff, promo: co.promo?.code || '',
+        pointsUsed: a.points, pointsOff: a.pointsOff, amount: a.total,
+        method: 'BDAI Wallet', auth: 'PIN + security key', status: 'Paid',
       };
       u.invoices = u.invoices || [];
       u.invoices.unshift(inv);
       const changed = prev && prev.status === 'active';
       logActivity(u, changed
         ? `Plan changed: ${PLANS[prev.plan].name} → ${plan.name} (${co.cycle})`
-        : `Subscribed to ${plan.name} (${co.cycle}) — authorized with PIN`);
+        : `Subscribed to ${plan.name} (${co.cycle}) — authorized with PIN + security key`);
       sendMail(u, 'billing', `Receipt: you’re on BDAI ${plan.name}`, {
         paras: [
-          `Hi ${u.first}, thanks for ${changed ? 'switching to' : 'subscribing to'} BDAI ${plan.name}! This payment was authorized with your PIN security key.`,
-          `All ${plan.name} programs and features are unlocked now. You can manage or cancel your plan any time from your account.`,
+          `Hi ${u.first}, thanks for ${changed ? 'switching to' : 'subscribing to'} BDAI ${plan.name}! It was paid from your BDAI Wallet and authorized with your PIN and security key.`,
+          `Renewals are taken from your wallet automatically — keep logging activities to top it up. Your wallet now holds ${fmtMoney(u.wallet.cash, cur)} and ${fmtPts(u.wallet.points)}.`,
         ],
         rows: receiptRows(inv, renewsAt),
         actions: [{ label: 'Download receipt', invoice: inv.id }, { label: 'Manage subscription', tab: 'subscription' }],
@@ -1609,8 +1747,10 @@
         actions: [{ label: 'Browse programs', href: '#programs' }],
       });
     });
-    setCo('successText', `${fmtMoney(total, co.currency)} paid with ${describeMethod(co.payment)}. Your next billing date is ${fmtDate(renewsAt)}. A receipt was sent to your BDAI inbox.`);
-    co.payment = null;
+    if (ok) {
+      setCo('successText', `${fmtMoney(a.total, cur)} paid from your BDAI Wallet${a.points ? ` plus ${fmtPts(a.points)} (−${fmtMoney(a.pointsOff, cur)})` : ''}. Next renewal ${fmtDate(renewsAt)} at ${fmtMoney(plan.price[cur][co.cycle], cur)} from your wallet. Receipt sent to your inbox.`);
+    }
+    return ok;
   }
 
   $('#coGoAccount').addEventListener('click', () => {
@@ -1620,8 +1760,8 @@
   dlg.checkout.addEventListener('cancel', (e) => { if (co.busy) e.preventDefault(); });
   dlg.checkout.addEventListener('close', () => {
     checkoutPad.stopCooldown();
-    co.payment = null;
-    payForm.reset();
+    co.pinOk = false;
+    coKeyForm.reset();
   });
 
   function confetti() {
@@ -1738,6 +1878,7 @@
     state.currency = currencySelect.value;
     local.set(KEYS.currency, state.currency);
     renderPricing(true);
+    renderRewardsCopy();
   });
 
   document.addEventListener('click', (e) => {
@@ -1829,6 +1970,7 @@
     setAcc('plan', PLANS[planKey].name + (u.sub?.cancelAtPeriodEnd ? ' (ending)' : ''));
     setAcc('programs', String((u.programs || []).length));
 
+    renderWallet(u);
     renderSubscriptionPanel(u);
     renderSecurityPanel(u);
     if (!$('[data-acc-panel="inbox"]', dlg.account).hidden) renderInbox();
@@ -1852,7 +1994,7 @@
           </div>
           <dl class="sub-meta">
             <div><dt>${s.cancelAtPeriodEnd ? 'Access until' : 'Next billing'}</dt><dd>${escapeHtml(fmtDate(s.renewsAt))}</dd></div>
-            <div><dt>Payment method</dt><dd>${escapeHtml(describeMethod(s.method))}</dd></div>
+            <div><dt>Paid from</dt><dd>BDAI Wallet · ${escapeHtml(fmtMoney(u.wallet?.cash || 0, s.currency))}</dd></div>
             <div><dt>Started</dt><dd>${escapeHtml(fmtDate(s.startedAt))}</dd></div>
           </dl>
           <div class="sub-actions">
@@ -1969,12 +2111,15 @@
       `Date:      ${new Date(x.date).toLocaleString()}`,
       `Customer:  ${fullName(u)} <${u.email}>`,
       `Plan:      BDAI ${PLANS[x.plan].name} (${x.cycle})`,
-      x.discount ? `Discount:  -${fmtMoney(x.discount, x.currency)}${x.promo ? ` (${x.promo})` : ''}` : null,
+      `Price:     ${fmtMoney(x.price ?? x.amount, x.currency)}`,
+      x.discount ? `Promo:     -${fmtMoney(x.discount, x.currency)}${x.promo ? ` (${x.promo})` : ''}` : null,
+      x.pointsUsed ? `Points:    -${fmtMoney(x.pointsOff, x.currency)} (${x.pointsUsed} pts redeemed)` : null,
       `Total:     ${fmtMoney(x.amount, x.currency)}`,
-      `Paid with: ${x.method}`,
+      `Paid from: ${x.method}`,
+      `Authorized: ${x.auth}`,
       `Status:    ${x.status}`,
       '----------------------------------------',
-      'Demo receipt — no real payment was processed.',
+      'Demo receipt — paid with BDAI Wallet credit, no real money.',
     ].filter(Boolean).join('\n'));
   }
   $('#invoiceView').addEventListener('click', (e) => {
@@ -2060,6 +2205,185 @@
     db.remove(email);
     devices.remove(email);
   });
+
+  /* ---------------------------------------------------------
+     Wallet tab
+     --------------------------------------------------------- */
+  const setW = (k, text) => $$(`[data-w="${k}"]`, dlg.account).forEach((el) => { el.textContent = text; });
+  const activityForm = $('#activityForm');
+  const activityType = $('#activityType');
+  activityType.innerHTML = Object.entries(ACTIVITIES)
+    .map(([id, a]) => `<option value="${id}">${escapeHtml(a.label)} · ${a.rate} pts/min</option>`).join('');
+  const TX_ICON = { earn: 'bolt', bonus: 'wallet', milestone: 'medal', spend: 'card' };
+  const breathing = { timer: null, left: 0 };
+
+  function renderWallet(u) {
+    const w = u?.wallet;
+    if (!w) return;
+    const cur = w.currency;
+    const cfg = WALLET_CFG[cur];
+    const d = ensureDaily(w);
+    const streak = liveStreak(w);
+    setW('cash', fmtMoney(w.cash, cur));
+    setW('points', w.points.toLocaleString());
+    setW('pointsValue', `Worth ${fmtMoney(round2(w.points * cfg.pointValue), cur)} off subscriptions`);
+    setW('streak', `${streak} day${streak === 1 ? '' : 's'}`);
+    setW('today', `Earned today: ${fmtMoney(d.cash, cur)} of ${fmtMoney(cfg.dailyCap, cur)}`);
+    $('[data-w="todayBar"]', dlg.account).style.width = `${clamp(d.cash / cfg.dailyCap * 100, 0, 100)}%`;
+
+    // Daily tasks
+    const doneCount = DAILY_TASKS.filter((t) => d.tasks[t.id]).length;
+    setW('tasksDone', `${doneCount}/${DAILY_TASKS.length} done`);
+    $('#dailyTasks').innerHTML = DAILY_TASKS.map((t) => {
+      const done = !!d.tasks[t.id];
+      const cash = round2(t.points * cfg.cashPerPoint);
+      let label = 'Claim';
+      if (done) label = '✓ Done';
+      else if (t.auto) label = 'Open tools';
+      else if (t.timer) label = breathing.timer ? `Breathe… ${breathing.left}s` : 'Start';
+      return `<div class="task${done ? ' is-done' : ''}">
+        <span class="task-icon"><svg class="i"><use href="#i-${t.icon}"/></svg></span>
+        <span class="task-text"><strong>${escapeHtml(t.title)}</strong><small>${escapeHtml(t.desc)} · +${t.points} pts · +${escapeHtml(fmtMoney(cash, cur))}</small></span>
+        <button class="btn ${done ? 'btn-ghost' : 'btn-outline'} btn-sm${t.timer && breathing.timer ? ' is-breathing' : ''}" type="button" data-task="${t.id}"${done || (t.timer && breathing.timer) ? ' disabled' : ''}>${escapeHtml(label)}</button>
+      </div>`;
+    }).join('');
+
+    updateEarnPreview(u);
+
+    // Milestones
+    $('#milestoneList').innerHTML = MILESTONES.map((m) => {
+      const done = !!w.milestones[m.id];
+      const v = done ? m.goal : milestoneValue(w, m);
+      const cash = milestoneCash(m, cur);
+      const reward = [m.points ? `+${fmtPts(m.points)}` : '', cash ? `+${fmtMoney(cash, cur)}` : ''].filter(Boolean).join(' · ');
+      return `<li class="milestone${done ? ' is-done' : ''}">
+        <span class="ms-icon"><svg class="i"><use href="#i-${done ? 'medal' : 'trophy'}"/></svg></span>
+        <div class="ms-text"><strong>${escapeHtml(m.title)}</strong>
+          <small>${done ? `Unlocked ${escapeHtml(fmtDate(w.milestones[m.id]))}` : `${escapeHtml(m.desc)} · ${Math.round(v).toLocaleString()}/${m.goal.toLocaleString()}`} · ${escapeHtml(reward)}</small>
+          <div class="ms-bar"><i style="width:${clamp(v / m.goal * 100, 0, 100)}%"></i></div>
+        </div>
+      </li>`;
+    }).join('');
+
+    // Transactions
+    $('#txList').innerHTML = w.tx.length ? w.tx.slice(0, 40).map((t) => `
+      <li class="${t.kind === 'spend' ? 'is-debit' : ''}">
+        <span class="tx-icon"><svg class="i"><use href="#i-${TX_ICON[t.kind] || 'bolt'}"/></svg></span>
+        <span class="tx-desc"><strong>${escapeHtml(t.desc)}</strong><small>${escapeHtml(fmtDateTime(t.t))}</small></span>
+        <span class="tx-amt">
+          ${t.cash ? `<span class="${t.cash < 0 ? 'neg' : 'pos'}">${t.cash < 0 ? '−' : '+'}${escapeHtml(fmtMoney(Math.abs(t.cash), cur))}</span>` : ''}
+          ${t.points ? `<span class="pts">${t.points < 0 ? '−' : '+'}${escapeHtml(fmtPts(Math.abs(t.points)))}</span>` : ''}
+        </span>
+      </li>`).join('') : '<li><span class="muted">No transactions yet.</span></li>';
+  }
+
+  function updateEarnPreview(u = currentUser()) {
+    const w = u?.wallet;
+    if (!w) return;
+    const cfg = WALLET_CFG[w.currency];
+    const d = ensureDaily(w);
+    const min = parseInt(activityForm.elements.minutes.value, 10);
+    const a = ACTIVITIES[activityType.value];
+    if (!a || !(min >= 5 && min <= 240)) { setW('earnPreview', '5–240 minutes'); return; }
+    const pts = Math.min(Math.round(min * a.rate), Math.max(0, DAILY_POINTS_CAP - d.points));
+    const cash = round2(Math.min(pts * cfg.cashPerPoint, Math.max(0, cfg.dailyCap - d.cash)));
+    setW('earnPreview', pts || cash ? earnedText({ points: pts, cash }, w.currency) : 'Daily cap reached');
+  }
+  activityForm.addEventListener('input', () => { activityForm.elements.minutes.removeAttribute('aria-invalid'); updateEarnPreview(); });
+
+  activityForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const u = currentUser();
+    if (!u?.wallet) return;
+    const f = activityForm.elements;
+    const a = ACTIVITIES[f.type.value];
+    const min = parseInt(f.minutes.value, 10);
+    if (!a) return;
+    if (!(min >= 5 && min <= 240)) { fieldError(activityForm, 'minutes', 'Enter between 5 and 240 minutes.'); return; }
+    if (ensureDaily(u.wallet).logs >= 12) { fieldError(activityForm, 'minutes', 'You’ve logged 12 activities today — come back tomorrow!'); return; }
+    setMsg($('.form-error', activityForm), '');
+    let r = null;
+    updateUser((x) => {
+      const d = ensureDaily(x.wallet);
+      d.logs += 1;
+      x.wallet.workouts += 1;
+      x.wallet.minutes += min;
+      r = earn(x, { points: min * a.rate, desc: `${a.label} · ${min} min` });
+      if (!r.points && !r.cash) addTx(x.wallet, { desc: `${a.label} · ${min} min (daily cap reached)` });
+    });
+    const cur = currentUser().wallet.currency;
+    toast(r.points || r.cash ? `${a.label} logged: ${earnedText(r, cur)}` : `${a.label} logged — daily earning cap reached, earning resumes tomorrow.`, 'success');
+    flushWalletToasts();
+  });
+
+  function claimTask(id) {
+    const u = currentUser();
+    const t = DAILY_TASKS.find((x) => x.id === id);
+    if (!u?.wallet || !t || ensureDaily(u.wallet).tasks[id]) return;
+    let r = null;
+    updateUser((x) => {
+      const d = ensureDaily(x.wallet);
+      d.tasks[id] = Date.now();
+      r = earn(x, { points: t.points, desc: `Daily task: ${t.title}` });
+    });
+    toast(`${t.title} complete: ${earnedText(r, currentUser().wallet.currency) || 'daily cap reached'}`, 'success');
+    flushWalletToasts();
+  }
+
+  $('#dailyTasks').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-task]');
+    if (!b || b.disabled) return;
+    const t = DAILY_TASKS.find((x) => x.id === b.dataset.task);
+    if (t.auto) { closeDialog(dlg.account); scrollToId('tools'); toast('Use any health tool — your task completes automatically.'); return; }
+    if (t.timer) {
+      if (breathing.timer) return;
+      breathing.left = t.timer;
+      const tick = () => {
+        breathing.left -= 1;
+        if (breathing.left <= 0) {
+          clearInterval(breathing.timer);
+          breathing.timer = null;
+          claimTask(t.id);
+          return;
+        }
+        if (dlg.account.open) renderWallet(currentUser());
+      };
+      breathing.timer = setInterval(tick, 1000);
+      renderWallet(currentUser());
+      toast('Breathe in for 4s, hold 4s, out for 6s…');
+      return;
+    }
+    claimTask(t.id);
+  });
+
+  function renderHeaderWallet(u) {
+    const btn = $('#walletBtn');
+    if (!u?.wallet) return;
+    const cashText = fmtMoney(u.wallet.cash, u.wallet.currency);
+    if ($('#walletPillCash').textContent !== cashText && state.lastCash !== null) {
+      btn.classList.remove('bump');
+      void btn.offsetWidth;
+      btn.classList.add('bump');
+    }
+    state.lastCash = cashText;
+    $('#walletPillCash').textContent = cashText;
+    $('#walletPillPoints').textContent = u.wallet.points.toLocaleString();
+    btn.setAttribute('aria-label', `Open wallet: ${cashText} and ${u.wallet.points} points`);
+  }
+  $('#walletBtn').addEventListener('click', () => openAccount('wallet'));
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('[data-open-wallet]')) return;
+    if (currentUser()) openAccount('wallet');
+    else openAuth('signup', `Create a free account and get ${fmtMoney(WALLET_CFG[state.currency].welcome, state.currency)} in your BDAI Wallet.`);
+  });
+
+  function renderRewardsCopy() {
+    const cfg = WALLET_CFG[state.currency];
+    $$('[data-wcfg]').forEach((el) => {
+      const k = el.dataset.wcfg;
+      el.textContent = k === 'hundred' ? `100 points = ${fmtMoney(cfg.pointValue * 100, state.currency)}` : fmtMoney(cfg[k], state.currency);
+    });
+  }
 
   /* ---------------------------------------------------------
      Inbox
@@ -2265,9 +2589,11 @@
     }
     const start = new Date();
     start.setDate(start.getDate() + 1);
+    let reward = null;
     updateUser((x) => {
       x.programs = [...(x.programs || []), name];
       logActivity(x, `Started program: ${name}`);
+      reward = earn(x, { points: 50, desc: `Started program: ${name}` });
       sendMail(x, 'coach', `You’re in: ${name}`, {
         paras: [
           `Great choice, ${x.first}! “${name}” starts tomorrow and is now part of your daily plan.`,
@@ -2277,7 +2603,9 @@
         actions: [{ label: 'Browse more programs', href: '#programs' }],
       });
     });
-    toast(`“${name}” added to your plan. Your coach sent details to your inbox.`, 'success');
+    const rt = earnedText(reward, currentUser().wallet.currency);
+    toast(`“${name}” added to your plan${rt ? ` (${rt})` : ''}. Your coach sent details to your inbox.`, 'success');
+    flushWalletToasts();
   }
 
   document.addEventListener('click', (e) => {
@@ -2306,6 +2634,19 @@
   function renderAll() {
     const u = currentUser();
     PinPad.shuffle = !!u?.settings?.shuffle;
+    // Signed in: prices follow the wallet's currency.
+    if (u?.wallet) {
+      state.currency = u.wallet.currency;
+      currencySelect.disabled = true;
+      currencySelect.title = 'Prices are shown in your wallet currency';
+    } else {
+      state.currency = local.get(KEYS.currency, 'INR') === 'USD' ? 'USD' : 'INR';
+      currencySelect.disabled = false;
+      currencySelect.title = '';
+    }
+    currencySelect.value = state.currency;
+    renderHeaderWallet(u);
+    renderRewardsCopy();
     $$('[data-guest]').forEach((el) => { el.hidden = !!u; });
     $$('[data-member]').forEach((el) => { el.hidden = !u; });
     $('#lockNowBtn').hidden = !u?.pin;
@@ -2433,8 +2774,9 @@
     },
   };
   $$('form[data-tool]').forEach((form) => {
-    form.addEventListener('submit', (e) => { e.preventDefault(); tools[form.dataset.tool](form); });
-    form.addEventListener('change', () => tools[form.dataset.tool](form));
+    const used = () => { if (currentUser() && !state.locked) claimTask('tool'); };
+    form.addEventListener('submit', (e) => { e.preventDefault(); tools[form.dataset.tool](form); used(); });
+    form.addEventListener('change', () => { tools[form.dataset.tool](form); used(); });
     tools[form.dataset.tool](form);
   });
 
@@ -2569,6 +2911,7 @@
   const saved = loadSession();
   if (saved && db.get(saved.email)) {
     state.email = saved.email;
+    updateUserSilently((u) => { ensureWallet(u); });
     syncSubscription();
     state.lastUnread = unreadCount(currentUser());
     renderAll();
