@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" class="no-js">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="BDAI Sports & Health — AI-powered training, vitals, nutrition and recovery. Powered by BDAIWellness.">
+  <meta name="theme-color" content="#070b10">
+  <title>BDAI Sports &amp; Health · Powered by BDAIWellness</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style-6.css">
+  <script src="script-6.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- ===================== ICON SPRITE ===================== -->
+  <svg xmlns="http://www.w3.org/2000/svg" class="sprite" aria-hidden="true">
+    <symbol id="i-pulse" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-apple" viewBox="0 0 24 24"><path d="M12 7c-1.5-1.5-5-2-6.5 1S5 16 7.5 19s3.5 2 4.5 1.5c1 .5 2 1.5 4.5-1.5S20 11 18.5 8 13.5 5.5 12 7z"/><path d="M12 7c0-2 1-4 3-4"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></symbol>
+    <symbol id="i-shield-check" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20a7 7 0 0 1 14 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 13.5a7 7 0 0 1 4 6.5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-key" viewBox="0 0 24 24"><circle cx="7.5" cy="15.5" r="4.5"/><path d="m10.7 12.3 9.3-9.3M16 7l3 3M14 9l2 2"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></symbol>
+    <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 2.7s-7 7.3-7 12.3a7 7 0 0 0 14 0c0-5-7-12.3-7-12.3z"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M17 5h3v2a4 4 0 0 1-4 4M7 5H4v2a4 4 0 0 0 4 4"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></symbol>
+    <symbol id="i-backspace" viewBox="0 0 24 24"><path d="M21 5H9l-6 7 6 7h12a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1z"/><path d="m12 9 6 6M18 9l-6 6"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></symbol>
+    <symbol id="i-run" viewBox="0 0 24 24"><circle cx="15" cy="4" r="2"/><path d="m7 21 3-6 3 2 1-5 3 3h3M8 10l4-3 3 1"/></symbol>
+    <symbol id="i-dumbbell" viewBox="0 0 24 24"><path d="M6 7v10M18 7v10M3 9v6M21 9v6M6 12h12"/></symbol>
+    <symbol id="i-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m12 7 4 3-1.5 5h-5L8 10z"/><path d="M12 3v4M16 10l4.5-1.5M14.5 15l2.5 4M9.5 15 7 19M8 10 3.5 8.5"/></symbol>
+    <symbol id="i-lotus" viewBox="0 0 24 24"><path d="M12 20c-4 0-8-2-9-6 3 0 5 1 6 2M12 20c4 0 8-2 9-6-3 0-5 1-6 2"/><path d="M12 20c-2-2-3-5-3-8s1.5-6 3-8c1.5 2 3 5 3 8s-1 6-3 8z"/></symbol>
+    <symbol id="i-chip" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"/><path d="M9.5 9.5h5v5h-5z"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2 3 6.5 7 .8-5.2 4.8 1.5 7L12 17.6 5.7 21l1.5-7L2 9.3l7-.8z"/></symbol>
+    <symbol id="i-sparkle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15"/></symbol>
+  </svg>
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="site-header" id="siteHeader">
+    <div class="container nav">
+      <a href="#top" class="brand" aria-label="BDAI Sports and Health, home">
+        <span class="brand-mark"><svg class="i"><use href="#i-pulse"/></svg></span>
+        <span class="brand-text"><strong>BDAI</strong> Sports &amp; Health<small>powered by BDAIWellness</small></span>
+      </a>
+
+      <nav class="nav-links" id="navLinks" aria-label="Primary">
+        <a href="#features">Features</a>
+        <a href="#tools">Health Tools</a>
+        <a href="#programs">Programs</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#faq">FAQ</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="icon-btn" id="themeToggle" type="button" aria-label="Switch color theme">
+          <svg class="i only-dark"><use href="#i-sun"/></svg>
+          <svg class="i only-light"><use href="#i-moon"/></svg>
+        </button>
+        <button class="icon-btn" id="lockNowBtn" type="button" aria-label="Lock account with PIN" title="Lock now" hidden>
+          <svg class="i"><use href="#i-lock"/></svg>
+        </button>
+        <div class="guest-actions" data-guest>
+          <button class="btn btn-ghost btn-sm" type="button" data-open-auth="login">Log in</button>
+          <button class="btn btn-primary btn-sm" type="button" data-open-auth="signup">Join free</button>
+        </div>
+        <button class="user-chip" id="userChip" type="button" data-member hidden aria-label="Open your account">
+          <span class="avatar" id="chipAvatar">BD</span>
+          <span class="user-chip-text"><strong id="chipName">Athlete</strong><small id="chipPlan">Starter</small></span>
+        </button>
+        <button class="icon-btn menu-btn" id="menuBtn" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+          <svg class="i"><use href="#i-menu"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- ===================== HERO ===================== -->
+    <section class="hero" id="top">
+      <div class="hero-bg" aria-hidden="true"><span class="blob b1"></span><span class="blob b2"></span><span class="grid-lines"></span></div>
+      <div class="container hero-grid">
+        <div class="hero-copy reveal">
+          <span class="eyebrow"><svg class="i"><use href="#i-sparkle"/></svg> Powered by BDAIWellness AI</span>
+          <h1>Train smarter. <span class="grad-text">Recover faster.</span> Live stronger.</h1>
+          <p class="lead">BDAI Sports &amp; Health turns your workouts, vitals, sleep and nutrition into one adaptive plan — designed with sports scientists and tuned every day by AI.</p>
+          <div class="hero-cta">
+            <button class="btn btn-primary btn-lg" type="button" data-open-auth="signup">Start free <svg class="i"><use href="#i-arrow-right"/></svg></button>
+            <a class="btn btn-outline btn-lg" href="#pricing">See plans</a>
+          </div>
+          <ul class="hero-trust">
+            <li><svg class="i"><use href="#i-shield-check"/></svg> PIN-secured accounts</li>
+            <li><svg class="i"><use href="#i-check"/></svg> Cancel anytime</li>
+            <li><svg class="i"><use href="#i-star"/></svg> 4.9 athlete rating</li>
+          </ul>
+        </div>
+
+        <div class="hero-visual reveal">
+          <div class="dash-card glass" role="img" aria-label="Sample BDAI dashboard: move 82 percent, exercise 64 percent, recovery 91 percent, live heart rate">
+            <div class="dash-head">
+              <div><small>Today</small><strong id="dashDate">Your day</strong></div>
+              <span class="pill pill-live"><span class="dot"></span> Live</span>
+            </div>
+            <div class="rings-wrap">
+              <svg class="rings" id="rings" viewBox="0 0 200 200" aria-hidden="true">
+                <circle class="ring-track" cx="100" cy="100" r="84"/>
+                <circle class="ring ring-1" cx="100" cy="100" r="84" pathLength="100" style="--p:82"/>
+                <circle class="ring-track" cx="100" cy="100" r="62"/>
+                <circle class="ring ring-2" cx="100" cy="100" r="62" pathLength="100" style="--p:64"/>
+                <circle class="ring-track" cx="100" cy="100" r="40"/>
+                <circle class="ring ring-3" cx="100" cy="100" r="40" pathLength="100" style="--p:91"/>
+              </svg>
+              <ul class="ring-legend">
+                <li><i class="sw sw-1"></i><span>Move</span><strong>82%</strong></li>
+                <li><i class="sw sw-2"></i><span>Exercise</span><strong>64%</strong></li>
+                <li><i class="sw sw-3"></i><span>Recovery</span><strong>91%</strong></li>
+              </ul>
+            </div>
+            <div class="hr-panel">
+              <div class="hr-top">
+                <span><svg class="i heart-beat"><use href="#i-heart"/></svg> Heart rate</span>
+                <strong><span id="bpm">72</span> <small>bpm</small></strong>
+              </div>
+              <svg class="spark" viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true">
+                <defs>
+                  <linearGradient id="sparkFill" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0" stop-color="currentColor" stop-opacity=".35"/>
+                    <stop offset="1" stop-color="currentColor" stop-opacity="0"/>
+                  </linearGradient>
+                </defs>
+                <path id="sparkArea" fill="url(#sparkFill)"/>
+                <path id="sparkLine" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+              </svg>
+            </div>
+            <div class="mini-stats">
+              <div><small>Steps</small><strong>9,842</strong></div>
+              <div><small>Sleep</small><strong>7h 48m</strong></div>
+              <div><small>HRV</small><strong>64 ms</strong></div>
+            </div>
+          </div>
+          <div class="float-card fc-1 glass" aria-hidden="true"><svg class="i"><use href="#i-sparkle"/></svg><div><small>AI Coach</small><strong>Tempo run moved to Thu — recovery at 91%</strong></div></div>
+          <div class="float-card fc-2 glass" aria-hidden="true"><svg class="i"><use href="#i-trophy"/></svg><div><small>New PR</small><strong>5K · 22:41</strong></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== STATS ===================== -->
+    <section class="stats-band" aria-label="BDAI in numbers">
+      <div class="container stats-grid">
+        <div class="stat reveal"><strong data-count="120000" data-suffix="+">0</strong><span>Active athletes</span></div>
+        <div class="stat reveal"><strong data-count="38">0</strong><span>Sports covered</span></div>
+        <div class="stat reveal"><strong data-count="2.4" data-decimals="1" data-suffix="M">0</strong><span>Workouts analysed</span></div>
+        <div class="stat reveal"><strong data-count="98" data-suffix="%">0</strong><span>Would recommend</span></div>
+      </div>
+    </section>
+
+    <!-- ===================== FEATURES ===================== -->
+    <section class="section" id="features">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="eyebrow">Why BDAI</span>
+          <h2>One platform for performance &amp; wellbeing</h2>
+          <p>Every signal from your body and your training, connected — so your plan adapts to how you actually feel today.</p>
+        </header>
+        <div class="feature-grid">
+          <article class="feature-card reveal">
+            <span class="feature-icon fi-1"><svg class="i"><use href="#i-chip"/></svg></span>
+            <h3>AI training plans</h3>
+            <p>Periodised plans that adjust load, intensity and rest days from your readiness score every morning.</p>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon fi-2"><svg class="i"><use href="#i-heart"/></svg></span>
+            <h3>Heart &amp; vitals</h3>
+            <p>Resting HR, HRV, SpO₂ and heart-rate zones tracked over time with early-warning trend alerts.</p>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon fi-3"><svg class="i"><use href="#i-apple"/></svg></span>
+            <h3>Nutrition intelligence</h3>
+            <p>Calorie and macro targets that change with training days, plus hydration reminders that know the weather.</p>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon fi-4"><svg class="i"><use href="#i-moon"/></svg></span>
+            <h3>Sleep &amp; recovery</h3>
+            <p>Sleep stages, recovery debt and guided cool-downs so you arrive at every session ready.</p>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon fi-5"><svg class="i"><use href="#i-shield"/></svg></span>
+            <h3>Injury prevention</h3>
+            <p>Acute:chronic workload ratio monitoring flags overtraining before it turns into time off.</p>
+          </article>
+          <article class="feature-card reveal">
+            <span class="feature-icon fi-6"><svg class="i"><use href="#i-users"/></svg></span>
+            <h3>Team &amp; coach hub</h3>
+            <p>Share plans with your coach or squad, compare load across players and plan match-day tapers.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== TOOLS ===================== -->
+    <section class="section section-alt" id="tools">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="eyebrow">Free health tools</span>
+          <h2>Know your numbers in seconds</h2>
+          <p>Quick, science-backed calculators. Results are estimates — talk to a medical professional for personal advice.</p>
+        </header>
+
+        <div class="tools glass reveal">
+          <div class="tabs" role="tablist" aria-label="Health tools">
+            <button class="tab" type="button" role="tab" id="tab-bmi" aria-controls="panel-bmi" aria-selected="true"><svg class="i"><use href="#i-chart"/></svg> BMI</button>
+            <button class="tab" type="button" role="tab" id="tab-hr" aria-controls="panel-hr" aria-selected="false" tabindex="-1"><svg class="i"><use href="#i-heart"/></svg> Heart-rate zones</button>
+            <button class="tab" type="button" role="tab" id="tab-cal" aria-controls="panel-cal" aria-selected="false" tabindex="-1"><svg class="i"><use href="#i-apple"/></svg> Calories &amp; macros</button>
+            <button class="tab" type="button" role="tab" id="tab-water" aria-controls="panel-water" aria-selected="false" tabindex="-1"><svg class="i"><use href="#i-drop"/></svg> Hydration</button>
+          </div>
+
+          <!-- BMI -->
+          <form class="tool-panel" role="tabpanel" id="panel-bmi" aria-labelledby="tab-bmi" data-tool="bmi" novalidate>
+            <div class="tool-inputs">
+              <label class="field"><span>Height (cm)</span><input type="number" name="height" min="100" max="250" value="175" inputmode="decimal" required></label>
+              <label class="field"><span>Weight (kg)</span><input type="number" name="weight" min="25" max="300" value="72" step="0.1" inputmode="decimal" required></label>
+              <button class="btn btn-primary" type="submit">Calculate BMI</button>
+            </div>
+            <div class="tool-result" aria-live="polite">
+              <div class="big-num"><span data-out="bmi">—</span><small>Body Mass Index</small></div>
+              <p class="result-tag" data-out="bmiCat">Enter your details</p>
+              <div class="gauge">
+                <div class="gauge-bar">
+                  <span class="seg seg-under" style="flex-basis:10.4%"></span>
+                  <span class="seg seg-normal" style="flex-basis:27.1%"></span>
+                  <span class="seg seg-over" style="flex-basis:20.8%"></span>
+                  <span class="seg seg-obese" style="flex-basis:41.7%"></span>
+                </div>
+                <span class="gauge-marker" data-out="bmiMarker" style="left:0%"></span>
+                <div class="gauge-labels"><span style="left:0%">16</span><span style="left:10.4%">18.5</span><span style="left:37.5%">25</span><span style="left:58.3%">30</span><span style="left:100%">40</span></div>
+              </div>
+              <p class="muted small" data-out="bmiNote"></p>
+            </div>
+          </form>
+
+          <!-- HEART RATE -->
+          <form class="tool-panel" role="tabpanel" id="panel-hr" aria-labelledby="tab-hr" data-tool="hr" hidden novalidate>
+            <div class="tool-inputs">
+              <label class="field"><span>Age</span><input type="number" name="age" min="12" max="100" value="30" inputmode="numeric" required></label>
+              <label class="field"><span>Resting heart rate (bpm)</span><input type="number" name="rest" min="30" max="120" value="60" inputmode="numeric" required></label>
+              <button class="btn btn-primary" type="submit">Get my zones</button>
+            </div>
+            <div class="tool-result" aria-live="polite">
+              <div class="big-num"><span data-out="maxHr">—</span><small>Estimated max HR (bpm)</small></div>
+              <ul class="zones" data-out="zones"></ul>
+            </div>
+          </form>
+
+          <!-- CALORIES -->
+          <form class="tool-panel" role="tabpanel" id="panel-cal" aria-labelledby="tab-cal" data-tool="cal" hidden novalidate>
+            <div class="tool-inputs tool-inputs-wide">
+              <label class="field"><span>Sex</span>
+                <select name="sex"><option value="male">Male</option><option value="female">Female</option></select>
+              </label>
+              <label class="field"><span>Age</span><input type="number" name="age" min="14" max="100" value="30" required></label>
+              <label class="field"><span>Height (cm)</span><input type="number" name="height" min="120" max="230" value="175" required></label>
+              <label class="field"><span>Weight (kg)</span><input type="number" name="weight" min="35" max="250" value="72" step="0.1" required></label>
+              <label class="field"><span>Activity</span>
+                <select name="activity">
+                  <option value="1.2">Sedentary</option>
+                  <option value="1.375">Light (1–3 days/wk)</option>
+                  <option value="1.55" selected>Moderate (3–5 days/wk)</option>
+                  <option value="1.725">Very active (6–7 days/wk)</option>
+                  <option value="1.9">Athlete (2× per day)</option>
+                </select>
+              </label>
+              <label class="field"><span>Goal</span>
+                <select name="goal"><option value="-450">Lose fat</option><option value="0" selected>Maintain</option><option value="300">Build muscle</option></select>
+              </label>
+              <button class="btn btn-primary" type="submit">Calculate</button>
+            </div>
+            <div class="tool-result" aria-live="polite">
+              <div class="big-num"><span data-out="kcal">—</span><small>kcal per day target</small></div>
+              <p class="muted small" data-out="calNote"></p>
+              <div class="macros" data-out="macros"></div>
+            </div>
+          </form>
+
+          <!-- WATER -->
+          <form class="tool-panel" role="tabpanel" id="panel-water" aria-labelledby="tab-water" data-tool="water" hidden novalidate>
+            <div class="tool-inputs">
+              <label class="field"><span>Weight (kg)</span><input type="number" name="weight" min="30" max="250" value="72" required></label>
+              <label class="field"><span>Exercise today (minutes)</span><input type="number" name="minutes" min="0" max="600" value="45" required></label>
+              <label class="field"><span>Climate</span>
+                <select name="climate"><option value="0">Mild</option><option value="500">Hot / humid</option><option value="250">High altitude</option></select>
+              </label>
+              <button class="btn btn-primary" type="submit">Calculate</button>
+            </div>
+            <div class="tool-result" aria-live="polite">
+              <div class="big-num"><span data-out="liters">—</span><small>litres per day</small></div>
+              <div class="glasses" data-out="glasses" aria-hidden="true"></div>
+              <p class="muted small" data-out="waterNote"></p>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PROGRAMS ===================== -->
+    <section class="section" id="programs">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="eyebrow">Programs</span>
+          <h2>Coach-built programs for every sport</h2>
+          <p>Start with free programs, unlock advanced blocks with Pro and Elite.</p>
+        </header>
+
+        <div class="chips reveal" role="group" aria-label="Filter programs">
+          <button class="chip is-active" type="button" data-filter="all" aria-pressed="true">All</button>
+          <button class="chip" type="button" data-filter="running" aria-pressed="false">Running</button>
+          <button class="chip" type="button" data-filter="strength" aria-pressed="false">Strength</button>
+          <button class="chip" type="button" data-filter="football" aria-pressed="false">Football</button>
+          <button class="chip" type="button" data-filter="yoga" aria-pressed="false">Yoga</button>
+          <button class="chip" type="button" data-filter="recovery" aria-pressed="false">Recovery</button>
+        </div>
+
+        <div class="program-grid" id="programGrid">
+          <article class="program-card reveal" data-cat="running" data-tier="0">
+            <div class="program-media m-run"><span class="badge" data-badge></span><svg class="i"><use href="#i-run"/></svg></div>
+            <div class="program-body">
+              <h3>Couch to 5K</h3>
+              <p>From your first jog to a confident 5K with walk-run intervals and smart rest days.</p>
+              <ul class="meta"><li>8 weeks</li><li>Beginner</li><li>3×/week</li></ul>
+              <button class="btn btn-outline btn-block" type="button" data-start-program="Couch to 5K">Start program</button>
+            </div>
+          </article>
+          <article class="program-card reveal" data-cat="running" data-tier="1">
+            <div class="program-media m-run2"><span class="badge" data-badge></span><svg class="i"><use href="#i-run"/></svg></div>
+            <div class="program-body">
+              <h3>Half-Marathon Builder</h3>
+              <p>Tempo, threshold and long-run progressions with AI pacing that adapts to your HRV.</p>
+              <ul class="meta"><li>12 weeks</li><li>Intermediate</li><li>4–5×/week</li></ul>
+              <button class="btn btn-outline btn-block" type="button" data-start-program="Half-Marathon Builder">Start program</button>
+            </div>
+          </article>
+          <article class="program-card reveal" data-cat="strength" data-tier="0">
+            <div class="program-media m-str"><span class="badge" data-badge></span><svg class="i"><use href="#i-dumbbell"/></svg></div>
+            <div class="program-body">
+              <h3>Strength Foundations</h3>
+              <p>Master the big lifts with technique cues, RPE targets and progressive overload.</p>
+              <ul class="meta"><li>6 weeks</li><li>Beginner</li><li>3×/week</li></ul>
+              <button class="btn btn-outline btn-block" type="button" data-start-program="Strength Foundations">Start program</button>
+            </div>
+          </article>
+          <article class="program-card reveal" data-cat="strength" data-tier="1">
+            <div class="program-media m-str2"><span class="badge" data-badge></span><svg class="i"><use href="#i-dumbbell"/></svg></div>
+            <div class="program-body">
+              <h3>Hypertrophy Pro</h3>
+              <p>Volume-landmark programming with auto-regulated deloads and nutrition sync.</p>
+              <ul class="meta"><li>10 weeks</li><li>Advanced</li><li>5×/week</li></ul>
+              <button class="btn btn-outline btn-block" type="button" data-start-program="Hypertrophy Pro">Start program</button>
+            </div>
+          </article>
+          <article class="program-card reveal" data-cat="football" data-tier="1">
+            <div class="program-media m-ball"><span class="badge" data-badge></span><svg class="i"><use href="#i-ball"/></svg></div>
+            <div class="program-body">
+              <h3>Football Speed &amp; Agility</h3>
+              <p>Acceleration, change of direction and repeat-sprint ability for field players.</p>
+              <ul class="meta"><li>8 weeks</li><li>All levels</li><li>3×/week</li></ul>
+              <button class="btn btn-outline btn-block" type="button" data-start-program="Football Speed &amp; Agility">Start program</button>
+            </div>
+          </article>
+          <article class="program-card reveal" data-cat="football" data-tier="2">
+            <div class="program-media m-ball2"><span class="badge" data-badge></span><svg class="i"><use href="#i-trophy"/></svg></div>
+            <div class="program-body">
+              <h3>Elite Match Fitness</h3>
+              <p>In-season load management, match-day tapers and GPS-style workload analytics.</p>
+              <ul class="meta"><li>Season-long</li><li>Advanced</li><li>Adaptive</li></ul>
+              <button class="btn btn-outline btn-block" type="button" data-start-program="Elite Match Fitness">Start program</button>
+            </div>
+          </article>
+          <article class="program-card reveal" data-cat="yoga" data-tier="0">
+            <div class="program-media m-yoga"><span class="badge" data-badge></span><svg class="i"><use href="#i-lotus"/></svg></div>
+            <div class="program-body">
+              <h3>Mobility Flow Yoga</h3>
+              <p>20-minute flows to open hips, hamstrings and thoracic spine for athletes.</p>
+              <ul class="meta"><li>4 weeks</li><li>All levels</li><li>Daily</li></ul>
+              <button class="btn btn-outline btn-block" type="button" data-start-program="Mobility Flow Yoga">Start program</button>
+            </div>
+          </article>
+          <article class="program-card reveal" data-cat="recovery" data-tier="2">
+            <div class="program-media m-rec"><span class="badge" data-badge></span><svg class="i"><use href="#i-moon"/></svg></div>
+            <div class="program-body">
+              <h3>Recovery Lab &amp; HRV</h3>
+              <p>Breathwork, sleep protocols and HRV-guided training for peak readiness.</p>
+              <ul class="meta"><li>6 weeks</li><li>All levels</li><li>Daily</li></ul>
+              <button class="btn btn-outline btn-block" type="button" data-start-program="Recovery Lab &amp; HRV">Start program</button>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PRICING ===================== -->
+    <section class="section section-alt" id="pricing">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="eyebrow">Subscriptions</span>
+          <h2>Simple plans. Serious results.</h2>
+          <p>Start free. Upgrade when you're ready. Every payment is authorized with your PIN security key.</p>
+        </header>
+
+        <div class="pricing-controls reveal">
+          <div class="billing-toggle" id="billingToggle" role="radiogroup" aria-label="Billing cycle" data-active="monthly">
+            <span class="toggle-glider" aria-hidden="true"></span>
+            <button type="button" role="radio" aria-checked="true" data-billing="monthly">Monthly</button>
+            <button type="button" role="radio" aria-checked="false" data-billing="yearly" tabindex="-1">Yearly <span class="save">−20%</span></button>
+          </div>
+          <label class="currency-select">
+            <span class="sr-only">Currency</span>
+            <select id="currencySelect"><option value="INR">₹ INR</option><option value="USD">$ USD</option></select>
+          </label>
+        </div>
+
+        <div class="pricing-grid">
+          <article class="price-card reveal" data-plan="starter">
+            <h3>Starter</h3>
+            <p class="price-desc">Everything you need to begin.</p>
+            <div class="price"><span class="amount" data-price="starter">₹0</span><span class="per" data-per="starter">/month</span></div>
+            <p class="billed" data-billed="starter">Free forever</p>
+            <button class="btn btn-outline btn-block" type="button" data-choose-plan="starter">Get started free</button>
+            <ul class="feature-list">
+              <li><svg class="i"><use href="#i-check"/></svg> Activity &amp; heart-rate tracking</li>
+              <li><svg class="i"><use href="#i-check"/></svg> 3 free coach programs</li>
+              <li><svg class="i"><use href="#i-check"/></svg> All health calculators</li>
+              <li><svg class="i"><use href="#i-check"/></svg> PIN security key</li>
+              <li class="off"><svg class="i"><use href="#i-x"/></svg> AI adaptive plans</li>
+            </ul>
+          </article>
+
+          <article class="price-card is-featured reveal" data-plan="pro">
+            <span class="ribbon">Most popular</span>
+            <h3>Pro</h3>
+            <p class="price-desc">For athletes who train with purpose.</p>
+            <div class="price"><span class="amount" data-price="pro">₹499</span><span class="per" data-per="pro">/month</span></div>
+            <p class="billed" data-billed="pro">Billed monthly</p>
+            <button class="btn btn-primary btn-block" type="button" data-choose-plan="pro">Choose Pro</button>
+            <ul class="feature-list">
+              <li><svg class="i"><use href="#i-check"/></svg> Everything in Starter</li>
+              <li><svg class="i"><use href="#i-check"/></svg> AI adaptive training plans</li>
+              <li><svg class="i"><use href="#i-check"/></svg> All Pro programs</li>
+              <li><svg class="i"><use href="#i-check"/></svg> Nutrition &amp; macro coaching</li>
+              <li><svg class="i"><use href="#i-check"/></svg> HRV &amp; recovery insights</li>
+            </ul>
+          </article>
+
+          <article class="price-card reveal" data-plan="elite">
+            <h3>Elite</h3>
+            <p class="price-desc">Pro-level performance analytics.</p>
+            <div class="price"><span class="amount" data-price="elite">₹999</span><span class="per" data-per="elite">/month</span></div>
+            <p class="billed" data-billed="elite">Billed monthly</p>
+            <button class="btn btn-outline btn-block" type="button" data-choose-plan="elite">Choose Elite</button>
+            <ul class="feature-list">
+              <li><svg class="i"><use href="#i-check"/></svg> Everything in Pro</li>
+              <li><svg class="i"><use href="#i-check"/></svg> 1:1 monthly coach check-in</li>
+              <li><svg class="i"><use href="#i-check"/></svg> Team &amp; coach hub</li>
+              <li><svg class="i"><use href="#i-check"/></svg> Injury-risk workload alerts</li>
+              <li><svg class="i"><use href="#i-check"/></svg> Priority BDAIWellness support</li>
+            </ul>
+          </article>
+        </div>
+
+        <p class="pricing-note"><svg class="i"><use href="#i-lock"/></svg> Demo checkout — no real charges are made. Promo codes to try: <code>BDAI20</code>, <code>WELLNESS10</code>, <code>ATHLETE50</code> (yearly).</p>
+      </div>
+    </section>
+
+    <!-- ===================== TESTIMONIALS ===================== -->
+    <section class="section" aria-labelledby="voicesTitle">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="eyebrow">Athletes</span>
+          <h2 id="voicesTitle">Trusted on track, field and mat</h2>
+        </header>
+        <div class="quote-grid">
+          <figure class="quote reveal">
+            <blockquote>“The readiness score moved my long run twice in a month — and I still hit a 6-minute half-marathon PR.”</blockquote>
+            <figcaption><span class="avatar">AM</span><span><strong>Aarav M.</strong><small>Half-marathoner · Pro</small></span></figcaption>
+          </figure>
+          <figure class="quote reveal">
+            <blockquote>“I run load for 22 players from one dashboard. Soft-tissue injuries are down noticeably this season.”</blockquote>
+            <figcaption><span class="avatar">SR</span><span><strong>Sofia R.</strong><small>Football S&amp;C coach · Elite</small></span></figcaption>
+          </figure>
+          <figure class="quote reveal">
+            <blockquote>“Macros that change on rest days made nutrition finally click. The PIN lock is a nice touch on a shared tablet.”</blockquote>
+            <figcaption><span class="avatar">DK</span><span><strong>Daniel K.</strong><small>Strength athlete · Pro</small></span></figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== FAQ ===================== -->
+    <section class="section section-alt" id="faq">
+      <div class="container container-narrow">
+        <header class="section-head reveal">
+          <span class="eyebrow">FAQ</span>
+          <h2>Questions, answered</h2>
+        </header>
+        <div class="faq reveal">
+          <details>
+            <summary>What is the PIN security key?</summary>
+            <p>A 4- or 6-digit PIN that quickly unlocks your account on this device, auto-locks it after inactivity and authorizes subscription payments and other sensitive changes. During setup you also get a one-time recovery security key to reset a forgotten PIN.</p>
+          </details>
+          <details>
+            <summary>What happens if I enter the wrong PIN too many times?</summary>
+            <p>Every 5 incorrect attempts trigger a cooldown that doubles each time (30s, 60s, 120s…). After 15 incorrect attempts you are signed out and must log in with your password.</p>
+          </details>
+          <details>
+            <summary>Can I cancel my subscription anytime?</summary>
+            <p>Yes. Cancel from Account → Subscription. You keep access until the end of your current billing period, and you can resume before then with one click.</p>
+          </details>
+          <details>
+            <summary>Is my data secure?</summary>
+            <p>Passwords, PINs and recovery keys are never stored in plain text — they're salted and hashed with PBKDF2-SHA-256. Card numbers and CVCs are never stored; only the brand and last four digits are kept for your receipt.</p>
+          </details>
+          <details>
+            <summary>Who is BDAIWellness?</summary>
+            <p>BDAIWellness is the wellness-intelligence engine that powers BDAI Sports &amp; Health — the models behind readiness scores, adaptive plans and nutrition targets.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CTA ===================== -->
+    <section class="cta-band">
+      <div class="container cta-inner reveal">
+        <div>
+          <h2>Ready to train with BDAI?</h2>
+          <p>Create a free account, secure it with your PIN, and get your first adaptive plan today.</p>
+        </div>
+        <button class="btn btn-dark btn-lg" type="button" data-open-auth="signup">Create free account <svg class="i"><use href="#i-arrow-right"/></svg></button>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <a href="#top" class="brand">
+          <span class="brand-mark"><svg class="i"><use href="#i-pulse"/></svg></span>
+          <span class="brand-text"><strong>BDAI</strong> Sports &amp; Health</span>
+        </a>
+        <p class="muted">AI-powered training, vitals, nutrition and recovery for every athlete.</p>
+        <span class="powered"><svg class="i"><use href="#i-sparkle"/></svg> Powered by <strong>BDAIWellness</strong></span>
+      </div>
+      <nav aria-label="Product"><h4>Product</h4><a href="#features">Features</a><a href="#programs">Programs</a><a href="#pricing">Pricing</a><a href="#tools">Health tools</a></nav>
+      <nav aria-label="Account"><h4>Account</h4><button type="button" class="link-btn" data-open-auth="login">Log in</button><button type="button" class="link-btn" data-open-auth="signup">Create account</button><a href="#faq">Security FAQ</a></nav>
+      <nav aria-label="Company"><h4>Company</h4><a href="#faq">About BDAIWellness</a><a href="#faq">Privacy</a><a href="#faq">Terms</a></nav>
+    </div>
+    <div class="container footer-bottom">
+      <small>© <span id="year">2026</span> BDAI Sports &amp; Health. Powered by BDAIWellness.</small>
+      <small class="muted">Health information is educational and not a substitute for medical advice.</small>
+    </div>
+  </footer>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <!-- ===================== AUTH DIALOG ===================== -->
+  <dialog class="modal" id="authDialog" aria-labelledby="authTitle">
+    <div class="modal-card modal-sm">
+      <button class="icon-btn modal-close" type="button" data-close aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+      <div class="modal-head">
+        <span class="brand-mark brand-mark-lg"><svg class="i"><use href="#i-pulse"/></svg></span>
+        <h2 id="authTitle">Welcome to BDAI</h2>
+        <p class="muted" id="authSub">Log in to continue your training.</p>
+      </div>
+      <div class="seg" role="tablist" aria-label="Account access">
+        <button type="button" role="tab" id="authTabLogin" data-auth-tab="login" aria-selected="true" aria-controls="loginForm">Log in</button>
+        <button type="button" role="tab" id="authTabSignup" data-auth-tab="signup" aria-selected="false" aria-controls="signupForm" tabindex="-1">Create account</button>
+      </div>
+
+      <form id="loginForm" class="form" role="tabpanel" aria-labelledby="authTabLogin" novalidate>
+        <label class="field"><span>Email</span><input type="email" name="email" autocomplete="email" required></label>
+        <div class="field">
+          <label for="loginPw">Password</label>
+          <div class="input-wrap">
+            <input id="loginPw" type="password" name="password" autocomplete="current-password" required>
+            <button type="button" class="reveal-btn" data-toggle-pw aria-label="Show password"><svg class="i"><use href="#i-eye"/></svg></button>
+          </div>
+        </div>
+        <label class="check"><input type="checkbox" name="remember" checked> <span>Remember this device (unlock with your PIN)</span></label>
+        <p class="form-error" role="alert"></p>
+        <button class="btn btn-primary btn-block" type="submit">Log in</button>
+        <p class="muted small center">New to BDAI? <button type="button" class="link-btn" data-auth-tab="signup">Create a free account</button></p>
+      </form>
+
+      <form id="signupForm" class="form" role="tabpanel" aria-labelledby="authTabSignup" novalidate hidden>
+        <label class="field"><span>Full name</span><input type="text" name="name" autocomplete="name" maxlength="60" required></label>
+        <label class="field"><span>Email</span><input type="email" name="email" autocomplete="email" required></label>
+        <div class="field">
+          <label for="signupPw">Password</label>
+          <div class="input-wrap">
+            <input id="signupPw" type="password" name="password" autocomplete="new-password" minlength="8" required aria-describedby="pwMeterLabel">
+            <button type="button" class="reveal-btn" data-toggle-pw aria-label="Show password"><svg class="i"><use href="#i-eye"/></svg></button>
+          </div>
+          <div class="pw-meter" data-score="0"><span></span><span></span><span></span><span></span></div>
+          <small class="muted" id="pwMeterLabel">Use 8+ characters with a mix of letters, numbers &amp; symbols.</small>
+        </div>
+        <label class="field"><span>Confirm password</span><input type="password" name="confirm" autocomplete="new-password" required></label>
+        <label class="check"><input type="checkbox" name="terms" required> <span>I agree to the Terms and the health-data Privacy Policy.</span></label>
+        <p class="form-error" role="alert"></p>
+        <button class="btn btn-primary btn-block" type="submit">Create account</button>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- ===================== PIN SETUP DIALOG ===================== -->
+  <dialog class="modal" id="pinSetupDialog" aria-labelledby="pinSetupTitle">
+    <div class="modal-card modal-sm">
+      <button class="icon-btn modal-close" type="button" data-close aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+      <ol class="mini-steps" aria-label="PIN setup progress">
+        <li data-ps-dot="enter">Create</li><li data-ps-dot="confirm">Confirm</li><li data-ps-dot="key">Recovery key</li>
+      </ol>
+
+      <section data-pin-step="enter">
+        <div class="modal-head">
+          <span class="icon-badge"><svg class="i"><use href="#i-key"/></svg></span>
+          <h2 id="pinSetupTitle">Create your PIN security key</h2>
+          <p class="muted" data-pin-reason>Your PIN unlocks BDAI on this device and authorizes payments.</p>
+        </div>
+        <div class="seg seg-sm" role="radiogroup" aria-label="PIN length">
+          <button type="button" role="radio" data-pin-length="4" aria-checked="false">4 digits</button>
+          <button type="button" role="radio" data-pin-length="6" aria-checked="true">6 digits</button>
+        </div>
+        <div id="setupPad"></div>
+        <p class="pin-msg" id="setupMsg" role="alert"></p>
+        <ul class="pin-rules"><li>No repeated digits (111111)</li><li>No sequences (123456)</li><li>Avoid birth years</li></ul>
+      </section>
+
+      <section data-pin-step="confirm" hidden>
+        <div class="modal-head">
+          <span class="icon-badge"><svg class="i"><use href="#i-shield-check"/></svg></span>
+          <h2>Confirm your PIN</h2>
+          <p class="muted">Enter the same PIN again.</p>
+        </div>
+        <div id="confirmPad"></div>
+        <p class="pin-msg" id="confirmMsg" role="alert"></p>
+        <div class="center"><button type="button" class="link-btn" data-pin-restart>Start over</button></div>
+      </section>
+
+      <section data-pin-step="key" hidden>
+        <div class="modal-head">
+          <span class="icon-badge icon-badge-ok"><svg class="i"><use href="#i-key"/></svg></span>
+          <h2 data-key-title>Save your recovery security key</h2>
+          <p class="muted">If you forget your PIN, this key is the only way to reset it. We store only a hashed copy, so it can't be shown again.</p>
+        </div>
+        <div class="key-box"><code id="recoveryKey">XXXX-XXXX-XXXX-XXXX</code></div>
+        <div class="key-actions">
+          <button class="btn btn-outline btn-sm" type="button" id="copyKeyBtn"><svg class="i"><use href="#i-copy"/></svg> Copy</button>
+          <button class="btn btn-outline btn-sm" type="button" id="downloadKeyBtn"><svg class="i"><use href="#i-download"/></svg> Download .txt</button>
+        </div>
+        <label class="check"><input type="checkbox" id="keySavedCheck"> <span>I've stored my recovery key somewhere safe</span></label>
+        <button class="btn btn-primary btn-block" type="button" id="keyDoneBtn" disabled>Finish</button>
+      </section>
+    </div>
+  </dialog>
+
+  <!-- ===================== PIN PROMPT DIALOG ===================== -->
+  <dialog class="modal" id="pinPromptDialog" aria-labelledby="pinPromptTitle">
+    <div class="modal-card modal-xs">
+      <button class="icon-btn modal-close" type="button" data-close aria-label="Cancel"><svg class="i"><use href="#i-x"/></svg></button>
+      <div class="modal-head">
+        <span class="icon-badge"><svg class="i"><use href="#i-lock"/></svg></span>
+        <h2 id="pinPromptTitle">Enter your PIN</h2>
+        <p class="muted" id="pinPromptSub"></p>
+      </div>
+      <div id="promptPad"></div>
+      <p class="pin-msg" id="pinPromptMsg" role="alert"></p>
+    </div>
+  </dialog>
+
+  <!-- ===================== LOCK SCREEN ===================== -->
+  <dialog class="lock-screen" id="lockDialog" aria-labelledby="lockTitle">
+    <div class="lock-inner">
+      <div class="lock-clock" aria-hidden="true"><strong id="lockTime">--:--</strong><span id="lockDate"></span></div>
+
+      <div class="lock-view" data-lock-view="pin">
+        <span class="avatar avatar-lg" id="lockAvatar">BD</span>
+        <h2 id="lockTitle">Welcome back, <span id="lockName">Athlete</span></h2>
+        <p class="muted">Enter your PIN security key to unlock</p>
+        <div id="lockPad"></div>
+        <p class="pin-msg" id="lockMsg" role="alert"></p>
+        <div class="lock-links">
+          <button type="button" class="link-btn" data-lock-goto="recovery">Forgot PIN? Use recovery key</button>
+          <button type="button" class="link-btn" id="lockSignOut">Sign out</button>
+        </div>
+      </div>
+
+      <form class="lock-view form" data-lock-view="recovery" id="recoveryForm" novalidate hidden>
+        <span class="icon-badge"><svg class="i"><use href="#i-key"/></svg></span>
+        <h2>Recover with your security key</h2>
+        <p class="muted">Enter the 16-character recovery key you saved when you created your PIN.</p>
+        <label class="field"><span class="sr-only">Recovery key</span>
+          <input type="text" name="key" class="key-input" placeholder="XXXX-XXXX-XXXX-XXXX" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" required>
+        </label>
+        <p class="form-error" role="alert"></p>
+        <button class="btn btn-primary btn-block" type="submit">Verify key &amp; reset PIN</button>
+        <button type="button" class="link-btn" data-lock-goto="pin">Back to PIN</button>
+      </form>
+    </div>
+  </dialog>
+
+  <!-- ===================== CHECKOUT DIALOG ===================== -->
+  <dialog class="modal" id="checkoutDialog" aria-labelledby="checkoutTitle">
+    <div class="modal-card modal-md">
+      <canvas class="confetti" id="confetti" aria-hidden="true"></canvas>
+      <button class="icon-btn modal-close" type="button" data-close aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+      <h2 class="modal-title" id="checkoutTitle">Subscribe to BDAI <span data-co="planName">Pro</span></h2>
+      <ol class="stepper">
+        <li data-stepper="1"><span>1</span>Plan</li>
+        <li data-stepper="2"><span>2</span>Payment</li>
+        <li data-stepper="3"><span>3</span>Authorize</li>
+        <li data-stepper="4"><span>4</span>Done</li>
+      </ol>
+
+      <!-- Step 1 -->
+      <section data-co-step="1">
+        <fieldset class="radio-cards">
+          <legend class="sr-only">Plan</legend>
+          <label class="radio-card"><input type="radio" name="coPlan" value="pro"><span><strong>Pro</strong><small data-co-price="pro"></small></span></label>
+          <label class="radio-card"><input type="radio" name="coPlan" value="elite"><span><strong>Elite</strong><small data-co-price="elite"></small></span></label>
+        </fieldset>
+        <fieldset class="radio-cards radio-cards-sm">
+          <legend class="sr-only">Billing cycle</legend>
+          <label class="radio-card"><input type="radio" name="coCycle" value="monthly"><span><strong>Monthly</strong><small>Flexible</small></span></label>
+          <label class="radio-card"><input type="radio" name="coCycle" value="yearly"><span><strong>Yearly</strong><small>Save 20%</small></span></label>
+        </fieldset>
+        <form class="promo" id="promoForm" novalidate>
+          <label class="sr-only" for="promoInput">Promo code</label>
+          <input id="promoInput" name="promo" placeholder="Promo code (try BDAI20)" autocomplete="off" autocapitalize="characters">
+          <button class="btn btn-outline btn-sm" type="submit">Apply</button>
+        </form>
+        <p class="promo-msg" id="promoMsg" aria-live="polite"></p>
+        <dl class="summary">
+          <div><dt data-co="line">Pro · monthly</dt><dd data-co="subtotal"></dd></div>
+          <div data-co="discountRow" hidden><dt data-co="discountLabel">Discount</dt><dd data-co="discount"></dd></div>
+          <div class="total"><dt>Total due today</dt><dd data-co="total"></dd></div>
+        </dl>
+        <p class="muted small" data-co="renews"></p>
+        <div class="modal-actions"><button class="btn btn-primary" type="button" data-co-next>Continue to payment <svg class="i"><use href="#i-arrow-right"/></svg></button></div>
+      </section>
+
+      <!-- Step 2 -->
+      <section data-co-step="2" hidden>
+        <div class="seg" role="tablist" aria-label="Payment method">
+          <button type="button" role="tab" data-pay-method="card" aria-selected="true"><svg class="i"><use href="#i-card"/></svg> Card</button>
+          <button type="button" role="tab" data-pay-method="upi" aria-selected="false" tabindex="-1"><svg class="i"><use href="#i-phone"/></svg> UPI</button>
+        </div>
+        <form id="payForm" class="form" novalidate>
+          <div data-pay-panel="card">
+            <div class="card-preview" aria-hidden="true">
+              <div class="cp-top"><span class="cp-chip"></span><span class="cp-brand" data-cp="brand">CARD</span></div>
+              <div class="cp-number" data-cp="number">•••• •••• •••• ••••</div>
+              <div class="cp-row"><span data-cp="name">YOUR NAME</span><span data-cp="exp">MM/YY</span></div>
+            </div>
+            <label class="field"><span>Name on card</span><input name="ccName" autocomplete="cc-name" maxlength="40"></label>
+            <label class="field"><span>Card number</span><input name="ccNumber" inputmode="numeric" autocomplete="cc-number" placeholder="1234 5678 9012 3456" maxlength="23"></label>
+            <div class="field-row">
+              <label class="field"><span>Expiry</span><input name="ccExp" inputmode="numeric" autocomplete="cc-exp" placeholder="MM/YY" maxlength="5"></label>
+              <label class="field"><span>CVC</span><input name="ccCvc" inputmode="numeric" autocomplete="cc-csc" placeholder="123" maxlength="4"></label>
+            </div>
+          </div>
+          <div data-pay-panel="upi" hidden>
+            <label class="field"><span>UPI ID</span><input name="upi" autocomplete="off" placeholder="yourname@bank" spellcheck="false"></label>
+            <p class="muted small">You'll authorize the mandate with your BDAI PIN in the next step.</p>
+          </div>
+          <p class="form-error" role="alert"></p>
+          <p class="demo-note"><svg class="i"><use href="#i-shield"/></svg> Demo mode — no real charge. Test card <code>4242 4242 4242 4242</code>, any future expiry, any CVC. Card numbers are never stored.</p>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-ghost" data-co-back>Back</button>
+            <button class="btn btn-primary" type="submit">Review &amp; authorize</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Step 3 -->
+      <section data-co-step="3" hidden>
+        <div class="auth-summary">
+          <div><small>You're subscribing to</small><strong data-co="authLine"></strong><small data-co="authMethod"></small></div>
+          <strong class="auth-total" data-co="authTotal"></strong>
+        </div>
+        <div data-co="pinArea">
+          <p class="muted center">Enter your PIN security key to authorize this payment</p>
+          <div id="checkoutPad"></div>
+          <p class="pin-msg" id="checkoutPinMsg" role="alert"></p>
+        </div>
+        <div data-co="noPinArea" class="center" hidden>
+          <p>For your security, subscriptions are authorized with a PIN security key. Set one up to continue.</p>
+          <button class="btn btn-primary" type="button" id="coSetupPin"><svg class="i"><use href="#i-key"/></svg> Set up PIN security key</button>
+        </div>
+        <div class="processing" data-co="processing" hidden><span class="spinner"></span> Processing securely…</div>
+        <div class="modal-actions"><button type="button" class="btn btn-ghost" data-co-back>Back</button></div>
+      </section>
+
+      <!-- Step 4 -->
+      <section data-co-step="4" class="success" hidden>
+        <div class="success-check"><svg class="i"><use href="#i-check"/></svg></div>
+        <h3>You're on BDAI <span data-co="planName">Pro</span>!</h3>
+        <p class="muted" data-co="successText"></p>
+        <div class="modal-actions center">
+          <button class="btn btn-primary" type="button" id="coGoAccount">View my subscription</button>
+          <button class="btn btn-ghost" type="button" data-close>Start training</button>
+        </div>
+      </section>
+    </div>
+  </dialog>
+
+  <!-- ===================== ACCOUNT DIALOG ===================== -->
+  <dialog class="modal" id="accountDialog" aria-labelledby="accountTitle">
+    <div class="modal-card modal-lg account">
+      <button class="icon-btn modal-close" type="button" data-close aria-label="Close"><svg class="i"><use href="#i-x"/></svg></button>
+      <aside class="account-side">
+        <span class="avatar avatar-lg" data-acc="avatar">BD</span>
+        <strong data-acc="name">Athlete</strong>
+        <small class="muted" data-acc="email"></small>
+        <span class="plan-badge" data-acc="planBadge">Starter</span>
+        <nav class="account-tabs" role="tablist" aria-label="Account sections" aria-orientation="vertical">
+          <button type="button" role="tab" data-acc-tab="profile" aria-selected="true"><svg class="i"><use href="#i-user"/></svg> Profile</button>
+          <button type="button" role="tab" data-acc-tab="subscription" aria-selected="false" tabindex="-1"><svg class="i"><use href="#i-card"/></svg> Subscription</button>
+          <button type="button" role="tab" data-acc-tab="security" aria-selected="false" tabindex="-1"><svg class="i"><use href="#i-shield"/></svg> Security</button>
+        </nav>
+        <button class="btn btn-ghost btn-sm" type="button" data-logout><svg class="i"><use href="#i-logout"/></svg> Sign out</button>
+      </aside>
+
+      <div class="account-main">
+        <section data-acc-panel="profile">
+          <h2 id="accountTitle">Profile</h2>
+          <form id="profileForm" class="form" novalidate>
+            <div class="field-row">
+              <label class="field"><span>Full name</span><input name="name" maxlength="60" required></label>
+              <label class="field"><span>Email</span><input name="email" type="email" readonly></label>
+            </div>
+            <div class="field-row">
+              <label class="field"><span>Primary sport</span>
+                <select name="sport">
+                  <option value="running">Running</option><option value="strength">Strength training</option><option value="football">Football</option>
+                  <option value="cricket">Cricket</option><option value="cycling">Cycling</option><option value="yoga">Yoga</option><option value="other">Other</option>
+                </select>
+              </label>
+              <label class="field"><span>Weekly sessions goal: <output name="goalOut">4</output></span><input type="range" name="weeklyGoal" min="1" max="7" value="4"></label>
+            </div>
+            <div class="modal-actions start"><button class="btn btn-primary" type="submit">Save changes</button></div>
+          </form>
+          <div class="info-grid">
+            <div><small>Member since</small><strong data-acc="since">—</strong></div>
+            <div><small>Current plan</small><strong data-acc="plan">Starter</strong></div>
+            <div><small>Active programs</small><strong data-acc="programs">0</strong></div>
+          </div>
+        </section>
+
+        <section data-acc-panel="subscription" hidden>
+          <h2>Subscription</h2>
+          <div id="subView"></div>
+          <h3 class="sub-h">Billing history</h3>
+          <div id="invoiceView"></div>
+        </section>
+
+        <section data-acc-panel="security" hidden>
+          <h2>Security</h2>
+          <div class="sec-list">
+            <div class="sec-item">
+              <span class="sec-icon"><svg class="i"><use href="#i-key"/></svg></span>
+              <div class="sec-text"><strong>PIN security key</strong><small class="muted" data-acc="pinStatus"></small></div>
+              <div class="sec-actions">
+                <button class="btn btn-outline btn-sm" type="button" id="pinSetupBtn">Set up PIN</button>
+                <button class="btn btn-ghost btn-sm is-danger" type="button" id="pinRemoveBtn">Remove</button>
+              </div>
+            </div>
+            <div class="sec-item" data-needs-pin>
+              <span class="sec-icon"><svg class="i"><use href="#i-shield-check"/></svg></span>
+              <div class="sec-text"><strong>Recovery security key</strong><small class="muted" data-acc="keyStatus"></small></div>
+              <div class="sec-actions"><button class="btn btn-outline btn-sm" type="button" id="regenKeyBtn">Regenerate</button></div>
+            </div>
+            <div class="sec-item" data-needs-pin>
+              <span class="sec-icon"><svg class="i"><use href="#i-clock"/></svg></span>
+              <div class="sec-text"><strong>Auto-lock</strong><small class="muted">Lock with your PIN after inactivity.</small></div>
+              <div class="sec-actions">
+                <label class="sr-only" for="autoLockSelect">Auto-lock after</label>
+                <select id="autoLockSelect" class="select-sm">
+                  <option value="0">Never</option><option value="1">1 minute</option><option value="5">5 minutes</option><option value="15">15 minutes</option><option value="30">30 minutes</option>
+                </select>
+              </div>
+            </div>
+            <div class="sec-item" data-needs-pin>
+              <span class="sec-icon"><svg class="i"><use href="#i-shuffle"/></svg></span>
+              <div class="sec-text"><strong>Scramble keypad</strong><small class="muted">Shuffle digits each time to stop shoulder-surfing.</small></div>
+              <div class="sec-actions"><label class="switch"><input type="checkbox" id="shuffleToggle"><span class="slider" aria-hidden="true"></span><span class="sr-only">Scramble keypad</span></label></div>
+            </div>
+            <div class="sec-item" data-needs-pin>
+              <span class="sec-icon"><svg class="i"><use href="#i-lock"/></svg></span>
+              <div class="sec-text"><strong>Lock now</strong><small class="muted">Instantly lock BDAI on this device.</small></div>
+              <div class="sec-actions"><button class="btn btn-outline btn-sm" type="button" id="lockNowInline">Lock</button></div>
+            </div>
+          </div>
+
+          <details class="sub-details">
+            <summary>Change password</summary>
+            <form id="passwordForm" class="form" novalidate>
+              <label class="field"><span>Current password</span><input type="password" name="current" autocomplete="current-password" required></label>
+              <div class="field-row">
+                <label class="field"><span>New password</span><input type="password" name="next" autocomplete="new-password" minlength="8" required></label>
+                <label class="field"><span>Confirm new password</span><input type="password" name="confirm" autocomplete="new-password" required></label>
+              </div>
+              <p class="form-error" role="alert"></p>
+              <div class="modal-actions start"><button class="btn btn-primary btn-sm" type="submit">Update password</button></div>
+            </form>
+          </details>
+
+          <h3 class="sub-h">Recent security activity</h3>
+          <ul class="activity" id="activityList"></ul>
+
+          <div class="danger-zone">
+            <div><strong>Delete account</strong><p class="muted small">Permanently remove your account and data from this device.</p></div>
+            <button class="btn btn-danger btn-sm" type="button" id="deleteAccountBtn"><svg class="i"><use href="#i-trash"/></svg> Delete</button>
+          </div>
+        </section>
+      </div>
+    </div>
+  </dialog>
+</body>
+</html>
