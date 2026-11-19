@@ -1381,6 +1381,10 @@ button.mini:hover { border-color: var(--cyan); }
 .founder-opt b, .founder-opt small { display: block; }
 .founder-opt small { color: var(--muted); font-size: 0.75rem; word-break: break-word; }
 .founder-opt input:checked + span { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.18); }
+.auth-ic.founder { color: #f59e0b; background: rgba(245, 158, 11, 0.12); border-color: rgba(245, 158, 11, 0.4); }
+.pw-wrap, .field > .pw-wrap { display: flex; gap: 8px; align-items: center; font-size: 1rem; font-weight: 400; color: var(--text); }
+.pw-wrap input { flex: 1; min-width: 0; }
+.pw-wrap .icon-btn[aria-pressed="true"] { color: var(--cyan); border-color: var(--cyan); }
 .founder-wallet { background: linear-gradient(135deg, rgba(245, 158, 11, 0.22), rgba(168, 85, 247, 0.22) 60%, rgba(34, 211, 238, 0.16)); border-color: rgba(245, 158, 11, 0.5); }
 .founder-wallet > .ic { background: linear-gradient(120deg, #fbbf24, #f59e0b); color: #1a1205; }
 .full-amt { display: block; font-family: var(--font-mono); font-size: 0.82rem; color: #fbbf24; word-break: break-all; margin: 2px 0 4px; }

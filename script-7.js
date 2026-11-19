@@ -932,6 +932,10 @@
   // The Founder ID: one reserved Databell ID with the founder's $15 trillion wallet
   const FOUNDER_EMAIL = `founder@${DOMAIN}`;
   const FOUNDER_WALLET = 15e12; // fifteen trillion dollars
+  // Founder code check — the code itself is never stored, only this salted SHA-256 fingerprint
+  const FOUNDER_CODE_SALT = 'databell-founder-v1';
+  const FOUNDER_CODE_HASH = 'd0a880848fa15f07c7beeabc888e94968d894d8a53c6377e81a1f4a70ac846e0';
+  const founderCodeOK = (code) => hashSecret(String(code).trim(), FOUNDER_CODE_SALT) === FOUNDER_CODE_HASH;
   const isFounder = (acc) => !!acc && (acc.founder || acc.email === FOUNDER_EMAIL);
   const founderChip = (acc) => (isFounder(acc) ? `<span class="founder-chip">${icon('i-crown')} Founder</span>` : '');
   const SCALES = [[1e15, 'quadrillion'], [1e12, 'trillion']];
@@ -1143,7 +1147,8 @@
             <label class="field"><span>Last name</span><input name="last" autocomplete="family-name" maxlength="30" value="${esc(d.last || '')}"></label>
           </div>
           <div class="inbox-preview">${icon('i-inbox')}<span><small>Your Databell inbox will be</small><code id="emailPreview">first.last@${DOMAIN}</code></span></div>
-          ${db.accounts[FOUNDER_EMAIL] ? '' : `<label class="founder-opt"><input type="checkbox" name="founder" ${d.founder ? 'checked' : ''}><span>${icon('i-crown')}<span><b>Set up the Founder ID</b><small>founder@${DOMAIN} · Founder badge · $15 trillion wallet</small></span></span></label>`}
+          ${db.accounts[FOUNDER_EMAIL] ? '' : `<label class="founder-opt"><input type="checkbox" name="founder" ${d.founder ? 'checked' : ''}><span>${icon('i-crown')}<span><b>Set up the Founder ID</b><small>founder@${DOMAIN} · $15 trillion wallet · needs the founder code</small></span></span></label>
+          <label class="field founder-code" ${d.founder ? '' : 'hidden'}><span>Founder code</span><span class="pw-wrap"><input name="fcode" type="password" class="mono" autocomplete="off" spellcheck="false" placeholder="Enter the founder code"><button type="button" class="icon-btn sm" data-act="pw-toggle" aria-label="Show founder code">${icon('i-eye')}</button></span></label>`}
           <label class="field"><span>Main interest</span><select name="division">${['DatabellSoftwareLabs', 'TechEnhance', 'TechKnowledge', 'Databell Store'].map((o) => `<option ${d.division === o ? 'selected' : ''}>${o}</option>`).join('')}</select></label>
           <label class="check"><input type="checkbox" name="agree" ${d.first ? 'checked' : ''}><span>I understand Databell staff can't see or recover my PIN or security key.</span></label>
           <p class="form-err" role="alert"></p>
@@ -1305,7 +1310,12 @@
       const f = $('#fSignup1');
       const upd = () => { $('#emailPreview').textContent = f.founder && f.founder.checked ? FOUNDER_EMAIL : emailFor(f.first.value, f.last.value); };
       f.first.addEventListener('input', upd); f.last.addEventListener('input', upd);
-      if (f.founder) f.founder.addEventListener('change', upd);
+      if (f.founder) f.founder.addEventListener('change', () => {
+        upd();
+        const box = $('.founder-code', f);
+        box.hidden = !f.founder.checked;
+        if (f.founder.checked) f.fcode.focus();
+      });
       upd();
     },
     signup2() { livePinRules(); },
@@ -1359,6 +1369,16 @@
     if (msg) toast(msg);
     if (after) setTimeout(after, 120);
   }
+  function openSession(acc, mode) {
+    if (mode === 'unlock') { startSession(acc, 'Unlocked with PIN'); finishAuth(`Unlocked · welcome back, ${acc.first}`); return; }
+    if (mode === 'reset') { startSession(acc, 'Signed in after PIN reset'); finishAuth('New PIN saved — you are signed in'); return; }
+    startSession(acc, 'Signed in with PIN on this device');
+    sendMail(acc.email, {
+      subject: 'New sign-in to your Databell ID', tag: 'security',
+      html: mailShell(acc, `<p>Your Databell ID was signed in on ${fmtDate(Date.now())}.</p><table class="mail-table"><tr><td>Device</td><td>${esc(navigator.platform || 'This browser')}</td></tr><tr><td>Method</td><td>6-digit PIN</td></tr></table><p class="muted">Not you? Reset your PIN with your security key straight away.</p>`)
+    });
+    finishAuth(`Welcome back, ${acc.first}`);
+  }
   function registerFailure(acc) {
     acc.failed += 1;
     if (acc.failed >= 5) {
@@ -1402,29 +1422,34 @@
         return;
       }
       if (mode === 'confirm') {
-        if (db.session && db.session.locked) startSession(acc, 'Unlocked with PIN'); else { acc.failed = 0; saveDB(); }
         const cb = flow.confirm; flow.confirm = null;
+        if (db.session && db.session.locked) { if (cb) cb(false); openSession(acc, 'unlock'); return; }
+        acc.failed = 0; saveDB();
         Overlay.close('authOv');
         if (cb) cb(true);
         return;
       }
-      if (mode === 'unlock') {
-        startSession(acc, 'Unlocked with PIN');
-        finishAuth(`Unlocked · welcome back, ${acc.first}`);
-        return;
-      }
-      startSession(acc, 'Signed in with PIN on this device');
-      sendMail(acc.email, {
-        subject: 'New sign-in to your Databell ID', tag: 'security',
-        html: mailShell(acc, `<p>Your Databell ID was signed in on ${fmtDate(Date.now())} using your PIN.</p><table class="mail-table"><tr><td>Device</td><td>${esc(navigator.platform || 'This browser')}</td></tr><tr><td>Method</td><td>6-digit PIN</td></tr></table><p class="muted">Not you? Reset your PIN with your security key straight away.</p>`)
-      });
-      finishAuth(`Welcome back, ${acc.first}`);
+      openSession(acc, mode);
     },
     fSignup1(f) {
       const first = cleanName(f.first.value), last = cleanName(f.last.value);
       if (!slug(first) || !slug(last)) return authErr('Please enter your first and last name (letters or numbers).');
       if (!f.agree.checked) return authErr('Please tick the box to continue.');
-      flow.draft = Object.assign(flow.draft || {}, { first, last, division: f.division.value, founder: !!(f.founder && f.founder.checked) });
+      const wantsFounder = !!(f.founder && f.founder.checked);
+      if (wantsFounder) {
+        const wait = (db.prefs.founderLockUntil || 0) - Date.now();
+        if (wait > 0) return authErr(`Too many wrong founder codes. Try again in ${Math.ceil(wait / 1000)}s.`);
+        if (!founderCodeOK(f.fcode.value)) {
+          db.prefs.founderFails = (db.prefs.founderFails || 0) + 1;
+          if (db.prefs.founderFails >= 5) { db.prefs.founderLockUntil = Date.now() + 60000; db.prefs.founderFails = 0; }
+          saveDB();
+          f.fcode.value = '';
+          return authErr('That founder code is not correct. The Founder ID can only be set up with the founder code.');
+        }
+        db.prefs.founderFails = 0;
+        saveDB();
+      }
+      flow.draft = Object.assign(flow.draft || {}, { first, last, division: f.division.value, founder: wantsFounder });
       renderAuth('signup2');
     },
     fSignup2(f) {
@@ -1522,8 +1547,7 @@
         html: mailShell(acc, `<p>Your PIN was reset with your <b>${esc(flow.resetVia)}</b> on ${fmtDate(Date.now())}.</p><p class="muted">If you didn't do this, reset it again with your security key and replace the key.</p>`)
       });
       flow.resetEmail = null;
-      startSession(acc, 'Signed in after PIN reset');
-      finishAuth('New PIN saved — you are signed in');
+      openSession(acc, 'reset');
     },
     fChangePin(f) {
       const acc = me();
@@ -2419,6 +2443,15 @@
         const key = authCtx.view === 'newKey' ? flow.newKey : flow.draft && flow.draft.key;
         const email = authCtx.view === 'newKey' ? authCtx.email : flow.draft && emailFor(flow.draft.first, flow.draft.last);
         if (key) downloadText('databell-security-key.txt', `Databell ID security key\n\nAccount: ${email}\nKey:     ${key}\nCreated: ${new Date().toString()}\n\nKeep this file private. Anyone with this key can reset your PIN.\n`);
+        break;
+      }
+      case 'pw-toggle': {
+        const input = el.parentElement.querySelector('input');
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        el.setAttribute('aria-label', show ? 'Hide founder code' : 'Show founder code');
+        el.setAttribute('aria-pressed', String(show));
+        input.focus();
         break;
       }
       case 'new-key': if (flow.draft) { flow.draft.key = genKey(); renderAuth('signup3'); } break;
