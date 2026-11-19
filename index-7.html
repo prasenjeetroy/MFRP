@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" class="no-js">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Databell — engineering the future of technology through DatabellSoftwareLabs, TechEnhance and TechKnowledge.">
+  <meta name="theme-color" content="#040a17">
+  <title>Databell · Technology, Engineered</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style-7.css">
+  <script>document.documentElement.classList.remove('no-js');try{var t=localStorage.getItem('databell-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
+  <script src="script-7.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <!-- ===================== ICON SPRITE ===================== -->
+  <svg xmlns="http://www.w3.org/2000/svg" class="sprite" aria-hidden="true">
+    <symbol id="i-code" viewBox="0 0 24 24"><path d="m8 6-6 6 6 6M16 6l6 6-6 6M14 4l-4 16"/></symbol>
+    <symbol id="i-rocket" viewBox="0 0 24 24"><path d="M5 15c-1.5 1-2 4-2 6 2 0 5-.5 6-2"/><path d="M9 15 6 12c1-4 4-8 9-9 2 0 4 0 6 1 1 2 1 4 1 6-1 5-5 8-9 9l-3-3"/><circle cx="15.5" cy="8.5" r="1.8"/></symbol>
+    <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H20v17H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 21.5A2.5 2.5 0 0 1 6.5 19H20v3H6.5"/><path d="M9 7h7M9 11h5"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a5 5 0 0 1-.6-10A6 6 0 0 1 18 9a4.5 4.5 0 0 1-.5 9z"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-brain" viewBox="0 0 24 24"><path d="M9 3a3 3 0 0 0-3 3 3 3 0 0 0-2 5 3 3 0 0 0 1 5 3 3 0 0 0 4 4 3 3 0 0 0 3-1V4a3 3 0 0 0-3-1z"/><path d="M15 3a3 3 0 0 1 3 3 3 3 0 0 1 2 5 3 3 0 0 1-1 5 3 3 0 0 1-4 4 3 3 0 0 1-3-1"/></symbol>
+    <symbol id="i-data" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></symbol>
+    <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="m7 15 4-4 3 3 5-6"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/></symbol>
+    <symbol id="i-mobile" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 5 5L20 7"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-left" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6"/></symbol>
+    <symbol id="i-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6"/></symbol>
+    <symbol id="i-up" viewBox="0 0 24 24"><path d="m6 15 6-6 6 6"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m2 6 10 7 10-7"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 22s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+    <symbol id="i-phone" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2 3 6.6 7 .8-5.2 4.8 1.4 7L12 17.8 5.8 21.2l1.4-7L2 9.4l7-.8z"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8z"/></symbol>
+    <symbol id="i-quote" viewBox="0 0 24 24"><path d="M10 7H6a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v3l3-3V9a2 2 0 0 0-1-2zM20 7h-4a2 2 0 0 0-2 2v4a2 2 0 0 0 2 2h2v3l3-3V9a2 2 0 0 0-1-2z"/></symbol>
+    <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m6 9 3 3-3 3M12 15h6"/></symbol>
+    <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20a7 7 0 0 1 14 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 13.5a7 7 0 0 1 4 6.5"/></symbol>
+    <symbol id="i-award" viewBox="0 0 24 24"><circle cx="12" cy="9" r="6"/><path d="m8.5 14-1.5 8 5-3 5 3-1.5-8"/></symbol>
+  </svg>
+
+  <!-- ===================== PRELOADER ===================== -->
+  <div class="preloader" id="preloader" aria-hidden="true">
+    <div class="boot">
+      <svg class="boot-logo" viewBox="0 0 64 64"><use href="#logo-mark"/></svg>
+      <div class="boot-lines" id="bootLines"></div>
+      <div class="boot-bar"><span id="bootBar"></span></div>
+    </div>
+  </div>
+
+  <!-- Logo symbol (kept separate so it can be referenced everywhere) -->
+  <svg xmlns="http://www.w3.org/2000/svg" class="sprite" aria-hidden="true">
+    <defs>
+      <linearGradient id="g-logo" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#22d3ee"/><stop offset="1" stop-color="#2563eb"/>
+      </linearGradient>
+    </defs>
+    <symbol id="logo-mark" viewBox="0 0 64 64">
+      <path d="M32 4 56 18v28L32 60 8 46V18z" fill="none" stroke="url(#g-logo)" stroke-width="3"/>
+      <path d="M22 20h10a12 12 0 0 1 0 24H22z" fill="none" stroke="url(#g-logo)" stroke-width="3.4" stroke-linejoin="round"/>
+      <circle cx="32" cy="32" r="3.4" fill="#22d3ee"/>
+      <path d="M22 32h7" stroke="#22d3ee" stroke-width="2.4" stroke-linecap="round"/>
+    </symbol>
+  </svg>
+
+  <div class="scroll-progress" id="scrollProgress"></div>
+  <div class="cursor-glow" id="cursorGlow" aria-hidden="true"></div>
+
+  <!-- ===================== HEADER ===================== -->
+  <header class="site-header" id="siteHeader">
+    <div class="container nav-wrap">
+      <a href="#home" class="brand" aria-label="Databell home">
+        <svg class="brand-mark"><use href="#logo-mark"/></svg>
+        <span class="brand-name">Data<b>bell</b></span>
+      </a>
+      <nav class="main-nav" id="mainNav" aria-label="Primary">
+        <a href="#about">Company</a>
+        <a href="#ecosystem">Ecosystem</a>
+        <a href="#labs">SoftwareLabs</a>
+        <a href="#enhance">TechEnhance</a>
+        <a href="#knowledge">TechKnowledge</a>
+        <a href="#plans">Plans</a>
+        <a href="#contact" class="nav-cta-mobile">Contact</a>
+      </nav>
+      <div class="nav-actions">
+        <button class="icon-btn" id="themeToggle" aria-label="Switch colour theme">
+          <svg class="ic ic-sun"><use href="#i-sun"/></svg>
+          <svg class="ic ic-moon"><use href="#i-moon"/></svg>
+        </button>
+        <a href="#contact" class="btn btn-primary btn-sm nav-cta">Start a project</a>
+        <button class="icon-btn menu-btn" id="menuBtn" aria-label="Open menu" aria-expanded="false" aria-controls="mainNav">
+          <svg class="ic"><use href="#i-menu"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- ===================== HERO ===================== -->
+    <section class="hero" id="home">
+      <canvas id="netCanvas" class="net-canvas" aria-hidden="true"></canvas>
+      <div class="hero-grid-bg" aria-hidden="true"></div>
+      <div class="hero-orb orb-a" aria-hidden="true"></div>
+      <div class="hero-orb orb-b" aria-hidden="true"></div>
+
+      <div class="container hero-inner">
+        <div class="hero-copy">
+          <span class="eyebrow reveal"><span class="pulse-dot"></span> Databell Technology Group · Est. 2014</span>
+          <h1 class="hero-title reveal">
+            We engineer<br>
+            <span class="type-wrap"><span class="grad-text" id="typeWord">smart software</span><span class="caret">|</span></span><br>
+            for what's next.
+          </h1>
+          <p class="hero-sub reveal">Databell builds, upgrades and teaches technology. Three divisions — <strong>DatabellSoftwareLabs</strong>, <strong>TechEnhance</strong> and <strong>TechKnowledge</strong> — take an idea from first line of code to a team that can run it.</p>
+          <div class="hero-ctas reveal">
+            <a href="#ecosystem" class="btn btn-primary magnetic">Explore the ecosystem <svg class="ic"><use href="#i-arrow"/></svg></a>
+            <a href="#labs" class="btn btn-ghost magnetic"><svg class="ic"><use href="#i-play"/></svg> See the Labs live</a>
+          </div>
+          <dl class="hero-stats reveal">
+            <div><dt><span class="count" data-to="480" data-suffix="+">0</span></dt><dd>Products shipped</dd></div>
+            <div><dt><span class="count" data-to="99.98" data-decimals="2" data-suffix="%">0</span></dt><dd>Platform uptime</dd></div>
+            <div><dt><span class="count" data-to="120" data-suffix="K">0</span></dt><dd>Learners trained</dd></div>
+          </dl>
+        </div>
+
+        <div class="hero-visual reveal" aria-hidden="true">
+          <div class="core">
+            <div class="ring r1"></div><div class="ring r2"></div><div class="ring r3"></div>
+            <div class="core-center">
+              <svg viewBox="0 0 64 64"><use href="#logo-mark"/></svg>
+            </div>
+            <div class="sat sat-1"><svg class="ic"><use href="#i-code"/></svg></div>
+            <div class="sat sat-2"><svg class="ic"><use href="#i-rocket"/></svg></div>
+            <div class="sat sat-3"><svg class="ic"><use href="#i-book"/></svg></div>
+          </div>
+          <div class="float-card fc-1 glass">
+            <span class="fc-label">Deploy · prod-eu</span>
+            <span class="fc-value"><span class="ok-dot"></span> Healthy · 42ms</span>
+          </div>
+          <div class="float-card fc-2 glass">
+            <span class="fc-label">Model accuracy</span>
+            <div class="spark"><i style="--h:40%"></i><i style="--h:55%"></i><i style="--h:48%"></i><i style="--h:70%"></i><i style="--h:66%"></i><i style="--h:84%"></i><i style="--h:92%"></i></div>
+          </div>
+        </div>
+      </div>
+
+      <a href="#marquee" class="scroll-hint" aria-label="Scroll down"><span></span></a>
+    </section>
+
+    <!-- ===================== MARQUEE ===================== -->
+    <div class="marquee" id="marquee" aria-label="Technologies we work with">
+      <div class="marquee-track">
+        <span>Artificial Intelligence</span><span>Cloud Native</span><span>Edge Computing</span><span>Cybersecurity</span><span>Data Engineering</span><span>DevOps</span><span>Quantum-ready</span><span>IoT</span><span>Blockchain</span><span>AR / VR</span><span>5G</span><span>Low-code</span>
+        <span aria-hidden="true">Artificial Intelligence</span><span aria-hidden="true">Cloud Native</span><span aria-hidden="true">Edge Computing</span><span aria-hidden="true">Cybersecurity</span><span aria-hidden="true">Data Engineering</span><span aria-hidden="true">DevOps</span><span aria-hidden="true">Quantum-ready</span><span aria-hidden="true">IoT</span><span aria-hidden="true">Blockchain</span><span aria-hidden="true">AR / VR</span><span aria-hidden="true">5G</span><span aria-hidden="true">Low-code</span>
+      </div>
+    </div>
+
+    <!-- ===================== ABOUT ===================== -->
+    <section class="section" id="about">
+      <div class="container about-grid">
+        <div class="about-copy">
+          <span class="kicker reveal">// The company</span>
+          <h2 class="section-title reveal">One company. <span class="grad-text">Three engines</span> of technology.</h2>
+          <p class="lead reveal">Databell started as a four-person data consultancy. Today it is a technology group that designs software, modernises the systems companies already have, and trains the people who keep them running.</p>
+          <ul class="value-list">
+            <li class="reveal"><svg class="ic"><use href="#i-target"/></svg><div><h3>Engineering first</h3><p>Every engagement is led by engineers who write production code, not slide decks.</p></div></li>
+            <li class="reveal"><svg class="ic"><use href="#i-shield"/></svg><div><h3>Secure by default</h3><p>Zero-trust architecture, audited pipelines and ISO 27001-aligned delivery.</p></div></li>
+            <li class="reveal"><svg class="ic"><use href="#i-users"/></svg><div><h3>Knowledge that stays</h3><p>We hand over documentation, training and runbooks so your team owns the result.</p></div></li>
+          </ul>
+        </div>
+        <div class="timeline reveal" aria-label="Databell milestones">
+          <div class="tl-line"><span class="tl-fill" id="tlFill"></span></div>
+          <div class="tl-item"><span class="tl-year">2014</span><h4>Databell founded</h4><p>Data analytics consultancy, four engineers, one shared office.</p></div>
+          <div class="tl-item"><span class="tl-year">2017</span><h4>DatabellSoftwareLabs</h4><p>Product engineering division launches; first SaaS platform ships.</p></div>
+          <div class="tl-item"><span class="tl-year">2020</span><h4>TechEnhance</h4><p>Modernisation practice formed to move legacy systems to the cloud.</p></div>
+          <div class="tl-item"><span class="tl-year">2022</span><h4>TechKnowledge</h4><p>Learning arm opens with 12 courses and a public knowledge base.</p></div>
+          <div class="tl-item"><span class="tl-year">2026</span><h4>AI-native group</h4><p>All three divisions run on a shared AI platform across 9 countries.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== ECOSYSTEM ===================== -->
+    <section class="section section-alt" id="ecosystem">
+      <div class="container">
+        <div class="section-head center">
+          <span class="kicker reveal">// The ecosystem</span>
+          <h2 class="section-title reveal">Build. Enhance. <span class="grad-text">Know.</span></h2>
+          <p class="lead reveal">Each Databell extension stands on its own, and they are designed to work together.</p>
+        </div>
+        <div class="eco-grid">
+          <article class="eco-card tilt reveal" style="--accent: var(--c-labs)">
+            <div class="eco-glow"></div>
+            <div class="eco-icon"><svg class="ic"><use href="#i-code"/></svg></div>
+            <span class="eco-tag">Extension 01</span>
+            <h3>DatabellSoftwareLabs</h3>
+            <p>Custom software, SaaS products, mobile apps and AI systems — designed, built and shipped by product engineering teams.</p>
+            <ul class="tick-list"><li>Product engineering</li><li>AI &amp; ML systems</li><li>Web &amp; mobile apps</li></ul>
+            <a href="#labs" class="eco-link">Enter the Labs <svg class="ic"><use href="#i-arrow"/></svg></a>
+          </article>
+          <article class="eco-card tilt reveal" style="--accent: var(--c-enhance)">
+            <div class="eco-glow"></div>
+            <div class="eco-icon"><svg class="ic"><use href="#i-rocket"/></svg></div>
+            <span class="eco-tag">Extension 02</span>
+            <h3>TechEnhance</h3>
+            <p>Modernisation, cloud migration and performance work that makes the systems you already run faster, cheaper and safer.</p>
+            <ul class="tick-list"><li>Cloud migration</li><li>Performance tuning</li><li>Security hardening</li></ul>
+            <a href="#enhance" class="eco-link">Enhance your stack <svg class="ic"><use href="#i-arrow"/></svg></a>
+          </article>
+          <article class="eco-card tilt reveal" style="--accent: var(--c-know)">
+            <div class="eco-glow"></div>
+            <div class="eco-icon"><svg class="ic"><use href="#i-book"/></svg></div>
+            <span class="eco-tag">Extension 03</span>
+            <h3>TechKnowledge</h3>
+            <p>Courses, certifications and an open knowledge base for developers, teams and anyone curious about technology.</p>
+            <ul class="tick-list"><li>Learning tracks</li><li>Corporate training</li><li>Open knowledge base</li></ul>
+            <a href="#knowledge" class="eco-link">Start learning <svg class="ic"><use href="#i-arrow"/></svg></a>
+          </article>
+        </div>
+
+        <div class="flow reveal" aria-label="How the divisions connect">
+          <div class="flow-node" style="--accent: var(--c-labs)"><svg class="ic"><use href="#i-code"/></svg><span>Build</span></div>
+          <div class="flow-pipe"><i></i></div>
+          <div class="flow-node" style="--accent: var(--c-enhance)"><svg class="ic"><use href="#i-rocket"/></svg><span>Enhance</span></div>
+          <div class="flow-pipe"><i></i></div>
+          <div class="flow-node" style="--accent: var(--c-know)"><svg class="ic"><use href="#i-book"/></svg><span>Know</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== DATABELL SOFTWARE LABS ===================== -->
+    <section class="section division" id="labs" style="--accent: var(--c-labs)">
+      <div class="container">
+        <div class="division-head">
+          <div>
+            <span class="division-badge reveal"><svg class="ic"><use href="#i-code"/></svg> DatabellSoftwareLabs</span>
+            <h2 class="section-title reveal">Where ideas become <span class="grad-text">shipped software.</span></h2>
+            <p class="lead reveal">Cross-functional squads of engineers, designers and data scientists who deliver in two-week increments, with a live build you can follow every day.</p>
+          </div>
+        </div>
+
+        <div class="labs-grid">
+          <div class="terminal glass reveal" aria-label="Example deployment log">
+            <div class="term-bar">
+              <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+              <span class="term-title">labs@databell: ~/nova-platform</span>
+            </div>
+            <pre class="term-body" id="termBody"></pre>
+          </div>
+
+          <div class="service-grid">
+            <div class="service reveal"><svg class="ic"><use href="#i-layers"/></svg><h3>SaaS platforms</h3><p>Multi-tenant products with billing, auth and analytics built in.</p></div>
+            <div class="service reveal"><svg class="ic"><use href="#i-brain"/></svg><h3>AI &amp; ML</h3><p>LLM assistants, vision models and forecasting that run in production.</p></div>
+            <div class="service reveal"><svg class="ic"><use href="#i-mobile"/></svg><h3>Mobile apps</h3><p>Native iOS and Android, or one cross-platform codebase.</p></div>
+            <div class="service reveal"><svg class="ic"><use href="#i-data"/></svg><h3>Data platforms</h3><p>Pipelines, lakehouses and real-time dashboards.</p></div>
+          </div>
+        </div>
+
+        <h3 class="sub-title reveal">The Labs pipeline</h3>
+        <ol class="pipeline reveal" id="pipeline">
+          <li class="pl-step"><span class="pl-dot"><svg class="ic"><use href="#i-search"/></svg></span><b>Discover</b><small>1 week</small></li>
+          <li class="pl-step"><span class="pl-dot"><svg class="ic"><use href="#i-layers"/></svg></span><b>Design</b><small>2 weeks</small></li>
+          <li class="pl-step"><span class="pl-dot"><svg class="ic"><use href="#i-code"/></svg></span><b>Build</b><small>Sprints</small></li>
+          <li class="pl-step"><span class="pl-dot"><svg class="ic"><use href="#i-shield"/></svg></span><b>Test</b><small>Continuous</small></li>
+          <li class="pl-step"><span class="pl-dot"><svg class="ic"><use href="#i-rocket"/></svg></span><b>Launch</b><small>Day 1</small></li>
+          <li class="pl-step"><span class="pl-dot"><svg class="ic"><use href="#i-chart"/></svg></span><b>Scale</b><small>Ongoing</small></li>
+        </ol>
+
+        <h3 class="sub-title reveal">From the Labs</h3>
+        <div class="product-grid">
+          <article class="product tilt reveal">
+            <div class="product-visual pv-1"><span></span><span></span><span></span></div>
+            <span class="chip">SaaS</span>
+            <h4>Nova Platform</h4>
+            <p>Operations suite that runs inventory, orders and invoicing for 2,300 retailers.</p>
+          </article>
+          <article class="product tilt reveal">
+            <div class="product-visual pv-2"><span></span><span></span><span></span></div>
+            <span class="chip">AI</span>
+            <h4>Sentinel Vision</h4>
+            <p>Computer-vision quality checks on factory lines, flagging defects in under 80 ms.</p>
+          </article>
+          <article class="product tilt reveal">
+            <div class="product-visual pv-3"><span></span><span></span><span></span></div>
+            <span class="chip">Mobile</span>
+            <h4>Pulse Health</h4>
+            <p>Patient app with secure messaging and appointment booking for 40 clinics.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== TECH ENHANCE ===================== -->
+    <section class="section section-alt division" id="enhance" style="--accent: var(--c-enhance)">
+      <div class="container">
+        <div class="division-head">
+          <div>
+            <span class="division-badge reveal"><svg class="ic"><use href="#i-rocket"/></svg> TechEnhance</span>
+            <h2 class="section-title reveal">Make what you have <span class="grad-text">faster, leaner, safer.</span></h2>
+            <p class="lead reveal">TechEnhance audits your systems, finds the bottlenecks and fixes them without stopping the business that depends on them.</p>
+          </div>
+        </div>
+
+        <div class="enhance-grid">
+          <div class="compare reveal" id="compare" aria-label="Before and after comparison">
+            <div class="compare-pane before">
+              <span class="cmp-label">Before · Legacy monolith</span>
+              <ul class="metric-bars">
+                <li><span>Page load</span><b style="--w:88%">4.2s</b></li>
+                <li><span>Infra cost / mo</span><b style="--w:92%">$48K</b></li>
+                <li><span>Deploys / week</span><b style="--w:12%">1</b></li>
+                <li><span>Incidents / mo</span><b style="--w:70%">14</b></li>
+              </ul>
+            </div>
+            <div class="compare-pane after" id="compareAfter">
+              <span class="cmp-label">After · TechEnhance</span>
+              <ul class="metric-bars">
+                <li><span>Page load</span><b style="--w:18%">0.8s</b></li>
+                <li><span>Infra cost / mo</span><b style="--w:46%">$22K</b></li>
+                <li><span>Deploys / week</span><b style="--w:90%">35</b></li>
+                <li><span>Incidents / mo</span><b style="--w:10%">2</b></li>
+              </ul>
+            </div>
+            <div class="compare-handle" id="compareHandle"><span><svg class="ic"><use href="#i-left"/></svg><svg class="ic"><use href="#i-right"/></svg></span></div>
+            <input type="range" min="0" max="100" value="50" id="compareRange" class="compare-range" aria-label="Drag to compare before and after">
+          </div>
+
+          <div class="calc glass reveal">
+            <h3><svg class="ic"><use href="#i-chart"/></svg> Savings estimator</h3>
+            <p class="muted small">Typical results from 140 TechEnhance engagements. Move the sliders to match your setup.</p>
+            <label class="field-range">
+              <span>Monthly cloud &amp; hosting spend <output id="spendOut">$25,000</output></span>
+              <input type="range" id="spend" min="2000" max="200000" step="1000" value="25000">
+            </label>
+            <label class="field-range">
+              <span>Engineers on the platform <output id="engOut">12</output></span>
+              <input type="range" id="eng" min="1" max="200" step="1" value="12">
+            </label>
+            <label class="field-range">
+              <span>Age of core system <output id="ageOut">8 years</output></span>
+              <input type="range" id="age" min="1" max="25" step="1" value="8">
+            </label>
+            <div class="calc-results">
+              <div><small>Est. yearly savings</small><strong id="saveOut">$0</strong></div>
+              <div><small>Hours freed / month</small><strong id="hoursOut">0</strong></div>
+              <div><small>Payback period</small><strong id="paybackOut">0 mo</strong></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="steps">
+          <div class="step reveal"><span class="step-n">01</span><h4>Audit</h4><p>Architecture, cost and security review with a scored report in 10 days.</p></div>
+          <div class="step reveal"><span class="step-n">02</span><h4>Roadmap</h4><p>A prioritised plan ranked by savings and risk, not by trend.</p></div>
+          <div class="step reveal"><span class="step-n">03</span><h4>Modernise</h4><p>Strangler-pattern migration so nothing goes offline.</p></div>
+          <div class="step reveal"><span class="step-n">04</span><h4>Optimise</h4><p>Observability, autoscaling and FinOps tuned against real traffic.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== TECH KNOWLEDGE ===================== -->
+    <section class="section division" id="knowledge" style="--accent: var(--c-know)">
+      <div class="container">
+        <div class="division-head">
+          <div>
+            <span class="division-badge reveal"><svg class="ic"><use href="#i-book"/></svg> TechKnowledge</span>
+            <h2 class="section-title reveal">Learn the technology <span class="grad-text">behind the technology.</span></h2>
+            <p class="lead reveal">Hands-on courses written by Databell engineers, an open knowledge base, and certifications employers recognise.</p>
+          </div>
+        </div>
+
+        <div class="filter-bar reveal" role="tablist" aria-label="Filter courses">
+          <button class="chip-btn active" data-filter="all" role="tab" aria-selected="true">All tracks</button>
+          <button class="chip-btn" data-filter="ai" role="tab" aria-selected="false">AI &amp; Data</button>
+          <button class="chip-btn" data-filter="cloud" role="tab" aria-selected="false">Cloud</button>
+          <button class="chip-btn" data-filter="dev" role="tab" aria-selected="false">Development</button>
+          <button class="chip-btn" data-filter="sec" role="tab" aria-selected="false">Security</button>
+        </div>
+        <div class="course-grid" id="courseGrid"></div>
+
+        <div class="kb-wrap">
+          <div class="kb glass reveal">
+            <h3><svg class="ic"><use href="#i-search"/></svg> Knowledge base</h3>
+            <div class="search-box">
+              <svg class="ic"><use href="#i-search"/></svg>
+              <input type="search" id="kbSearch" placeholder="Search articles — try “kubernetes” or “vector”" aria-label="Search knowledge base">
+            </div>
+            <ul class="kb-list" id="kbList"></ul>
+            <p class="kb-empty" id="kbEmpty" hidden>No articles match that search.</p>
+          </div>
+
+          <div class="quiz glass reveal" id="quiz">
+            <h3><svg class="ic"><use href="#i-bolt"/></svg> Tech Pulse quiz</h3>
+            <div class="quiz-progress"><span id="quizBar"></span></div>
+            <p class="quiz-q" id="quizQ"></p>
+            <div class="quiz-opts" id="quizOpts"></div>
+            <div class="quiz-foot">
+              <span class="muted small" id="quizMeta"></span>
+              <button class="btn btn-primary btn-sm" id="quizNext" disabled>Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== TECH STACK ===================== -->
+    <section class="section section-alt" id="stack">
+      <div class="container stack-grid">
+        <div>
+          <span class="kicker reveal">// Technology</span>
+          <h2 class="section-title reveal">A stack chosen for <span class="grad-text">the job,</span> not the hype.</h2>
+          <p class="lead reveal">Our engineers are certified across the major clouds and frameworks. We pick the tools that fit your team and your budget.</p>
+          <div class="stack-tags reveal">
+            <span>Python</span><span>TypeScript</span><span>Go</span><span>Rust</span><span>Kotlin</span><span>Swift</span><span>React</span><span>Next.js</span><span>Kubernetes</span><span>Terraform</span><span>PostgreSQL</span><span>Kafka</span><span>PyTorch</span><span>AWS</span><span>Azure</span><span>GCP</span>
+          </div>
+        </div>
+        <div class="orbit reveal" aria-hidden="true">
+          <div class="orbit-ring o1"><span class="planet" style="--a:0deg"><svg class="ic"><use href="#i-cloud"/></svg></span><span class="planet" style="--a:180deg"><svg class="ic"><use href="#i-data"/></svg></span></div>
+          <div class="orbit-ring o2"><span class="planet" style="--a:60deg"><svg class="ic"><use href="#i-cpu"/></svg></span><span class="planet" style="--a:180deg"><svg class="ic"><use href="#i-shield"/></svg></span><span class="planet" style="--a:300deg"><svg class="ic"><use href="#i-brain"/></svg></span></div>
+          <div class="orbit-ring o3"><span class="planet" style="--a:30deg"><svg class="ic"><use href="#i-globe"/></svg></span><span class="planet" style="--a:120deg"><svg class="ic"><use href="#i-gear"/></svg></span><span class="planet" style="--a:210deg"><svg class="ic"><use href="#i-mobile"/></svg></span><span class="planet" style="--a:300deg"><svg class="ic"><use href="#i-terminal"/></svg></span></div>
+          <div class="orbit-core"><svg viewBox="0 0 64 64"><use href="#logo-mark"/></svg></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== IMPACT ===================== -->
+    <section class="section" id="impact">
+      <div class="container">
+        <div class="section-head center">
+          <span class="kicker reveal">// Impact</span>
+          <h2 class="section-title reveal">Numbers that <span class="grad-text">compile.</span></h2>
+        </div>
+        <div class="impact-grid">
+          <div class="impact-card glass reveal"><svg class="ic"><use href="#i-users"/></svg><strong><span class="count" data-to="650" data-suffix="+">0</span></strong><span>Engineers &amp; educators</span></div>
+          <div class="impact-card glass reveal"><svg class="ic"><use href="#i-globe"/></svg><strong><span class="count" data-to="9">0</span></strong><span>Countries</span></div>
+          <div class="impact-card glass reveal"><svg class="ic"><use href="#i-award"/></svg><strong><span class="count" data-to="38">0</span></strong><span>Industry awards</span></div>
+          <div class="impact-card glass reveal"><svg class="ic"><use href="#i-star"/></svg><strong><span class="count" data-to="4.9" data-decimals="1">0</span>/5</strong><span>Client satisfaction</span></div>
+        </div>
+
+        <figure class="chart glass reveal">
+          <figcaption>
+            <h3>Group growth</h3>
+            <p class="muted small">Active client engagements per year</p>
+          </figcaption>
+          <div class="bars" role="img" aria-label="Active engagements: 2020 48, 2021 76, 2022 112, 2023 158, 2024 214, 2025 286, 2026 360">
+            <div class="bar" style="--v:13%"><b>48</b><span>2020</span></div>
+            <div class="bar" style="--v:21%"><b>76</b><span>2021</span></div>
+            <div class="bar" style="--v:31%"><b>112</b><span>2022</span></div>
+            <div class="bar" style="--v:44%"><b>158</b><span>2023</span></div>
+            <div class="bar" style="--v:59%"><b>214</b><span>2024</span></div>
+            <div class="bar" style="--v:79%"><b>286</b><span>2025</span></div>
+            <div class="bar hi" style="--v:100%"><b>360</b><span>2026</span></div>
+          </div>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ===================== STORIES ===================== -->
+    <section class="section section-alt" id="stories">
+      <div class="container">
+        <div class="section-head center">
+          <span class="kicker reveal">// Client stories</span>
+          <h2 class="section-title reveal">Trusted by teams that <span class="grad-text">ship.</span></h2>
+        </div>
+        <div class="carousel reveal" id="carousel" aria-roledescription="carousel">
+          <div class="carousel-track" id="carouselTrack">
+            <figure class="slide glass">
+              <svg class="ic quote-ic"><use href="#i-quote"/></svg>
+              <blockquote>“DatabellSoftwareLabs took our product from a whiteboard sketch to 50,000 paying users in eleven months. Their squad felt like part of our company.”</blockquote>
+              <figcaption><span class="avatar">AK</span><div><b>Aarav Kapoor</b><small>CTO, Finlytic</small></div><span class="chip" style="--accent: var(--c-labs)">SoftwareLabs</span></figcaption>
+            </figure>
+            <figure class="slide glass">
+              <svg class="ic quote-ic"><use href="#i-quote"/></svg>
+              <blockquote>“TechEnhance moved a 15-year-old ERP to the cloud without a single minute of downtime and cut our hosting bill by more than half.”</blockquote>
+              <figcaption><span class="avatar">MR</span><div><b>Maria Rossi</b><small>VP Engineering, Logistiq</small></div><span class="chip" style="--accent: var(--c-enhance)">TechEnhance</span></figcaption>
+            </figure>
+            <figure class="slide glass">
+              <svg class="ic quote-ic"><use href="#i-quote"/></svg>
+              <blockquote>“We put 300 developers through TechKnowledge's cloud track. Certification rates doubled and our internal tickets dropped noticeably.”</blockquote>
+              <figcaption><span class="avatar">JL</span><div><b>Jun Li</b><small>Head of L&amp;D, Orbitel</small></div><span class="chip" style="--accent: var(--c-know)">TechKnowledge</span></figcaption>
+            </figure>
+            <figure class="slide glass">
+              <svg class="ic quote-ic"><use href="#i-quote"/></svg>
+              <blockquote>“Build, enhance, train — Databell did all three for us. Having one partner across the whole lifecycle saved us months of hand-offs.”</blockquote>
+              <figcaption><span class="avatar">SN</span><div><b>Sara Nwosu</b><small>COO, Medivia</small></div><span class="chip">Databell Group</span></figcaption>
+            </figure>
+          </div>
+          <div class="carousel-nav">
+            <button class="icon-btn" id="prevSlide" aria-label="Previous story"><svg class="ic"><use href="#i-left"/></svg></button>
+            <div class="dots" id="dots"></div>
+            <button class="icon-btn" id="nextSlide" aria-label="Next story"><svg class="ic"><use href="#i-right"/></svg></button>
+          </div>
+        </div>
+        <div class="logos reveal" aria-label="Selected clients">
+          <span>FINLYTIC</span><span>LOGISTIQ</span><span>ORBITEL</span><span>MEDIVIA</span><span>NORTHWIND</span><span>QUANTA</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== PLANS ===================== -->
+    <section class="section" id="plans">
+      <div class="container">
+        <div class="section-head center">
+          <span class="kicker reveal">// Engagement plans</span>
+          <h2 class="section-title reveal">Pick how you <span class="grad-text">work with us.</span></h2>
+          <div class="billing reveal">
+            <span id="billMonthly" class="on">Monthly</span>
+            <button class="switch" id="billSwitch" role="switch" aria-checked="false" aria-label="Annual billing"><span></span></button>
+            <span id="billAnnual">Annual <em>save 20%</em></span>
+          </div>
+        </div>
+        <div class="plan-grid">
+          <article class="plan glass reveal">
+            <h3>Learn</h3>
+            <p class="muted">TechKnowledge for individuals and small teams.</p>
+            <div class="price"><span class="cur">$</span><span class="amt" data-m="49" data-y="39">49</span><span class="per">/ seat / mo</span></div>
+            <ul class="tick-list"><li>All learning tracks</li><li>Knowledge base &amp; labs</li><li>Certification exams</li><li>Community mentors</li></ul>
+            <a href="#contact" class="btn btn-ghost btn-block" data-plan="Learn">Choose Learn</a>
+          </article>
+          <article class="plan plan-featured glass reveal">
+            <span class="ribbon">Most popular</span>
+            <h3>Enhance</h3>
+            <p class="muted">TechEnhance audit and a dedicated modernisation pod.</p>
+            <div class="price"><span class="cur">$</span><span class="amt" data-m="9,900" data-y="7,900">9,900</span><span class="per">/ mo</span></div>
+            <ul class="tick-list"><li>Full system audit</li><li>3-engineer modernisation pod</li><li>FinOps &amp; security tuning</li><li>Team training seats included</li></ul>
+            <a href="#contact" class="btn btn-primary btn-block" data-plan="Enhance">Choose Enhance</a>
+          </article>
+          <article class="plan glass reveal">
+            <h3>Build</h3>
+            <p class="muted">A full DatabellSoftwareLabs squad for your product.</p>
+            <div class="price"><span class="amt amt-text">Custom</span></div>
+            <ul class="tick-list"><li>Cross-functional squad</li><li>Discovery to launch</li><li>24/7 SRE coverage</li><li>All three divisions on call</li></ul>
+            <a href="#contact" class="btn btn-ghost btn-block" data-plan="Build">Talk to sales</a>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== FAQ ===================== -->
+    <section class="section section-alt" id="faq">
+      <div class="container faq-wrap">
+        <div>
+          <span class="kicker reveal">// FAQ</span>
+          <h2 class="section-title reveal">Questions, <span class="grad-text">answered.</span></h2>
+          <p class="lead reveal">Can't find what you need? Our team replies within one business day.</p>
+          <a href="#contact" class="btn btn-ghost reveal">Ask us directly <svg class="ic"><use href="#i-arrow"/></svg></a>
+        </div>
+        <div class="faq-list">
+          <details class="faq reveal" open>
+            <summary>Can I work with just one Databell extension?</summary>
+            <div class="faq-body"><p>Yes. DatabellSoftwareLabs, TechEnhance and TechKnowledge each take engagements on their own. Many clients start with one and add the others later.</p></div>
+          </details>
+          <details class="faq reveal">
+            <summary>How quickly can a Labs squad start?</summary>
+            <div class="faq-body"><p>Usually within two weeks of signing. Discovery starts in week one and you see working software by the end of the first sprint.</p></div>
+          </details>
+          <details class="faq reveal">
+            <summary>Will modernisation take our systems offline?</summary>
+            <div class="faq-body"><p>No. TechEnhance migrates piece by piece behind feature flags and traffic shadowing, so the old system keeps serving until the new one is proven.</p></div>
+          </details>
+          <details class="faq reveal">
+            <summary>Are TechKnowledge certificates recognised?</summary>
+            <div class="faq-body"><p>Each certificate has a public verification link, and the cloud tracks map to the official AWS, Azure and GCP exam objectives.</p></div>
+          </details>
+          <details class="faq reveal">
+            <summary>Who owns the code you write?</summary>
+            <div class="faq-body"><p>You do. All source code, infrastructure definitions and documentation are transferred to you, with no lock-in.</p></div>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== CONTACT ===================== -->
+    <section class="section" id="contact">
+      <div class="container contact-grid">
+        <div class="contact-info">
+          <span class="kicker reveal">// Contact</span>
+          <h2 class="section-title reveal">Let's build something <span class="grad-text">remarkable.</span></h2>
+          <p class="lead reveal">Tell us what you're working on and the right Databell team will get back to you.</p>
+          <ul class="contact-list">
+            <li class="reveal"><svg class="ic"><use href="#i-mail"/></svg><div><small>Email</small><span>hello@databell.tech</span></div></li>
+            <li class="reveal"><svg class="ic"><use href="#i-phone"/></svg><div><small>Phone</small><span>+1 (415) 555-0142</span></div></li>
+            <li class="reveal"><svg class="ic"><use href="#i-pin"/></svg><div><small>HQ</small><span>Databell Tower, Innovation District</span></div></li>
+            <li class="reveal"><svg class="ic"><use href="#i-clock"/></svg><div><small>Response time</small><span>Within 1 business day</span></div></li>
+          </ul>
+        </div>
+        <form class="contact-form glass reveal" id="contactForm" novalidate>
+          <div class="form-row">
+            <label class="field"><span>Full name</span><input type="text" name="name" autocomplete="name" required><em class="err">Please enter your name.</em></label>
+            <label class="field"><span>Work email</span><input type="email" name="email" autocomplete="email" required><em class="err">Please enter a valid email.</em></label>
+          </div>
+          <div class="form-row">
+            <label class="field"><span>Company</span><input type="text" name="company" autocomplete="organization"></label>
+            <label class="field"><span>Division</span>
+              <select name="division" id="divisionSelect" required>
+                <option value="">Select a division…</option>
+                <option>DatabellSoftwareLabs</option>
+                <option>TechEnhance</option>
+                <option>TechKnowledge</option>
+                <option>Not sure yet</option>
+              </select>
+              <em class="err">Please pick a division.</em>
+            </label>
+          </div>
+          <label class="field"><span>Project details</span><textarea name="message" rows="5" required minlength="10"></textarea><em class="err">Tell us a bit more (at least 10 characters).</em></label>
+          <label class="check"><input type="checkbox" name="consent" required><span>I agree to be contacted about my enquiry.</span><em class="err">Please confirm.</em></label>
+          <button type="submit" class="btn btn-primary btn-block" id="submitBtn"><span>Send message</span> <svg class="ic"><use href="#i-arrow"/></svg></button>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- ===================== FOOTER ===================== -->
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <a href="#home" class="brand"><svg class="brand-mark"><use href="#logo-mark"/></svg><span class="brand-name">Data<b>bell</b></span></a>
+        <p class="muted">Technology, engineered. Build with DatabellSoftwareLabs, enhance with TechEnhance and grow with TechKnowledge.</p>
+        <form class="newsletter" id="newsletter" novalidate>
+          <input type="email" placeholder="you@company.com" aria-label="Email for newsletter" required>
+          <button class="btn btn-primary btn-sm" type="submit">Subscribe</button>
+        </form>
+      </div>
+      <div><h4>Extensions</h4><ul><li><a href="#labs">DatabellSoftwareLabs</a></li><li><a href="#enhance">TechEnhance</a></li><li><a href="#knowledge">TechKnowledge</a></li></ul></div>
+      <div><h4>Company</h4><ul><li><a href="#about">About</a></li><li><a href="#impact">Impact</a></li><li><a href="#stories">Stories</a></li><li><a href="#plans">Plans</a></li></ul></div>
+      <div><h4>Resources</h4><ul><li><a href="#knowledge">Knowledge base</a></li><li><a href="#faq">FAQ</a></li><li><a href="#contact">Contact</a></li></ul></div>
+    </div>
+    <div class="container footer-bottom">
+      <span>© <span id="year">2026</span> Databell Technology Group. All rights reserved.</span>
+      <span class="status"><span class="ok-dot"></span> All systems operational</span>
+    </div>
+  </footer>
+
+  <button class="to-top" id="toTop" aria-label="Back to top"><svg class="ic"><use href="#i-up"/></svg></button>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- Article modal -->
+  <div class="modal" id="modal" hidden>
+    <div class="modal-backdrop" data-close></div>
+    <article class="modal-card glass" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="icon-btn modal-close" data-close aria-label="Close article"><svg class="ic"><use href="#i-x"/></svg></button>
+      <span class="chip" id="modalTag"></span>
+      <h3 id="modalTitle"></h3>
+      <p class="muted small" id="modalMeta"></p>
+      <div id="modalBody" class="modal-body"></div>
+    </article>
+  </div>
+</body>
+</html>
