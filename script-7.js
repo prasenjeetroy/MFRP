@@ -929,6 +929,18 @@
 
   /* ---------- Accounts ---------- */
   const DOMAIN = 'softwarelabs.databell.inbox.bdai';
+  // The Founder ID: one reserved Databell ID with the founder's $15 trillion wallet
+  const FOUNDER_EMAIL = `founder@${DOMAIN}`;
+  const FOUNDER_WALLET = 15e12; // fifteen trillion dollars
+  const isFounder = (acc) => !!acc && (acc.founder || acc.email === FOUNDER_EMAIL);
+  const founderChip = (acc) => (isFounder(acc) ? `<span class="founder-chip">${icon('i-crown')} Founder</span>` : '');
+  const SCALES = [[1e15, 'quadrillion'], [1e12, 'trillion']];
+  const bigMoney = (v) => {
+    const s = SCALES.find(([n]) => v >= n);
+    if (!s) return money(v);
+    const x = v / s[0];
+    return '$' + x.toLocaleString('en-US', { maximumFractionDigits: x < 10 ? 2 : 0 }) + ' ' + s[1];
+  };
   const slug = (s) => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const cleanName = (s) => String(s).replace(/\s+/g, ' ').trim().slice(0, 30);
   function emailFor(first, last) {
@@ -948,10 +960,11 @@
   const TIERS = [
     { name: 'Explorer', min: 0, mult: 1, perk: '1 point per $1 spent' },
     { name: 'Builder', min: 500, mult: 1.5, perk: '1.5 points per $1 · priority support' },
-    { name: 'Architect', min: 2000, mult: 2, perk: '2 points per $1 · free express shipping' }
+    { name: 'Architect', min: 2000, mult: 2, perk: '2 points per $1 · free express shipping', freeExpress: true }
   ];
-  const tierOf = (acc) => TIERS.filter((t) => acc.spent >= t.min).pop();
-  const nextTier = (acc) => TIERS.find((t) => acc.spent < t.min) || null;
+  const FOUNDER_TIER = { name: 'Founder', min: 0, mult: 3, perk: '3 points per $1 · free express shipping · $15 trillion founder wallet', freeExpress: true };
+  const tierOf = (acc) => (isFounder(acc) ? FOUNDER_TIER : TIERS.filter((t) => acc.spent >= t.min).pop());
+  const nextTier = (acc) => (isFounder(acc) ? null : TIERS.find((t) => acc.spent < t.min) || null);
 
   function securityScore(acc) {
     const checks = [
@@ -1098,7 +1111,7 @@
     signin() {
       const accts = Object.values(db.accounts);
       return `<div class="auth-head">${icon('i-fingerprint', 'ic auth-ic')}<h3 id="authTitle">Sign in to Databell ID</h3><p class="muted">Choose your account and unlock it with your 6-digit PIN.</p></div>
-        ${accts.length ? `<div class="acct-list">${accts.map((a) => `<button class="acct-pick" data-act="pick" data-email="${esc(a.email)}">${avatar(a)}<span><b>${esc(a.first)} ${esc(a.last)}</b><small>${esc(a.email)}</small></span>${icon('i-right')}</button>`).join('')}</div><div class="or"><span>or enter your address</span></div>` : ''}
+        ${accts.length ? `<div class="acct-list">${accts.map((a) => `<button class="acct-pick" data-act="pick" data-email="${esc(a.email)}">${avatar(a)}<span><b>${esc(a.first)} ${esc(a.last)} ${founderChip(a)}</b><small>${esc(a.email)}</small></span>${icon('i-right')}</button>`).join('')}</div><div class="or"><span>or enter your address</span></div>` : ''}
         <form class="auth-form" id="fFind" novalidate>
           <label class="field"><span>Databell inbox address</span><input name="email" type="email" placeholder="first.last@${DOMAIN}" autocomplete="username" spellcheck="false" ${accts.length ? '' : 'data-autofocus'}></label>
           <p class="form-err" role="alert"></p>
@@ -1130,6 +1143,7 @@
             <label class="field"><span>Last name</span><input name="last" autocomplete="family-name" maxlength="30" value="${esc(d.last || '')}"></label>
           </div>
           <div class="inbox-preview">${icon('i-inbox')}<span><small>Your Databell inbox will be</small><code id="emailPreview">first.last@${DOMAIN}</code></span></div>
+          ${db.accounts[FOUNDER_EMAIL] ? '' : `<label class="founder-opt"><input type="checkbox" name="founder" ${d.founder ? 'checked' : ''}><span>${icon('i-crown')}<span><b>Set up the Founder ID</b><small>founder@${DOMAIN} · Founder badge · $15 trillion wallet</small></span></span></label>`}
           <label class="field"><span>Main interest</span><select name="division">${['DatabellSoftwareLabs', 'TechEnhance', 'TechKnowledge', 'Databell Store'].map((o) => `<option ${d.division === o ? 'selected' : ''}>${o}</option>`).join('')}</select></label>
           <label class="check"><input type="checkbox" name="agree" ${d.first ? 'checked' : ''}><span>I understand Databell staff can't see or recover my PIN or security key.</span></label>
           <p class="form-err" role="alert"></p>
@@ -1159,12 +1173,12 @@
     },
     done(ctx) {
       const acc = db.accounts[ctx.email];
-      return `<div class="auth-done"><div class="done-check">${icon('i-check')}</div><h3 id="authTitle">You're all set, ${esc(acc.first)}!</h3><p class="muted">Your Databell ID is active and unlocked on this device.</p></div>
+      return `<div class="auth-done"><div class="done-check">${icon('i-check')}</div><h3 id="authTitle">You're all set, ${esc(acc.first)}!</h3>${founderChip(acc)}<p class="muted">Your Databell ID is active and unlocked on this device.</p></div>
         <ul class="done-list">
           <li>${icon('i-inbox')}<span>Inbox <b>${esc(acc.email)}</b></span><button class="icon-btn sm" data-copy="${esc(acc.email)}" aria-label="Copy inbox address">${icon('i-copy')}</button></li>
           <li>${icon('i-lock')}<span>6-digit PIN set · auto-lock after ${acc.autoLock} min</span></li>
           <li>${icon('i-key')}<span>Security key ${maskKey(acc.keyHint)}</span></li>
-          <li>${icon('i-wallet')}<span>${money(acc.wallet)} welcome credit in your Databell Wallet</span></li>
+          <li>${icon(isFounder(acc) ? 'i-crown' : 'i-wallet')}<span>${isFounder(acc) ? `<b>${money(acc.wallet)}</b> — $15 trillion in your Founder wallet` : `${money(acc.wallet)} welcome credit in your Databell Wallet`}</span></li>
           <li>${icon('i-gift')}<span>${acc.points} Databell Points to start</span></li>
         </ul>
         <div class="btn-row"><button class="btn btn-ghost" data-act="open-inbox">${icon('i-inbox')} Open inbox</button><button class="btn btn-primary" data-act="done-continue">Continue ${icon('i-arrow')}</button></div>`;
@@ -1289,8 +1303,10 @@
     resetKey(ctx) { showAttempts(db.accounts[ctx.email]); },
     signup1() {
       const f = $('#fSignup1');
-      const upd = () => { $('#emailPreview').textContent = emailFor(f.first.value, f.last.value); };
-      f.first.addEventListener('input', upd); f.last.addEventListener('input', upd); upd();
+      const upd = () => { $('#emailPreview').textContent = f.founder && f.founder.checked ? FOUNDER_EMAIL : emailFor(f.first.value, f.last.value); };
+      f.first.addEventListener('input', upd); f.last.addEventListener('input', upd);
+      if (f.founder) f.founder.addEventListener('change', upd);
+      upd();
     },
     signup2() { livePinRules(); },
     resetNew() { livePinRules(); },
@@ -1408,7 +1424,7 @@
       const first = cleanName(f.first.value), last = cleanName(f.last.value);
       if (!slug(first) || !slug(last)) return authErr('Please enter your first and last name (letters or numbers).');
       if (!f.agree.checked) return authErr('Please tick the box to continue.');
-      flow.draft = Object.assign(flow.draft || {}, { first, last, division: f.division.value });
+      flow.draft = Object.assign(flow.draft || {}, { first, last, division: f.division.value, founder: !!(f.founder && f.founder.checked) });
       renderAuth('signup2');
     },
     fSignup2(f) {
@@ -1423,24 +1439,25 @@
       const d = flow.draft;
       if (!f.saved.checked) return authErr('Please confirm you have saved your security key.');
       if (f.last4.value.trim().toUpperCase() !== d.key.slice(-4)) return authErr('That doesn’t match the last group of your key.');
-      const email = emailFor(d.first, d.last);
+      const founder = !!d.founder && !db.accounts[FOUNDER_EMAIL];
+      const email = founder ? FOUNDER_EMAIL : emailFor(d.first, d.last);
       const now = Date.now();
       const pinSalt = randomFrom(ALNUM, 16), keySalt = randomFrom(ALNUM, 16);
       const acc = {
         first: d.first, last: d.last, email, division: d.division, created: now,
         pinSalt, pinHash: hashSecret(d.pin, pinSalt), pinChanged: now,
         keySalt, keyHash: hashSecret(canonKey(d.key), keySalt), keyHint: d.key.slice(-4), keyCreated: now,
-        wallet: 1000, points: 500, spent: 0, orders: [], activity: [], failed: 0, lockUntil: 0, autoLock: 5, recovery: null
+        founder, wallet: founder ? FOUNDER_WALLET : 1000, points: 500, spent: 0, orders: [], activity: [], failed: 0, lockUntil: 0, autoLock: 5, recovery: null
       };
       db.accounts[email] = acc;
-      logAct(acc, 'Databell ID created', 'i-user');
+      logAct(acc, founder ? 'Founder ID created · $15 trillion wallet activated' : 'Databell ID created', founder ? 'i-crown' : 'i-user');
       logAct(acc, 'PIN and security key set up', 'i-key');
       startSession(acc, 'Signed in on this device');
       sendMail(email, {
-        subject: `Welcome to Databell, ${acc.first}!`, tag: 'updates', from: 'Databell Team', addr: `hello@${DOMAIN}`,
+        subject: founder ? `Founder ID activated — welcome, ${acc.first}!` : `Welcome to Databell, ${acc.first}!`, tag: 'updates', from: 'Databell Team', addr: `hello@${DOMAIN}`,
         html: mailShell(acc, `<p>Your Databell ID is ready. This inbox — <b>${esc(email)}</b> — is where Databell sends codes, receipts and licence keys.</p>
           <ul><li><b>PIN</b> unlocks your ID and confirms payments.</li><li><b>Security key</b> (${maskKey(acc.keyHint)}) resets a forgotten PIN instantly.</li><li><b>This inbox</b> receives one-time codes if you lose your PIN or key.</li></ul>
-          <p>We've added <b>${money(acc.wallet)}</b> of welcome credit and <b>${acc.points} points</b> to your account. Enjoy the Databell Store!</p>`)
+          ${founder ? `<p>As <b>Founder</b>, your Databell Wallet holds <b>${money(acc.wallet)}</b> — fifteen trillion dollars — and you earn 3 points per $1 with free express shipping.</p>` : `<p>We've added <b>${money(acc.wallet)}</b> of welcome credit and <b>${acc.points} points</b> to your account. Enjoy the Databell Store!</p>`}`)
       });
       sendMail(email, {
         subject: 'Your security key is set up', tag: 'security',
@@ -1883,7 +1900,7 @@
     const after = round2(sub - discount);
     let ship = 0;
     if (physical && !freeShip) ship = after >= 150 ? 0 : 12;
-    if (physical && extra.express && !(acc && tierOf(acc).name === 'Architect')) ship += 15;
+    if (physical && extra.express && !(acc && tierOf(acc).freeExpress)) ship += 15;
     const tax = round2(after * 0.08);
     const total = round2(after + ship + tax);
     const pts = acc ? acc.points : 0;
@@ -2022,7 +2039,7 @@
         <div class="btn-row end"><button class="btn btn-primary" data-act="co-next">Continue ${icon('i-arrow')}</button></div>`;
     } else if (co.step === 'delivery') {
       const a = co.addr;
-      const arch = tierOf(acc).name === 'Architect';
+      const arch = tierOf(acc).freeExpress;
       main = `<form id="fDelivery" class="auth-form" novalidate>
         <label class="field"><span>Full name</span><input name="name" value="${esc(a.name)}" autocomplete="name" required></label>
         <label class="field"><span>Address</span><input name="line" value="${esc(a.line)}" autocomplete="street-address" required></label>
@@ -2030,14 +2047,14 @@
         <label class="field"><span>Country</span><select name="country">${COUNTRIES.map((c) => `<option ${c === a.country ? 'selected' : ''}>${c}</option>`).join('')}</select></label>
         <fieldset class="opts"><legend>Delivery speed</legend>
           <label class="opt"><input type="radio" name="speed" value="std" ${co.express ? '' : 'checked'}><span>Standard · 3–5 business days<small>${t.ship && !co.express ? money(t.ship) : 'Free'}</small></span></label>
-          <label class="opt"><input type="radio" name="speed" value="exp" ${co.express ? 'checked' : ''}><span>Express · 1–2 business days<small>${arch ? 'Free for Architects' : '+$15.00'}</small></span></label>
+          <label class="opt"><input type="radio" name="speed" value="exp" ${co.express ? 'checked' : ''}><span>Express · 1–2 business days<small>${arch ? `Free for ${tierOf(acc).name}s` : '+$15.00'}</small></span></label>
         </fieldset>
         <p class="form-err" role="alert"></p>
         <div class="btn-row between"><button type="button" class="btn btn-ghost" data-act="co-back">Back</button><button class="btn btn-primary">Continue ${icon('i-arrow')}</button></div>
       </form>`;
     } else {
       const short = round2(t.due - acc.wallet);
-      main = `<div class="wallet-card">${icon('i-wallet')}<div><small>Databell Wallet</small><strong>${money(acc.wallet)}</strong></div>${short > 0 ? `<span class="pill warn">Short ${money(short)}</span>` : `<span class="pill ok">Enough balance</span>`}</div>
+      main = `<div class="wallet-card ${isFounder(acc) ? 'founder-wallet' : ''}">${icon(isFounder(acc) ? 'i-crown' : 'i-wallet')}<div><small>${isFounder(acc) ? 'Founder wallet' : 'Databell Wallet'}</small><strong>${bigMoney(acc.wallet)}</strong></div>${short > 0 ? `<span class="pill warn">Short ${money(short)}</span>` : `<span class="pill ok">Enough balance</span>`}</div>
         <label class="row-toggle"><input type="checkbox" id="usePoints" ${co.usePoints ? 'checked' : ''} ${acc.points < 100 ? 'disabled' : ''}><span><b>Use Databell Points</b><small>${acc.points.toLocaleString()} points available · 100 points = $1</small></span><em>${co.usePoints ? '−' + money(t.pointsValue) : ''}</em></label>
         ${t.physical ? `<div class="co-addr">${icon('i-truck')}<span><b>${esc(co.addr.name)}</b><small>${esc(co.addr.line)}, ${esc(co.addr.city)} ${esc(co.addr.zip)}, ${esc(co.addr.country)} · ${co.express ? 'Express' : 'Standard'}</small></span><button class="link-btn small" data-act="co-back">Change</button></div>` : `<div class="co-addr">${icon('i-inbox')}<span><b>Digital delivery</b><small>Keys and receipts go to ${esc(acc.email)}</small></span></div>`}
         ${short > 0 ? `<p class="note small">${icon('i-alert')}<span>Your wallet is ${money(short)} short. <button class="link-btn small" data-act="co-topup" data-amt="${Math.ceil(short / 50) * 50}">Add ${money0(Math.ceil(short / 50) * 50)} demo credit</button></span></p>` : ''}
@@ -2184,7 +2201,10 @@
     const tabs = [['overview', 'Overview'], ['orders', `Orders${acc.orders.length ? ` (${acc.orders.length})` : ''}`], ['wishlist', `Wishlist${db.wishlist.length ? ` (${db.wishlist.length})` : ''}`], ['security', 'Security']];
     let body = '';
     if (acctTab === 'overview') {
-      body = `<div class="wallet-card big">${icon('i-wallet')}<div><small>Databell Wallet</small><strong>${money(acc.wallet)}</strong><span class="muted small">Demo credit for the Databell Store</span></div><button class="btn btn-ghost btn-sm" data-act="topup" data-amt="250">${icon('i-plus')} $250</button></div>
+      body = isFounder(acc)
+        ? `<div class="wallet-card big founder-wallet">${icon('i-crown')}<div><small>Founder wallet</small><strong>${bigMoney(acc.wallet)}</strong><span class="full-amt">${money(acc.wallet)}</span><span class="muted small">Founder allocation · fifteen trillion dollars</span></div></div>`
+        : `<div class="wallet-card big">${icon('i-wallet')}<div><small>Databell Wallet</small><strong>${money(acc.wallet)}</strong><span class="muted small">Demo credit for the Databell Store</span></div><button class="btn btn-ghost btn-sm" data-act="topup" data-amt="250">${icon('i-plus')} $250</button></div>`;
+      body += `
         <div class="mini-grid">
           <div class="mini"><small>Points</small><strong>${acc.points.toLocaleString()}</strong><span>worth ${money(acc.points / 100)}</span></div>
           <button class="mini" data-act="tab" data-tab="orders"><small>Orders</small><strong>${acc.orders.length}</strong><span>${money0(acc.spent)} spent</span></button>
@@ -2211,7 +2231,7 @@
         <ul class="activity">${acc.activity.slice(0, 15).map((a) => `<li>${icon(a.icon)}<span>${esc(a.text)}</span><small>${ago(a.t)}</small></li>`).join('')}</ul>
         <button class="danger-link" data-act="delete">${icon('i-trash')} Delete Databell ID</button>`;
     }
-    $('#acctBody').innerHTML = `<div class="drawer-head acct-head">${avatar(acc, 'lg')}<span class="dh-text"><b>${esc(acc.first)} ${esc(acc.last)}</b><button class="email-chip" data-copy="${esc(acc.email)}" title="Copy inbox address">${esc(acc.email)} ${icon('i-copy')}</button></span>
+    $('#acctBody').innerHTML = `<div class="drawer-head acct-head">${avatar(acc, 'lg')}<span class="dh-text"><b>${esc(acc.first)} ${esc(acc.last)} ${founderChip(acc)}</b><button class="email-chip" data-copy="${esc(acc.email)}" title="Copy inbox address">${esc(acc.email)} ${icon('i-copy')}</button></span>
         <button class="icon-btn" data-act="lock" aria-label="Lock Databell ID">${icon('i-lock')}</button><button class="icon-btn" data-ov-close aria-label="Close">${icon('i-x')}</button></div>
       <div class="d-tabs" role="tablist">${tabs.map(([k, n]) => `<button role="tab" aria-selected="${acctTab === k}" class="${acctTab === k ? 'on' : ''}" data-act="tab" data-tab="${k}">${n}</button>`).join('')}</div>
       <div class="drawer-body">${body}</div>`;
@@ -2238,6 +2258,7 @@
       $('#acctAvatar').innerHTML = isLocked ? icon('i-lock') : esc(initials(acc));
       $('#acctLabel').textContent = isLocked ? 'Locked' : acc.first;
       btn.classList.toggle('locked', isLocked);
+      btn.classList.toggle('founder', isFounder(acc));
       btn.classList.add('signed');
       const u = isLocked ? 0 : unreadFor(acc.email);
       mc.hidden = !u;
@@ -2246,7 +2267,7 @@
     } else {
       $('#acctAvatar').innerHTML = icon('i-user');
       $('#acctLabel').textContent = 'Sign in';
-      btn.classList.remove('locked', 'signed');
+      btn.classList.remove('locked', 'signed', 'founder');
       mc.hidden = true;
       btn.setAttribute('aria-label', 'Sign in to Databell ID');
     }
