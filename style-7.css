@@ -1498,6 +1498,19 @@ button.mini:hover { border-color: var(--cyan); }
 .mq-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
 .mq-head b { display: inline-flex; align-items: center; gap: 8px; }
 .mq-q { margin: 4px 0 0; font-weight: 600; }
+.mq-limit { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; border: 1px solid rgba(34, 211, 238, 0.35); background: rgba(34, 211, 238, 0.08); font-size: 0.88rem; }
+.mq-limit > .ic { width: 18px; height: 18px; color: #fbbf24; }
+.mq-limit > span:first-of-type { flex: 1; }
+.mq-limit.out { border-color: rgba(251, 191, 36, 0.4); background: rgba(251, 191, 36, 0.08); }
+.mq-dots { display: inline-flex; gap: 5px; }
+.mq-dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--grad); box-shadow: 0 0 6px rgba(34, 211, 238, 0.6); }
+.mq-dots i.used { background: var(--line-strong); box-shadow: none; }
+.mq-quit { color: var(--muted); }
+.mq-quit .ic { width: 14px; height: 14px; }
+.done-check.quit { background: linear-gradient(135deg, #64748b, #475569); box-shadow: 0 0 0 8px rgba(100, 116, 139, 0.15); }
+.done-check.quit .ic { stroke-dasharray: none; stroke-dashoffset: 0; animation: none; }
+.quiz-btns { display: inline-flex; gap: 8px; }
+.quiz-btns [hidden] { display: none; }
 .mq-done { text-align: center; display: grid; justify-items: center; gap: 6px; padding: 10px 0; }
 .mq-done h4, .mq-done p { margin: 0; }
 @media (max-width: 520px) {

@@ -631,8 +631,8 @@
   ];
 
   function initQuiz() {
-    const qEl = $('#quizQ'), opts = $('#quizOpts'), next = $('#quizNext'), meta = $('#quizMeta'), bar = $('#quizBar');
-    let idx = 0, score = 0;
+    const qEl = $('#quizQ'), opts = $('#quizOpts'), next = $('#quizNext'), meta = $('#quizMeta'), bar = $('#quizBar'), quit = $('#quizQuit');
+    let idx = 0, score = 0, answered = 0;
     const best = () => store.get('databell-quiz-best', 0);
 
     const show = () => {
@@ -640,6 +640,7 @@
       qEl.textContent = item.q;
       opts.innerHTML = item.o.map((o, i) => `<button class="quiz-opt" data-i="${i}">${escapeHTML(o)}</button>`).join('');
       next.disabled = true;
+      quit.hidden = false;
       next.textContent = idx === QUIZ.length - 1 ? 'See result' : 'Next';
       meta.textContent = `Question ${idx + 1} of ${QUIZ.length} · Score ${score}`;
       bar.style.width = `${(idx / QUIZ.length) * 100}%`;
@@ -656,8 +657,22 @@
       meta.textContent = `Best score: ${Math.max(prev, score)}/${QUIZ.length}`;
       next.disabled = false;
       next.textContent = 'Try again';
+      quit.hidden = true;
       idx = -1;
     };
+
+    quit.addEventListener('click', () => {
+      if (idx < 0) return;
+      bar.style.width = '0%';
+      qEl.textContent = '';
+      opts.innerHTML = `<div class="quiz-result"><span class="score grad-text">${score}/${answered}</span><p>Quiz ended early after ${answered} question${answered === 1 ? '' : 's'}. Any points you earned are kept.</p></div>`;
+      meta.textContent = 'You quit the quiz';
+      next.disabled = false;
+      next.textContent = 'Start again';
+      quit.hidden = true;
+      idx = -1;
+      next.focus();
+    });
 
     opts.addEventListener('click', (e) => {
       const btn = e.target.closest('.quiz-opt');
@@ -668,13 +683,14 @@
         b.disabled = true;
         if (i === right) b.classList.add('right');
       });
+      answered = idx + 1;
       if (choice === right) { score += 1; rewardActivity('quiz'); } else btn.classList.add('wrong');
       meta.textContent = `Question ${idx + 1} of ${QUIZ.length} · Score ${score}`;
       next.disabled = false;
     });
 
     next.addEventListener('click', () => {
-      if (idx === -1) { idx = 0; score = 0; show(); return; }
+      if (idx === -1) { idx = 0; score = 0; answered = 0; show(); return; }
       if (idx === QUIZ.length - 1) { finish(); return; }
       idx += 1;
       show();
@@ -1376,7 +1392,8 @@
   }
 
   function startSession(acc, how) {
-    db.session = { email: acc.email, locked: false };
+    const plays = db.session && db.session.email === acc.email ? db.session.quizPlays || 0 : 0;
+    db.session = { email: acc.email, locked: false, quizPlays: plays };
     acc.failed = 0;
     acc.lockUntil = 0;
     lastActive = Date.now();
@@ -2328,22 +2345,36 @@
       { q: 'Which service model gives you virtual machines you manage yourself?', o: ['SaaS', 'PaaS', 'IaaS', 'FaaS'], a: 2 },
       { q: 'What does “autoscaling” change automatically?', o: ['Your password', 'The number of running instances', 'The DNS provider', 'The billing currency'], a: 1 },
       { q: 'Object storage like S3 is best for…', o: ['Files and backups', 'CPU registers', 'Running SQL joins', 'Keyboard input'], a: 0 },
-      { q: 'A CDN mainly reduces…', o: ['Code size', 'Latency for distant users', 'Database locks', 'Compile time'], a: 1 }
+      { q: 'A CDN mainly reduces…', o: ['Code size', 'Latency for distant users', 'Database locks', 'Compile time'], a: 1 },
+      { q: 'Which tool defines infrastructure as code?', o: ['Terraform', 'Photoshop', 'Excel', 'Figma'], a: 0 },
+      { q: 'A container image is run by…', o: ['A container runtime such as Docker', 'A printer driver', 'A DNS record', 'A CSS file'], a: 0 },
+      { q: 'Which pricing model suits steady 24/7 workloads?', o: ['On-demand only', 'Reserved instances or savings plans', 'Spot only', 'Free tier'], a: 1 },
+      { q: 'Deploying across several regions mainly improves…', o: ['Font rendering', 'Availability and disaster recovery', 'Keyboard latency', 'Image compression'], a: 1 }
     ] },
     { id: 'ai', name: 'AI & Data', icon: 'i-brain', qs: [
       { q: 'Training a model on labelled examples is called…', o: ['Supervised learning', 'Unsupervised learning', 'Compilation', 'Sharding'], a: 0 },
       { q: 'Which metric suits an imbalanced fraud dataset better than accuracy?', o: ['Precision/recall', 'Line count', 'Ping time', 'Pixel density'], a: 0 },
       { q: 'In RAG, what does the “R” stand for?', o: ['Rendering', 'Retrieval', 'Recursion', 'Routing'], a: 1 },
-      { q: 'Overfitting means the model…', o: ['Is too small', 'Memorises training data and generalises poorly', 'Runs too fast', 'Has no parameters'], a: 1 }
+      { q: 'Overfitting means the model…', o: ['Is too small', 'Memorises training data and generalises poorly', 'Runs too fast', 'Has no parameters'], a: 1 },
+      { q: 'A vector embedding represents…', o: ['Meaning as a list of numbers', 'A JPEG header', 'A CPU clock speed', 'A password'], a: 0 },
+      { q: 'Which data split measures performance on unseen data?', o: ['Training set', 'Test set', 'Cache', 'Log file'], a: 1 },
+      { q: 'LLM stands for…', o: ['Large Language Model', 'Low Latency Machine', 'Linear Logic Module', 'Long Lived Memory'], a: 0 },
+      { q: 'Which is a common neural-network activation function?', o: ['ReLU', 'HTTP', 'CSV', 'DNS'], a: 0 }
     ] },
     { id: 'sec', name: 'Security', icon: 'i-shield', qs: [
       { q: 'Which is the strongest second factor?', o: ['SMS code', 'Security key', 'Security question', 'Birthday'], a: 1 },
       { q: 'Storing passwords safely means…', o: ['Encrypting with one shared key', 'Salted, slow hashing', 'Base64 encoding', 'Plain text in a vault'], a: 1 },
       { q: 'Phishing is an attack that…', o: ['Floods a server', 'Tricks people into giving secrets', 'Breaks encryption maths', 'Overheats CPUs'], a: 1 },
-      { q: 'HTTPS protects data…', o: ['Only at rest', 'In transit between browser and server', 'Inside the CPU', 'On printed pages'], a: 1 }
+      { q: 'HTTPS protects data…', o: ['Only at rest', 'In transit between browser and server', 'Inside the CPU', 'On printed pages'], a: 1 },
+      { q: '“Least privilege” means…', o: ['Grant only the access that is needed', 'Make everyone an admin', 'Share one password', 'Turn off logging'], a: 0 },
+      { q: 'A firewall controls…', o: ['Network traffic', 'Screen brightness', 'Font size', 'Battery charging'], a: 0 },
+      { q: 'Which makes a PIN harder to guess?', o: ['Avoiding sequences like 123456', 'Using your birth year', 'Using 000000', 'Writing it on a sticky note'], a: 0 },
+      { q: 'Ransomware typically…', o: ['Encrypts files and demands payment', 'Speeds up your computer', 'Updates your drivers', 'Cleans your disk'], a: 0 }
     ] }
   ];
   const QUIZ_PAY = 5;
+  const QUIZ_LEN = 4; // questions drawn at random from each topic's pool
+  const QUIZ_SESSION_MAX = 3; // money quizzes allowed per sign-in session
   const addm = { tab: 'topup', amount: 100, quiz: null };
   const norm = (v) => String(v).trim().toLowerCase().replace(/\s+/g, ' ').replace(/[.;]+$/, '');
   function ensureEarn(acc) {
@@ -2395,24 +2426,30 @@
     } else if (addm.quiz) {
       const qz = MONEY_QUIZZES.find((x) => x.id === addm.quiz.id);
       const st = addm.quiz;
-      if (st.i >= qz.qs.length) {
-        body = `<div class="mq-done"><div class="done-check">${icon('i-check')}</div><h4>${qz.name} quiz complete</h4><p class="muted">${st.score}/${qz.qs.length} correct · <b>+${money0(st.score * QUIZ_PAY)}</b> added to pending earnings</p><button class="btn btn-ghost btn-sm" data-act="m-quiz-back">Back to quizzes</button></div>`;
+      const left = Math.max(0, QUIZ_SESSION_MAX - (db.session.quizPlays || 0));
+      if (st.i >= st.qs.length) {
+        body = `<div class="mq-done">${st.quit ? `<div class="done-check quit">${icon('i-x')}</div><h4>${qz.name} quiz ended early</h4><p class="muted">You quit after ${st.answered} of ${st.qs.length} questions · ${st.score} correct · <b>+${money0(st.score * QUIZ_PAY)}</b> kept in pending earnings</p>` : `<div class="done-check">${icon('i-check')}</div><h4>${qz.name} quiz complete</h4><p class="muted">${st.score}/${st.qs.length} correct · <b>+${money0(st.score * QUIZ_PAY)}</b> added to pending earnings</p>`}
+          <p class="small muted">${left} of ${QUIZ_SESSION_MAX} quizzes left this session</p><button class="btn btn-ghost btn-sm" data-act="m-quiz-back">Back to quizzes</button></div>`;
       } else {
-        const item = qz.qs[st.i];
-        body = `<div class="mq-head"><b>${icon(qz.icon)} ${qz.name} quiz</b><span class="muted small">Question ${st.i + 1} of ${qz.qs.length} · ${money0(QUIZ_PAY)} per correct answer</span></div>
-          <div class="bar"><i style="width:${(st.i / qz.qs.length) * 100}%"></i></div>
+        const item = st.qs[st.i];
+        body = `<div class="mq-head"><b>${icon(qz.icon)} ${qz.name} quiz</b><button class="btn btn-ghost btn-sm mq-quit" data-act="m-quiz-quit">${icon('i-x')} Quit quiz</button></div>
+          <span class="muted small">Question ${st.i + 1} of ${st.qs.length} · ${money0(QUIZ_PAY)} per correct answer</span>
+          <div class="bar"><i style="width:${(st.i / st.qs.length) * 100}%"></i></div>
           <p class="mq-q">${esc(item.q)}</p>
           <div class="quiz-opts">${item.o.map((o, i) => `<button class="quiz-opt ${st.picked === undefined ? '' : i === item.a ? 'right' : i === st.picked ? 'wrong' : ''}" data-act="m-quiz-pick" data-i="${i}" ${st.picked === undefined ? '' : 'disabled'}>${esc(o)}</button>`).join('')}</div>
-          ${st.picked === undefined ? '' : `<div class="btn-row end"><button class="btn btn-primary btn-sm" data-act="m-quiz-next">${st.i + 1 === qz.qs.length ? 'Finish' : 'Next question'}</button></div>`}`;
+          ${st.picked === undefined ? '' : `<div class="btn-row end"><button class="btn btn-primary btn-sm" data-act="m-quiz-next">${st.i + 1 === st.qs.length ? 'Finish' : 'Next question'}</button></div>`}`;
       }
     } else {
-      const d = today();
-      body = `<p class="muted small">Each quiz pays ${money0(QUIZ_PAY)} per correct answer and can be played once a day.</p>
+      const plays = db.session.quizPlays || 0;
+      const left = Math.max(0, QUIZ_SESSION_MAX - plays);
+      body = `<div class="mq-limit ${left ? '' : 'out'}">${icon('i-bolt')}<span><b>${left} of ${QUIZ_SESSION_MAX}</b> quizzes left this session</span><span class="mq-dots">${Array.from({ length: QUIZ_SESSION_MAX }, (_, i) => `<i class="${i < plays ? 'used' : ''}"></i>`).join('')}</span></div>
+        <p class="muted small">Each quiz draws ${QUIZ_LEN} random questions and pays ${money0(QUIZ_PAY)} per correct answer. You can quit at any time and keep what you've earned.</p>
         <ul class="mq-list">${MONEY_QUIZZES.map((qz) => {
-          const played = e.quiz[qz.id] && e.quiz[qz.id].day === d;
-          return `<li>${icon(qz.icon)}<span><b>${qz.name} quiz</b><small>${qz.qs.length} questions · up to ${money0(qz.qs.length * QUIZ_PAY)}${played ? ` · today: ${e.quiz[qz.id].score}/${qz.qs.length}` : ''}</small></span>
-            <button class="btn ${played ? 'btn-ghost' : 'btn-primary'} btn-sm" data-act="m-quiz-start" data-quiz="${qz.id}" ${played ? 'disabled' : ''}>${played ? `Next in ${untilMidnight()}` : 'Play'}</button></li>`;
-        }).join('')}</ul>`;
+          const last = e.quiz[qz.id];
+          return `<li>${icon(qz.icon)}<span><b>${qz.name} quiz</b><small>${QUIZ_LEN} of ${qz.qs.length} questions · up to ${money0(QUIZ_LEN * QUIZ_PAY)}${last ? ` · last score ${last.score}/${QUIZ_LEN}` : ''}</small></span>
+            <button class="btn ${left ? 'btn-primary' : 'btn-ghost'} btn-sm" data-act="m-quiz-start" data-quiz="${qz.id}" ${left ? '' : 'disabled'}>${left ? 'Play' : 'Limit reached'}</button></li>`;
+        }).join('')}</ul>
+        ${left ? '' : `<p class="note small">${icon('i-alert')}<span>You've played ${QUIZ_SESSION_MAX} quizzes this session. Sign out and sign in again to start a new session.</span></p>`}`;
     }
     $('#moneyBody').innerHTML = `<button class="icon-btn ov-x" data-ov-close aria-label="Close">${icon('i-x')}</button>
       <div class="m-head">${icon('i-wallet', 'ic m-ic')}<div><h3 id="moneyTitle">Add money</h3><span class="muted small">Wallet balance <b>${bigMoney(acc.wallet)}</b></span></div></div>
@@ -2919,12 +2956,29 @@
       case 'm-topup': topUpWithPin(addm.amount); break;
       case 'm-collect': collectEarnings(); break;
       case 'm-quiz-start': {
-        const e = ensureEarn(acc);
-        const id = el.dataset.quiz;
-        if (e.quiz[id] && e.quiz[id].day === today()) break;
-        e.quiz[id] = { day: today(), score: 0 };
+        const qz = MONEY_QUIZZES.find((x) => x.id === el.dataset.quiz);
+        if (!qz || !acc || !db.session) break;
+        const plays = db.session.quizPlays || 0;
+        if (plays >= QUIZ_SESSION_MAX) { toast(`You've played ${QUIZ_SESSION_MAX} quizzes this session`, 'i-alert'); break; }
+        db.session.quizPlays = plays + 1;
+        ensureEarn(acc).quiz[qz.id] = { day: today(), score: 0 };
         saveDB();
-        addm.quiz = { id, i: 0, score: 0, picked: undefined };
+        const qs = shuffle(qz.qs.slice()).slice(0, QUIZ_LEN).map((q) => {
+          const order = shuffle(q.o.map((_, i) => i));
+          return { q: q.q, o: order.map((i) => q.o[i]), a: order.indexOf(q.a) };
+        });
+        addm.quiz = { id: qz.id, qs, i: 0, score: 0, picked: undefined, quit: false, answered: 0 };
+        renderMoney();
+        break;
+      }
+      case 'm-quiz-quit': {
+        const st = addm.quiz;
+        if (!st || st.i >= st.qs.length) break;
+        st.answered = st.i + (st.picked === undefined ? 0 : 1);
+        st.quit = true;
+        st.i = st.qs.length;
+        logAct(acc, `Quit a quiz after ${st.answered} questions`, 'i-bolt');
+        saveDB();
         renderMoney();
         break;
       }
@@ -2933,7 +2987,7 @@
         if (!st || st.picked !== undefined) break;
         const qz = MONEY_QUIZZES.find((x) => x.id === st.id);
         st.picked = +el.dataset.i;
-        if (st.picked === qz.qs[st.i].a) {
+        if (st.picked === st.qs[st.i].a) {
           st.score += 1;
           ensureEarn(acc).quiz[st.id].score = st.score;
           earn(acc, QUIZ_PAY, `${qz.name} quiz answer`);
