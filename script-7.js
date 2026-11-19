@@ -317,16 +317,34 @@
     };
     follow();
 
+    // Tilt cards: hover is decided from the card's untransformed layout box, so the tilt itself
+    // can never move the card out from under the pointer (which caused flicker at the edges)
+    const layoutRect = (el) => {
+      const p = el.offsetParent;
+      const pr = p ? p.getBoundingClientRect() : { left: 0, top: 0 };
+      const left = pr.left + el.offsetLeft + (p ? p.clientLeft : 0);
+      const top = pr.top + el.offsetTop + (p ? p.clientTop : 0);
+      return { left, top, right: left + el.offsetWidth, bottom: top + el.offsetHeight, width: el.offsetWidth, height: el.offsetHeight };
+    };
+    const inside = (r, x, y) => x >= r.left && x <= r.right && y >= r.top && y <= r.bottom;
     $$('.tilt').forEach((card) => {
-      card.addEventListener('pointermove', (e) => {
-        const r = card.getBoundingClientRect();
-        const px = (e.clientX - r.left) / r.width;
-        const py = (e.clientY - r.top) / r.height;
-        card.style.transform = `perspective(900px) rotateX(${(0.5 - py) * 8}deg) rotateY(${(px - 0.5) * 10}deg) translateY(-4px)`;
+      let active = false;
+      const reset = () => { active = false; card.style.transform = ''; card.classList.remove('tilt-on'); };
+      const apply = (x, y) => {
+        const r = layoutRect(card);
+        if (!inside(r, x, y)) { reset(); return; }
+        active = true;
+        card.classList.add('tilt-on');
+        const px = (x - r.left) / r.width;
+        const py = (y - r.top) / r.height;
+        card.style.transform = `perspective(900px) rotateX(${(0.5 - py) * 7}deg) rotateY(${(px - 0.5) * 9}deg)`;
         card.style.setProperty('--mx', `${px * 100}%`);
         card.style.setProperty('--my', `${py * 100}%`);
-      });
-      card.addEventListener('pointerleave', () => { card.style.transform = ''; });
+      };
+      card.addEventListener('pointermove', (e) => apply(e.clientX, e.clientY));
+      card.addEventListener('pointerleave', (e) => { if (!inside(layoutRect(card), e.clientX, e.clientY)) reset(); });
+      window.addEventListener('pointermove', (e) => { if (active) apply(e.clientX, e.clientY); }, { passive: true });
+      window.addEventListener('scroll', () => { if (active) reset(); }, { passive: true });
     });
 
     $$('.magnetic').forEach((btn) => {
@@ -514,7 +532,7 @@
       const btn = e.target.closest('.enroll');
       if (!btn) return;
       const t = btn.dataset.title;
-      if (enrolled.has(t)) { enrolled.delete(t); toast(`Left “${t}”`, 'i-x'); } else { enrolled.add(t); toast(`Enrolled in “${t}”`); }
+      if (enrolled.has(t)) { enrolled.delete(t); toast(`Left “${t}”`, 'i-x'); } else { enrolled.add(t); toast(`Enrolled in “${t}”`); rewardActivity('course', t); }
       store.set('databell-enrolled', [...enrolled]);
       const on = enrolled.has(t);
       btn.classList.toggle('done', on);
@@ -576,6 +594,7 @@
   const modal = $('#modal');
   let lastFocus = null;
   function openArticle(a, trigger) {
+    setTimeout(() => rewardActivity('article', a.title), 500);
     lastFocus = trigger;
     $('#modalTag').textContent = a.tag;
     $('#modalTitle').textContent = a.title;
@@ -630,6 +649,7 @@
       bar.style.width = '100%';
       const prev = best();
       if (score > prev) store.set('databell-quiz-best', score);
+      if (score === QUIZ.length) rewardActivity('quiz-perfect');
       const msg = score === QUIZ.length ? 'Perfect — you’re ready for an advanced track.' : score >= 3 ? 'Solid! An intermediate track would suit you.' : 'Great start — try a beginner track.';
       qEl.textContent = '';
       opts.innerHTML = `<div class="quiz-result"><span class="score grad-text">${score}/${QUIZ.length}</span><p>${msg}</p></div>`;
@@ -648,7 +668,7 @@
         b.disabled = true;
         if (i === right) b.classList.add('right');
       });
-      if (choice === right) score += 1; else btn.classList.add('wrong');
+      if (choice === right) { score += 1; rewardActivity('quiz'); } else btn.classList.add('wrong');
       meta.textContent = `Question ${idx + 1} of ${QUIZ.length} · Score ${score}`;
       next.disabled = false;
     });
@@ -779,6 +799,7 @@
         form.classList.add('sent');
         setTimeout(() => form.classList.remove('sent'), 900);
         toast(`Thanks ${data.name.split(' ')[0]}! The ${data.division} team will reply within one business day.`);
+        setTimeout(() => rewardActivity('contact'), 2200);
       }, 1200);
     });
 
@@ -789,6 +810,7 @@
       if (!emailOK(input.value.trim())) { toast('Please enter a valid email address.', 'i-x'); input.focus(); return; }
       input.value = '';
       toast('Subscribed to the Databell tech digest.');
+      setTimeout(() => rewardActivity('newsletter'), 2000);
     });
   }
 
@@ -1475,6 +1497,7 @@
         founder, wallet: founder ? FOUNDER_WALLET : 1000, points: 500, spent: 0, orders: [], activity: [], failed: 0, lockUntil: 0, autoLock: 5, recovery: null
       };
       db.accounts[email] = acc;
+      ensureMember(acc);
       logAct(acc, founder ? 'Founder ID created · $15 trillion wallet activated' : 'Databell ID created', founder ? 'i-crown' : 'i-user');
       logAct(acc, 'PIN and security key set up', 'i-key');
       startSession(acc, 'Signed in on this device');
@@ -1482,7 +1505,7 @@
         subject: founder ? `Founder ID activated — welcome, ${acc.first}!` : `Welcome to Databell, ${acc.first}!`, tag: 'updates', from: 'Databell Team', addr: `hello@${DOMAIN}`,
         html: mailShell(acc, `<p>Your Databell ID is ready. This inbox — <b>${esc(email)}</b> — is where Databell sends codes, receipts and licence keys.</p>
           <ul><li><b>PIN</b> unlocks your ID and confirms payments.</li><li><b>Security key</b> (${maskKey(acc.keyHint)}) resets a forgotten PIN instantly.</li><li><b>This inbox</b> receives one-time codes if you lose your PIN or key.</li></ul>
-          ${founder ? `<p>As <b>Founder</b>, your Databell Wallet holds <b>${money(acc.wallet)}</b> — fifteen trillion dollars — and you earn 3 points per $1 with free express shipping.</p>` : `<p>We've added <b>${money(acc.wallet)}</b> of welcome credit and <b>${acc.points} points</b> to your account. Enjoy the Databell Store!</p>`}`)
+          ${founder ? `<p>As <b>Founder</b>, your Databell Wallet holds <b>${money(acc.wallet)}</b> — fifteen trillion dollars — and you're subscribed to <b>BDAI Team Pro</b>, complimentary for the Founder. You earn 3 points per $1 in the store, 2× points on activities, 10% off and free shipping.</p>` : `<p>We've added <b>${money(acc.wallet)}</b> of welcome credit and <b>${acc.points} points</b> to your account. Enjoy the Databell Store!</p>`}`)
       });
       sendMail(email, {
         subject: 'Your security key is set up', tag: 'security',
@@ -1647,7 +1670,7 @@
     db.session.locked = true;
     logAct(acc, auto ? 'Auto-locked after inactivity' : 'Locked', 'i-lock');
     saveDB();
-    ['acctOv', 'checkoutOv'].forEach((id) => Overlay.close(id));
+    ['acctOv', 'checkoutOv', 'moneyOv'].forEach((id) => Overlay.close(id));
     if (Overlay.isOpen('inboxOv') && inbox.email === acc.email && !inbox.recovery) Overlay.close('inboxOv');
     refreshAll();
     toast(auto ? 'Databell ID locked after inactivity' : 'Databell ID locked', 'i-lock');
@@ -1874,7 +1897,7 @@
   function toggleWish(id) {
     const i = db.wishlist.indexOf(id);
     if (i >= 0) { db.wishlist.splice(i, 1); toast(`Removed ${P[id].name} from wishlist`, 'i-heart'); }
-    else { db.wishlist.push(id); toast(`Saved ${P[id].name} to wishlist`, 'i-heart'); }
+    else { db.wishlist.push(id); toast(`Saved ${P[id].name} to wishlist`, 'i-heart'); setTimeout(() => rewardActivity('wish'), 1800); }
     saveDB();
     renderShop();
     if (Overlay.isOpen('productOv')) renderProduct();
@@ -1921,7 +1944,10 @@
     const c = db.coupon && COUPONS[db.coupon];
     if (c) { const r = c.apply(lines, sub); discount = r.discount || 0; freeShip = !!r.freeShip; couponError = r.error || ''; }
     discount = round2(Math.min(discount, sub));
-    const after = round2(sub - discount);
+    const plan = acc ? subOf(acc) : SUBS.free;
+    const member = round2((sub - discount) * plan.disc);
+    const after = round2(sub - discount - member);
+    if (plan.freeShip) freeShip = true;
     let ship = 0;
     if (physical && !freeShip) ship = after >= 150 ? 0 : 12;
     if (physical && extra.express && !(acc && tierOf(acc).freeExpress)) ship += 15;
@@ -1931,7 +1957,7 @@
     const pointsValue = extra.usePoints ? round2(Math.min(Math.floor(pts) / 100, total)) : 0;
     const due = round2(total - pointsValue);
     const earn = acc ? Math.floor(total * tierOf(acc).mult) : Math.floor(total);
-    return { lines, sub, discount, ship, tax, total, physical, pointsValue, due, earn, couponError, freeLeft: physical && !freeShip && after < 150 ? round2(150 - after) : 0, after };
+    return { lines, sub, discount, member, planName: plan.name, ship, tax, total, physical, pointsValue, due, earn, couponError, freeLeft: physical && !freeShip && after < 150 ? round2(150 - after) : 0, after };
   }
   function renderCart() { keepFocus($('#cartBody'), () => renderCartNow()); }
   function renderCartNow() {
@@ -1951,6 +1977,7 @@
           <dl class="sum">
             <div><dt>Subtotal</dt><dd>${money(t.sub)}</dd></div>
             ${t.discount ? `<div class="disc"><dt>Discount</dt><dd>−${money(t.discount)}</dd></div>` : ''}
+            ${t.member ? `<div class="disc"><dt>${esc(t.planName)}</dt><dd>−${money(t.member)}</dd></div>` : ''}
             ${t.physical ? `<div><dt>Shipping</dt><dd>${t.ship ? money(t.ship) : 'Free'}</dd></div>` : ''}
             <div><dt>Tax (8%)</dt><dd>${money(t.tax)}</dd></div>
             <div class="grand"><dt>Total</dt><dd>${money(t.total)}</dd></div>
@@ -2081,13 +2108,14 @@
       main = `<div class="wallet-card ${isFounder(acc) ? 'founder-wallet' : ''}">${icon(isFounder(acc) ? 'i-crown' : 'i-wallet')}<div><small>${isFounder(acc) ? 'Founder wallet' : 'Databell Wallet'}</small><strong>${bigMoney(acc.wallet)}</strong></div>${short > 0 ? `<span class="pill warn">Short ${money(short)}</span>` : `<span class="pill ok">Enough balance</span>`}</div>
         <label class="row-toggle"><input type="checkbox" id="usePoints" ${co.usePoints ? 'checked' : ''} ${acc.points < 100 ? 'disabled' : ''}><span><b>Use Databell Points</b><small>${acc.points.toLocaleString()} points available · 100 points = $1</small></span><em>${co.usePoints ? '−' + money(t.pointsValue) : ''}</em></label>
         ${t.physical ? `<div class="co-addr">${icon('i-truck')}<span><b>${esc(co.addr.name)}</b><small>${esc(co.addr.line)}, ${esc(co.addr.city)} ${esc(co.addr.zip)}, ${esc(co.addr.country)} · ${co.express ? 'Express' : 'Standard'}</small></span><button class="link-btn small" data-act="co-back">Change</button></div>` : `<div class="co-addr">${icon('i-inbox')}<span><b>Digital delivery</b><small>Keys and receipts go to ${esc(acc.email)}</small></span></div>`}
-        ${short > 0 ? `<p class="note small">${icon('i-alert')}<span>Your wallet is ${money(short)} short. <button class="link-btn small" data-act="co-topup" data-amt="${Math.ceil(short / 50) * 50}">Add ${money0(Math.ceil(short / 50) * 50)} demo credit</button></span></p>` : ''}
+        ${short > 0 ? `<p class="note small">${icon('i-alert')}<span>Your wallet is ${money(short)} short. <button class="link-btn small" data-act="co-topup" data-amt="${Math.ceil(short / 50) * 50}">Add ${money0(Math.ceil(short / 50) * 50)} with PIN</button> · <button class="link-btn small" data-act="money-open">More ways to add money</button></span></p>` : ''}
         <div class="btn-row between"><button class="btn btn-ghost" data-act="co-back">Back</button><button class="btn btn-primary" data-act="co-pay" ${short > 0 ? 'disabled' : ''}>${icon('i-lock')} Pay ${money(t.due)} with PIN</button></div>`;
     }
     $('#checkoutBody').innerHTML = `${head}${bar}<div class="co-grid"><div class="co-main">${main}</div>
       <aside class="co-sum"><h4>Order summary</h4><dl class="sum">
         <div><dt>Subtotal (${cartQty()} items)</dt><dd>${money(t.sub)}</dd></div>
         ${t.discount ? `<div class="disc"><dt>${esc(db.coupon)}</dt><dd>−${money(t.discount)}</dd></div>` : ''}
+        ${t.member ? `<div class="disc"><dt>${esc(t.planName)}</dt><dd>−${money(t.member)}</dd></div>` : ''}
         ${t.physical ? `<div><dt>Shipping</dt><dd>${t.ship ? money(t.ship) : 'Free'}</dd></div>` : ''}
         <div><dt>Tax (8%)</dt><dd>${money(t.tax)}</dd></div>
         ${t.pointsValue ? `<div class="disc"><dt>Points</dt><dd>−${money(t.pointsValue)}</dd></div>` : ''}
@@ -2125,7 +2153,7 @@
     const order = {
       id: 'DB-' + randomFrom('0123456789', 6), t: Date.now(),
       items: t.lines.map((l) => ({ id: l.id, name: l.p.name, cat: l.p.cat, opt: optLabel(l.p, l.opt), qty: l.qty, unit: l.unit, line: l.line, keys: keysFor(l.p, l.qty) })),
-      sub: t.sub, discount: t.discount, coupon: db.coupon, ship: t.ship, tax: t.tax, total: t.total, pointsUsed: Math.round(t.pointsValue * 100), paid: t.due,
+      sub: t.sub, discount: t.discount, coupon: db.coupon, member: t.member, planName: t.planName, ship: t.ship, tax: t.tax, total: t.total, pointsUsed: Math.round(t.pointsValue * 100), paid: t.due,
       earned: t.earn, physical: t.physical, express: co.express, addr: t.physical ? co.addr : null, mailed: 0
     };
     acc.wallet = round2(acc.wallet - t.due);
@@ -2136,11 +2164,15 @@
     db.cart = [];
     db.coupon = null;
     logAct(acc, `Order #${order.id} paid · ${money(order.total)}`, 'i-cart');
+    if (order.pointsUsed) addLedger(acc, -order.pointsUsed, `Points used on order #${order.id}`);
+    addLedger(acc, order.earned, `Order #${order.id}`);
+    setTimeout(() => completeQuest(acc, 'firstOrder'), 2200);
     sendMail(acc.email, {
       from: 'Databell Store', addr: `store@${DOMAIN}`, tag: 'orders', subject: `Receipt for order #${order.id} · ${money(order.total)}`,
       html: mailShell(acc, `<p>Thanks for your order! Here's your receipt.</p>
         <table class="mail-table">${order.items.map((i) => `<tr><td>${esc(i.name)}${i.opt ? `<br><small>${esc(i.opt)}</small>` : ''} × ${i.qty}</td><td>${money(i.line)}</td></tr>`).join('')}
         ${order.discount ? `<tr><td>Discount (${esc(order.coupon)})</td><td>−${money(order.discount)}</td></tr>` : ''}
+        ${order.member ? `<tr><td>${esc(order.planName)} discount</td><td>−${money(order.member)}</td></tr>` : ''}
         ${order.physical ? `<tr><td>Shipping</td><td>${order.ship ? money(order.ship) : 'Free'}</td></tr>` : ''}
         <tr><td>Tax</td><td>${money(order.tax)}</td></tr>${order.pointsUsed ? `<tr><td>Points used</td><td>−${money(order.pointsUsed / 100)}</td></tr>` : ''}
         <tr class="tot"><td>Paid from wallet</td><td>${money(order.paid)}</td></tr></table>
@@ -2187,6 +2219,7 @@
         });
       }
     });
+    if (checkRenewal(acc)) changed = true;
     if (changed) { saveDB(); if (Overlay.isOpen('acctOv')) renderAccount(); }
   }, 8000);
 
@@ -2218,16 +2251,18 @@
   function renderAccountNow() {
     const acc = me();
     if (!acc || !unlocked()) { Overlay.close('acctOv'); return; }
+    ensureMember(acc);
+    if (securityScore(acc).score >= 100 && !acc.rewards.quests.secure) setTimeout(() => completeQuest(acc, 'secure'), 600);
     const tier = tierOf(acc), next = nextTier(acc);
     const pct = next ? Math.min(100, ((acc.spent - tier.min) / (next.min - tier.min)) * 100) : 100;
     const sec = securityScore(acc);
     const unread = unreadFor(acc.email);
-    const tabs = [['overview', 'Overview'], ['orders', `Orders${acc.orders.length ? ` (${acc.orders.length})` : ''}`], ['wishlist', `Wishlist${db.wishlist.length ? ` (${db.wishlist.length})` : ''}`], ['security', 'Security']];
+    const tabs = [['overview', 'Overview'], ['orders', `Orders${acc.orders.length ? ` (${acc.orders.length})` : ''}`], ['wishlist', `Wishlist${db.wishlist.length ? ` (${db.wishlist.length})` : ''}`], ['plan', 'Plan'], ['rewards', 'Rewards'], ['security', 'Security']];
     let body = '';
     if (acctTab === 'overview') {
       body = isFounder(acc)
-        ? `<div class="wallet-card big founder-wallet">${icon('i-crown')}<div><small>Founder wallet</small><strong>${bigMoney(acc.wallet)}</strong><span class="full-amt">${money(acc.wallet)}</span><span class="muted small">Founder allocation · fifteen trillion dollars</span></div></div>`
-        : `<div class="wallet-card big">${icon('i-wallet')}<div><small>Databell Wallet</small><strong>${money(acc.wallet)}</strong><span class="muted small">Demo credit for the Databell Store</span></div><button class="btn btn-ghost btn-sm" data-act="topup" data-amt="250">${icon('i-plus')} $250</button></div>`;
+        ? `<div class="wallet-card big founder-wallet">${icon('i-crown')}<div><small>Founder wallet</small><strong>${bigMoney(acc.wallet)}</strong><span class="full-amt">${money(acc.wallet)}</span><span class="muted small">Founder allocation · fifteen trillion dollars</span></div><button class="btn btn-ghost btn-sm" data-act="money-open">${icon('i-plus')} Add money</button></div>`
+        : `<div class="wallet-card big">${icon('i-wallet')}<div><small>Databell Wallet</small><strong>${money(acc.wallet)}</strong><span class="muted small">Demo credit for the Databell Store</span></div><button class="btn btn-ghost btn-sm" data-act="money-open">${icon('i-plus')} Add money</button></div>`;
       body += `
         <div class="mini-grid">
           <div class="mini"><small>Points</small><strong>${acc.points.toLocaleString()}</strong><span>worth ${money(acc.points / 100)}</span></div>
@@ -2235,9 +2270,15 @@
           <button class="mini" data-act="open-inbox"><small>Inbox</small><strong>${unread}</strong><span>unread</span></button>
         </div>
         <div class="tier"><div class="tier-top"><b>${icon('i-award')} ${tier.name}</b><span class="muted small">${next ? `${money0(next.min - acc.spent)} to ${next.name}` : 'Top tier reached'}</span></div><div class="bar"><i style="width:${pct}%"></i></div><small class="muted">${tier.perk}</small></div>
+        <button class="sec-mini" data-act="tab" data-tab="plan">${icon(acc.sub && acc.sub.comp ? 'i-crown' : 'i-star', 'ic sm-ic')}<span><b>${subOf(acc).name}</b><small>${acc.sub && acc.sub.comp ? 'Complimentary for the Founder' : acc.sub && acc.sub.plan !== 'free' ? 'Active subscription' : 'Upgrade for more points and discounts'}</small></span>${icon('i-right')}</button>
+        <button class="sec-mini" data-act="tab" data-tab="rewards">${icon('i-gift', 'ic sm-ic')}<span><b>Earn points</b><small>${acc.rewards.checkin === today() ? `${QUESTS.filter((q) => !acc.rewards.quests[q.id]).length} quests waiting` : 'Daily check-in and lucky spin ready'}</small></span>${icon('i-right')}</button>
         <button class="sec-mini" data-act="tab" data-tab="security">${scoreRing(sec.score)}<span><b>Security score</b><small>${sec.tips.length ? 'Improve: ' + sec.tips[0] : 'Everything looks great'}</small></span>${icon('i-right')}</button>
         <h4 class="d-h">Recent orders</h4>
         ${acc.orders.length ? acc.orders.slice(0, 2).map(orderHTML).join('') : `<div class="empty-state sm">${icon('i-box')}<span class="muted small">No orders yet.</span><button class="btn btn-ghost btn-sm" data-act="go-shop">Visit the store</button></div>`}`;
+    } else if (acctTab === 'plan') {
+      body = planTabHTML(acc);
+    } else if (acctTab === 'rewards') {
+      body = rewardsTabHTML(acc);
     } else if (acctTab === 'orders') {
       body = acc.orders.length ? acc.orders.map(orderHTML).join('') : `<div class="empty-state">${icon('i-box')}<b>No orders yet</b><button class="btn btn-ghost btn-sm" data-act="go-shop">Visit the store</button></div>`;
     } else if (acctTab === 'wishlist') {
@@ -2255,14 +2296,437 @@
         <ul class="activity">${acc.activity.slice(0, 15).map((a) => `<li>${icon(a.icon)}<span>${esc(a.text)}</span><small>${ago(a.t)}</small></li>`).join('')}</ul>
         <button class="danger-link" data-act="delete">${icon('i-trash')} Delete Databell ID</button>`;
     }
-    $('#acctBody').innerHTML = `<div class="drawer-head acct-head">${avatar(acc, 'lg')}<span class="dh-text"><b>${esc(acc.first)} ${esc(acc.last)} ${founderChip(acc)}</b><button class="email-chip" data-copy="${esc(acc.email)}" title="Copy inbox address">${esc(acc.email)} ${icon('i-copy')}</button></span>
+    $('#acctBody').innerHTML = `<div class="drawer-head acct-head">${avatar(acc, 'lg')}<span class="dh-text"><b>${esc(acc.first)} ${esc(acc.last)} ${founderChip(acc)} ${planChip(acc)}</b><button class="email-chip" data-copy="${esc(acc.email)}" title="Copy inbox address">${esc(acc.email)} ${icon('i-copy')}</button></span>
         <button class="icon-btn" data-act="lock" aria-label="Lock Databell ID">${icon('i-lock')}</button><button class="icon-btn" data-ov-close aria-label="Close">${icon('i-x')}</button></div>
       <div class="d-tabs" role="tablist">${tabs.map(([k, n]) => `<button role="tab" aria-selected="${acctTab === k}" class="${acctTab === k ? 'on' : ''}" data-act="tab" data-tab="${k}">${n}</button>`).join('')}</div>
       <div class="drawer-body">${body}</div>`;
+    const onTab = $('#acctBody .d-tabs .on');
+    if (onTab) onTab.parentElement.scrollLeft = onTab.offsetLeft - 40;
     const al = $('#autoLockSel');
     if (al) al.addEventListener('change', () => { acc.autoLock = +al.value; logAct(acc, `Auto-lock set to ${al.value === '0' ? 'never' : al.value + ' min'}`, 'i-clock'); saveDB(); renderAccount(); });
     const sw = $('#scrambleSw');
     if (sw) sw.addEventListener('change', () => { db.prefs.scramble = sw.checked; saveDB(); renderAccount(); });
+  }
+
+  /* =========================================================
+     ADD MONEY — top up, exercises and money quizzes (PIN-confirmed)
+     ========================================================= */
+  const EXERCISES = [
+    { id: 'py-sum', lang: 'Python', level: 'Easy', pay: 10, q: 'What does this print?', code: 'print(sum(range(1, 11)))', a: ['55'], hint: 'range(1, 11) is 1 to 10.' },
+    { id: 'js-map', lang: 'JavaScript', level: 'Easy', pay: 10, q: 'What is the result?', code: "[1, 2, 3].map(x => x * 2).join('-')", a: ['2-4-6', "'2-4-6'", '"2-4-6"'], hint: 'Each item is doubled, then joined with a dash.' },
+    { id: 'bin', lang: 'Binary', level: 'Easy', pay: 10, q: 'Convert binary 1011 to decimal.', code: '1011₂ = ?₁₀', a: ['11'], hint: '8 + 0 + 2 + 1' },
+    { id: 'http', lang: 'Web', level: 'Easy', pay: 10, q: 'Which HTTP status code means “Not Found”?', code: 'HTTP/1.1 ??? Not Found', a: ['404'], hint: 'It starts with 4.' },
+    { id: 'py-len', lang: 'Python', level: 'Easy', pay: 10, q: 'What does this print?', code: 'print(len("Databell"))', a: ['8'], hint: 'Count the letters.' },
+    { id: 'fib', lang: 'Logic', level: 'Medium', pay: 15, q: 'What comes next?', code: '1, 1, 2, 3, 5, 8, ?', a: ['13'], hint: 'Add the two previous numbers.' },
+    { id: 'pow', lang: 'Python', level: 'Medium', pay: 15, q: 'What does this print?', code: 'print(2 ** 10)', a: ['1024'], hint: '** is “to the power of”.' },
+    { id: 'hex', lang: 'Hex', level: 'Medium', pay: 15, q: 'Convert hexadecimal FF to decimal.', code: '0xFF = ?', a: ['255'], hint: '15 × 16 + 15' },
+    { id: 'bigo', lang: 'Algorithms', level: 'Hard', pay: 25, q: 'What is the time complexity of binary search?', code: 'binarySearch(sortedArray, target)', a: ['o(log n)', 'olog n', 'log n', 'logn', 'o(logn)', 'o(log(n))', 'log(n)'], hint: 'It halves the search space each step.' },
+    { id: 'typeof', lang: 'JavaScript', level: 'Hard', pay: 25, q: 'What is the result?', code: 'typeof null', a: ['object', "'object'", '"object"'], hint: 'A famous JavaScript quirk.' }
+  ];
+  const MONEY_QUIZZES = [
+    { id: 'cloud', name: 'Cloud', icon: 'i-cloud', qs: [
+      { q: 'Which service model gives you virtual machines you manage yourself?', o: ['SaaS', 'PaaS', 'IaaS', 'FaaS'], a: 2 },
+      { q: 'What does “autoscaling” change automatically?', o: ['Your password', 'The number of running instances', 'The DNS provider', 'The billing currency'], a: 1 },
+      { q: 'Object storage like S3 is best for…', o: ['Files and backups', 'CPU registers', 'Running SQL joins', 'Keyboard input'], a: 0 },
+      { q: 'A CDN mainly reduces…', o: ['Code size', 'Latency for distant users', 'Database locks', 'Compile time'], a: 1 }
+    ] },
+    { id: 'ai', name: 'AI & Data', icon: 'i-brain', qs: [
+      { q: 'Training a model on labelled examples is called…', o: ['Supervised learning', 'Unsupervised learning', 'Compilation', 'Sharding'], a: 0 },
+      { q: 'Which metric suits an imbalanced fraud dataset better than accuracy?', o: ['Precision/recall', 'Line count', 'Ping time', 'Pixel density'], a: 0 },
+      { q: 'In RAG, what does the “R” stand for?', o: ['Rendering', 'Retrieval', 'Recursion', 'Routing'], a: 1 },
+      { q: 'Overfitting means the model…', o: ['Is too small', 'Memorises training data and generalises poorly', 'Runs too fast', 'Has no parameters'], a: 1 }
+    ] },
+    { id: 'sec', name: 'Security', icon: 'i-shield', qs: [
+      { q: 'Which is the strongest second factor?', o: ['SMS code', 'Security key', 'Security question', 'Birthday'], a: 1 },
+      { q: 'Storing passwords safely means…', o: ['Encrypting with one shared key', 'Salted, slow hashing', 'Base64 encoding', 'Plain text in a vault'], a: 1 },
+      { q: 'Phishing is an attack that…', o: ['Floods a server', 'Tricks people into giving secrets', 'Breaks encryption maths', 'Overheats CPUs'], a: 1 },
+      { q: 'HTTPS protects data…', o: ['Only at rest', 'In transit between browser and server', 'Inside the CPU', 'On printed pages'], a: 1 }
+    ] }
+  ];
+  const QUIZ_PAY = 5;
+  const addm = { tab: 'topup', amount: 100, quiz: null };
+  const norm = (v) => String(v).trim().toLowerCase().replace(/\s+/g, ' ').replace(/[.;]+$/, '');
+  function ensureEarn(acc) {
+    if (!acc.earn) acc.earn = { pending: 0, total: 0, solved: {}, tries: {}, quiz: {} };
+    return acc.earn;
+  }
+  function earn(acc, amt, text) {
+    const e = ensureEarn(acc);
+    e.pending = round2(e.pending + amt);
+    e.total = round2(e.total + amt);
+    logAct(acc, `Earned ${money0(amt)} · ${text}`, 'i-wallet');
+    saveDB();
+  }
+  function openMoney(tab) {
+    if (!me()) { acctClick(); return; }
+    requireUnlocked(() => {
+      if (tab) addm.tab = tab;
+      addm.quiz = null;
+      Overlay.open('moneyOv');
+      renderMoney();
+    });
+  }
+  function renderMoney() { keepFocus($('#moneyBody'), () => renderMoneyNow()); }
+  function renderMoneyNow() {
+    const acc = me();
+    if (!acc || !unlocked()) { Overlay.close('moneyOv'); return; }
+    const e = ensureEarn(acc);
+    const tabs = [['topup', 'Top up', 'i-wallet'], ['exercises', 'Exercises', 'i-code'], ['quizzes', 'Quizzes', 'i-bolt']];
+    let body = '';
+    if (addm.tab === 'topup') {
+      const amts = [50, 100, 250, 500, 1000];
+      body = `<p class="muted small">Add demo credit to your Databell Wallet. Every top-up is confirmed with your PIN.</p>
+        <div class="amt-grid">${amts.map((a) => `<button class="amt ${addm.amount === a ? 'on' : ''}" data-act="m-amt" data-amt="${a}" aria-pressed="${addm.amount === a}">${money0(a)}</button>`).join('')}</div>
+        <label class="field"><span>Or enter an amount ($1 – $10,000)</span><input id="mCustom" type="number" min="1" max="10000" step="1" inputmode="numeric" value="${amts.includes(addm.amount) ? '' : addm.amount}" placeholder="e.g. 75"></label>
+        <button class="btn btn-primary btn-block" data-act="m-topup">${icon('i-lock')} Add ${money0(addm.amount)} with PIN</button>`;
+    } else if (addm.tab === 'exercises') {
+      const solved = EXERCISES.filter((x) => e.solved[x.id]).length;
+      body = `<p class="muted small">Solve a coding or logic exercise to earn cash. Each one pays once · ${solved}/${EXERCISES.length} solved.</p>
+        <ul class="ex-list">${EXERCISES.map((x) => {
+          const done = !!e.solved[x.id];
+          const tries = e.tries[x.id] || 0;
+          return `<li class="ex ${done ? 'done' : ''}">
+            <div class="ex-top"><span class="ex-tag">${x.lang} · ${x.level}</span><b class="ex-pay">${done ? `${icon('i-check')} Earned` : '+' + money0(x.pay)}</b></div>
+            <p>${esc(x.q)}</p><code class="ex-code">${esc(x.code)}</code>
+            ${done ? '' : `<form class="ex-form" data-ex="${x.id}" novalidate><input name="ans" autocomplete="off" spellcheck="false" placeholder="Your answer" aria-label="Answer for: ${esc(x.q)}"><button class="btn btn-ghost btn-sm">Check</button></form>
+            ${tries ? `<small class="ex-msg">${tries >= 2 ? `${icon('i-alert')} Hint: ${esc(x.hint)}` : 'Not quite — try again.'}</small>` : ''}`}
+          </li>`;
+        }).join('')}</ul>`;
+    } else if (addm.quiz) {
+      const qz = MONEY_QUIZZES.find((x) => x.id === addm.quiz.id);
+      const st = addm.quiz;
+      if (st.i >= qz.qs.length) {
+        body = `<div class="mq-done"><div class="done-check">${icon('i-check')}</div><h4>${qz.name} quiz complete</h4><p class="muted">${st.score}/${qz.qs.length} correct · <b>+${money0(st.score * QUIZ_PAY)}</b> added to pending earnings</p><button class="btn btn-ghost btn-sm" data-act="m-quiz-back">Back to quizzes</button></div>`;
+      } else {
+        const item = qz.qs[st.i];
+        body = `<div class="mq-head"><b>${icon(qz.icon)} ${qz.name} quiz</b><span class="muted small">Question ${st.i + 1} of ${qz.qs.length} · ${money0(QUIZ_PAY)} per correct answer</span></div>
+          <div class="bar"><i style="width:${(st.i / qz.qs.length) * 100}%"></i></div>
+          <p class="mq-q">${esc(item.q)}</p>
+          <div class="quiz-opts">${item.o.map((o, i) => `<button class="quiz-opt ${st.picked === undefined ? '' : i === item.a ? 'right' : i === st.picked ? 'wrong' : ''}" data-act="m-quiz-pick" data-i="${i}" ${st.picked === undefined ? '' : 'disabled'}>${esc(o)}</button>`).join('')}</div>
+          ${st.picked === undefined ? '' : `<div class="btn-row end"><button class="btn btn-primary btn-sm" data-act="m-quiz-next">${st.i + 1 === qz.qs.length ? 'Finish' : 'Next question'}</button></div>`}`;
+      }
+    } else {
+      const d = today();
+      body = `<p class="muted small">Each quiz pays ${money0(QUIZ_PAY)} per correct answer and can be played once a day.</p>
+        <ul class="mq-list">${MONEY_QUIZZES.map((qz) => {
+          const played = e.quiz[qz.id] && e.quiz[qz.id].day === d;
+          return `<li>${icon(qz.icon)}<span><b>${qz.name} quiz</b><small>${qz.qs.length} questions · up to ${money0(qz.qs.length * QUIZ_PAY)}${played ? ` · today: ${e.quiz[qz.id].score}/${qz.qs.length}` : ''}</small></span>
+            <button class="btn ${played ? 'btn-ghost' : 'btn-primary'} btn-sm" data-act="m-quiz-start" data-quiz="${qz.id}" ${played ? 'disabled' : ''}>${played ? `Next in ${untilMidnight()}` : 'Play'}</button></li>`;
+        }).join('')}</ul>`;
+    }
+    $('#moneyBody').innerHTML = `<button class="icon-btn ov-x" data-ov-close aria-label="Close">${icon('i-x')}</button>
+      <div class="m-head">${icon('i-wallet', 'ic m-ic')}<div><h3 id="moneyTitle">Add money</h3><span class="muted small">Wallet balance <b>${bigMoney(acc.wallet)}</b></span></div></div>
+      <div class="pending ${e.pending ? 'has' : ''}">${icon('i-gift')}<span><small>Pending earnings</small><b>${money(e.pending)}</b><em>${money0(e.total)} earned all-time</em></span>
+        <button class="btn btn-primary btn-sm" data-act="m-collect" ${e.pending ? '' : 'disabled'}>${icon('i-lock')} Add to wallet</button></div>
+      <div class="seg" role="tablist">${tabs.map(([k, n, ic]) => `<button role="tab" aria-selected="${addm.tab === k}" class="${addm.tab === k ? 'on' : ''}" data-act="m-tab" data-tab="${k}">${icon(ic)} ${n}</button>`).join('')}</div>
+      <div class="m-body">${body}</div>`;
+    $$('.ex-form', $('#moneyBody')).forEach((f) => f.addEventListener('submit', (ev) => { ev.preventDefault(); checkExercise(f.dataset.ex, f.ans.value); }));
+    const cu = $('#mCustom');
+    if (cu) cu.addEventListener('input', () => {
+      const v = Math.floor(+cu.value);
+      if (v >= 1 && v <= 10000) { addm.amount = v; $$('.amt', $('#moneyBody')).forEach((b) => { b.classList.remove('on'); b.setAttribute('aria-pressed', 'false'); }); $('[data-act="m-topup"]').innerHTML = `${icon('i-lock')} Add ${money0(v)} with PIN`; }
+    });
+  }
+  function checkExercise(id, value) {
+    const acc = me();
+    const x = EXERCISES.find((y) => y.id === id);
+    if (!acc || !x) return;
+    const e = ensureEarn(acc);
+    if (e.solved[id]) return;
+    if (!value.trim()) return;
+    const v = norm(value);
+    if (x.a.some((a) => norm(a) === v || norm(a).replace(/\s/g, '') === v.replace(/\s/g, ''))) {
+      e.solved[id] = Date.now();
+      earn(acc, x.pay, `Exercise: ${x.q} (${x.lang})`);
+      toast(`Correct! +${money0(x.pay)} added to pending earnings`, 'i-check');
+    } else {
+      e.tries[id] = (e.tries[id] || 0) + 1;
+      saveDB();
+      toast('Not quite — try again', 'i-x');
+    }
+    renderMoney();
+  }
+  async function collectEarnings() {
+    const acc = me();
+    if (!acc) return;
+    const e = ensureEarn(acc);
+    const amt = e.pending;
+    if (!amt) return;
+    const ok = await confirmPin(`Move ${money(amt)} of earnings from exercises and quizzes into your Databell Wallet.`, 'Add earnings to wallet');
+    if (!ok || !unlocked()) return;
+    e.pending = 0;
+    acc.wallet = round2(acc.wallet + amt);
+    logAct(acc, `Added ${money(amt)} of earnings to wallet`, 'i-wallet');
+    sendMail(acc.email, { from: 'Databell Wallet', addr: `wallet@${DOMAIN}`, tag: 'orders', subject: `${money(amt)} added to your wallet`, html: mailShell(acc, `<p>You moved <b>${money(amt)}</b> of earnings from exercises and quizzes into your Databell Wallet on ${fmtDate(Date.now())}, confirmed with your PIN.</p><p>New balance: <b>${money(acc.wallet)}</b>.</p>`) });
+    saveDB();
+    refreshAll();
+    if (Overlay.isOpen('moneyOv')) renderMoney();
+    toast(`${money(amt)} added to your wallet`, 'i-wallet');
+  }
+  async function topUpWithPin(amt) {
+    const acc = me();
+    amt = Math.floor(+amt);
+    if (!acc || !(amt >= 1 && amt <= 10000)) { toast('Choose an amount between $1 and $10,000', 'i-alert'); return false; }
+    const ok = await confirmPin(`Add ${money0(amt)} of demo credit to your Databell Wallet.`, 'Add money');
+    if (!ok || !unlocked()) return false;
+    acc.wallet = round2(acc.wallet + amt);
+    logAct(acc, `Added ${money0(amt)} to wallet (top-up)`, 'i-wallet');
+    sendMail(acc.email, { from: 'Databell Wallet', addr: `wallet@${DOMAIN}`, tag: 'orders', subject: `Wallet top-up · ${money0(amt)}`, html: mailShell(acc, `<p>${money0(amt)} of demo credit was added to your Databell Wallet on ${fmtDate(Date.now())}, confirmed with your PIN.</p><p>New balance: <b>${money(acc.wallet)}</b>.</p>`) });
+    saveDB();
+    refreshAll();
+    if (Overlay.isOpen('moneyOv')) renderMoney();
+    toast(`${money0(amt)} added to your wallet`, 'i-wallet');
+    return true;
+  }
+
+  /* =========================================================
+     BDAI SUBSCRIPTIONS & REWARDS
+     ========================================================= */
+  const SUBS = {
+    free: { name: 'BDAI Free', price: 0, mult: 1, disc: 0, perks: ['Daily check-in and lucky spin', 'All quests and activities', 'Standard support'] },
+    pro: { name: 'BDAI Pro', price: 19, mult: 1.5, disc: 0.05, perks: ['1.5× points on every activity', '5% off the Databell Store', 'Priority TechKnowledge labs'] },
+    teampro: { name: 'BDAI Team Pro', price: 49, mult: 2, disc: 0.1, freeShip: true, perks: ['2× points on every activity', '10% off the Databell Store', 'Free shipping on every order', 'Up to 10 team seats', 'Priority support'] }
+  };
+  const subOf = (acc) => SUBS[(acc && acc.sub && acc.sub.plan) || 'free'] || SUBS.free;
+  const planChip = (acc) => (acc && acc.sub && acc.sub.plan !== 'free' ? `<span class="plan-chip">${icon('i-star')} ${SUBS[acc.sub.plan].name}</span>` : '');
+  const today = () => new Date().toLocaleDateString('en-CA');
+  const untilMidnight = () => {
+    const now = new Date(); const end = new Date(now); end.setHours(24, 0, 0, 0);
+    const m = Math.ceil((end - now) / 60000);
+    return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`;
+  };
+
+  function ensureMember(acc) {
+    if (!acc) return acc;
+    if (!acc.rewards) acc.rewards = { checkin: '', spin: '', spinWon: 0, spinDeg: 0, quizDay: '', quizPts: 0, articles: [], courses: [], sections: [], quests: {} };
+    if (!acc.ledger) acc.ledger = [];
+    if (!acc.sub) acc.sub = { plan: 'free' };
+    if (isFounder(acc) && !acc.sub.comp) {
+      acc.sub = { plan: 'teampro', since: Date.now(), comp: true };
+      acc.rewards.quests.subscribe = acc.rewards.quests.subscribe || Date.now();
+      logAct(acc, 'BDAI Team Pro activated · complimentary for the Founder', 'i-star');
+    }
+    return acc;
+  }
+
+  function addLedger(acc, pts, text) {
+    ensureMember(acc);
+    acc.ledger.unshift({ t: Date.now(), pts, text });
+    if (acc.ledger.length > 80) acc.ledger.length = 80;
+  }
+  function award(acc, base, text, opts = {}) {
+    ensureMember(acc);
+    const pts = Math.max(1, Math.round(base * (opts.noMult ? 1 : subOf(acc).mult)));
+    acc.points += pts;
+    addLedger(acc, pts, text);
+    saveDB();
+    refreshBadges();
+    if (Overlay.isOpen('acctOv')) renderAccount();
+    if (!opts.silent) toast(`+${pts.toLocaleString()} points · ${text}`, 'i-gift');
+    return pts;
+  }
+
+  const QUESTS = [
+    { id: 'explorer', icon: 'i-globe', title: 'Explore the ecosystem', desc: 'Visit SoftwareLabs, TechEnhance, TechKnowledge and the Store', pts: 75, go: '#labs', progress: (r) => `${Math.min(4, r.sections.length)}/4 visited` },
+    { id: 'reader', icon: 'i-book', title: 'Bookworm', desc: 'Read 3 knowledge-base articles', pts: 60, go: '#knowledge', progress: (r) => `${Math.min(3, r.articles.length)}/3 read` },
+    { id: 'learner', icon: 'i-award', title: 'Lifelong learner', desc: 'Enroll in a TechKnowledge course', pts: 40, go: '#knowledge' },
+    { id: 'quizace', icon: 'i-bolt', title: 'Quiz ace', desc: 'Score 5/5 in the Tech Pulse quiz', pts: 100, go: '#quiz' },
+    { id: 'wish', icon: 'i-heart', title: 'Window shopper', desc: 'Save a product to your wishlist', pts: 20, go: '#shop' },
+    { id: 'firstOrder', icon: 'i-box', title: 'First order', desc: 'Buy anything in the Databell Store', pts: 150, go: '#shop' },
+    { id: 'secure', icon: 'i-shield', title: 'Fortress', desc: 'Reach a security score of 100', pts: 80, tab: 'security' },
+    { id: 'subscribe', icon: 'i-star', title: 'Go Pro', desc: 'Join BDAI Pro or BDAI Team Pro', pts: 100, tab: 'plan' },
+    { id: 'cmdk', icon: 'i-cmd', title: 'Power user', desc: 'Open the command palette (Ctrl K)', pts: 20, run: 'cmd' },
+    { id: 'newsletter', icon: 'i-mail', title: 'Stay in the loop', desc: 'Subscribe to the tech digest', pts: 30, go: '.site-footer' },
+    { id: 'contact', icon: 'i-send', title: 'Say hello', desc: 'Send us a project enquiry', pts: 40, go: '#contact' }
+  ];
+  const SPIN = [25, 50, 10, 100, 25, 200, 50, 500];
+  const SPIN_W = [20, 15, 22, 8, 20, 4, 10, 1];
+  const QUIET = ['section', 'cmdk', 'wish'];
+  let nudged = false;
+
+  function completeQuest(acc, id) {
+    ensureMember(acc);
+    const q = QUESTS.find((x) => x.id === id);
+    if (!q || acc.rewards.quests[id]) return;
+    acc.rewards.quests[id] = Date.now();
+    logAct(acc, `Quest complete · ${q.title}`, 'i-award');
+    award(acc, q.pts, `Quest complete: ${q.title}`);
+  }
+  // Called from activities around the site; points only go to an unlocked Databell ID
+  function rewardActivity(kind, key) {
+    const acc = unlocked() ? ensureMember(me()) : null;
+    if (!acc) {
+      if (!QUIET.includes(kind) && !nudged && Object.keys(db.accounts).length + 1) { nudged = true; setTimeout(() => toast('Sign in to your Databell ID to earn points for activities', 'i-gift'), 1600); }
+      return;
+    }
+    const r = acc.rewards;
+    switch (kind) {
+      case 'article':
+        if (!r.articles.includes(key)) { r.articles.push(key); award(acc, 10, `Read “${key}”`); if (r.articles.length >= 3) setTimeout(() => completeQuest(acc, 'reader'), 1800); }
+        break;
+      case 'course':
+        if (!r.courses.includes(key)) { r.courses.push(key); award(acc, 15, `Enrolled in ${key}`); setTimeout(() => completeQuest(acc, 'learner'), 1800); }
+        break;
+      case 'quiz': {
+        const d = today();
+        if (r.quizDay !== d) { r.quizDay = d; r.quizPts = 0; }
+        if (r.quizPts < 100) { r.quizPts += 20; award(acc, 20, 'Correct quiz answer'); }
+        break;
+      }
+      case 'quiz-perfect': setTimeout(() => completeQuest(acc, 'quizace'), 1500); break;
+      case 'section':
+        if (!r.sections.includes(key)) { r.sections.push(key); saveDB(); if (r.sections.length >= 4) completeQuest(acc, 'explorer'); }
+        break;
+      default: completeQuest(acc, kind);
+    }
+  }
+
+  function checkIn() {
+    const acc = ensureMember(me());
+    if (!acc || !unlocked() || acc.rewards.checkin === today()) return;
+    acc.rewards.checkin = today();
+    logAct(acc, 'Daily check-in', 'i-gift');
+    award(acc, 25, 'Daily check-in');
+  }
+  function spin(btn) {
+    const acc = ensureMember(me());
+    if (!acc || !unlocked() || acc.rewards.spin === today()) return;
+    const total = SPIN_W.reduce((a, b) => a + b, 0);
+    let roll = randWords(1)[0] % total, idx = 0;
+    while (roll >= SPIN_W[idx]) { roll -= SPIN_W[idx]; idx += 1; }
+    const deg = 360 * 6 + (360 - (idx * 45 + 22.5));
+    acc.rewards.spin = today();
+    acc.rewards.spinWon = SPIN[idx];
+    acc.rewards.spinDeg = deg % 360;
+    saveDB();
+    const disc = $('#wheelDisc');
+    const wheel = disc.closest('.wheel');
+    wheel.classList.add('spinning');
+    btn.disabled = true;
+    btn.textContent = 'Spinning…';
+    disc.style.transition = reduceMotion ? 'none' : 'transform 3.2s cubic-bezier(.15,.7,.15,1)';
+    requestAnimationFrame(() => { disc.style.transform = `rotate(${deg}deg)`; });
+    setTimeout(() => {
+      wheel.classList.remove('spinning');
+      logAct(acc, `Lucky spin landed on ${SPIN[idx]}`, 'i-gift');
+      award(acc, SPIN[idx], `Lucky spin landed on ${SPIN[idx]}`);
+    }, reduceMotion ? 80 : 3400);
+  }
+  function redeemPoints() {
+    const acc = ensureMember(me());
+    if (!acc || !unlocked() || acc.points < 1000) return;
+    acc.points -= 1000;
+    acc.wallet = round2(acc.wallet + 10);
+    addLedger(acc, -1000, 'Redeemed for $10 wallet credit');
+    logAct(acc, 'Redeemed 1,000 points for $10 wallet credit', 'i-wallet');
+    saveDB();
+    refreshAll();
+    toast('1,000 points redeemed · $10 added to your wallet', 'i-wallet');
+  }
+
+  async function choosePlan(k) {
+    const acc = ensureMember(me());
+    if (!acc || !unlocked() || acc.sub.comp || !SUBS[k] || acc.sub.plan === k) return;
+    const p = SUBS[k];
+    if (k === 'free') {
+      const old = subOf(acc).name;
+      acc.sub = { plan: 'free' };
+      logAct(acc, `${old} cancelled`, 'i-star');
+      sendMail(acc.email, { from: 'Databell Billing', addr: `billing@${DOMAIN}`, tag: 'updates', subject: `${old} cancelled`, html: mailShell(acc, `<p>Your ${old} subscription was cancelled on ${fmtDate(Date.now())}. You're now on BDAI Free.</p>`) });
+      saveDB(); renderAccount(); toast(`${old} cancelled — you're on BDAI Free`, 'i-star');
+      return;
+    }
+    if (acc.wallet < p.price) { toast(`Add wallet credit first — ${p.name} is ${money(p.price)} a month`, 'i-alert'); return; }
+    const ok = await confirmPin(`Subscribe to ${p.name} for ${money(p.price)} a month, paid from your Databell Wallet.`, `Subscribe to ${p.name}`);
+    if (!ok || !unlocked()) return;
+    acc.wallet = round2(acc.wallet - p.price);
+    acc.sub = { plan: k, since: Date.now(), renews: Date.now() + 30 * 864e5 };
+    logAct(acc, `Subscribed to ${p.name} · ${money(p.price)}/month`, 'i-star');
+    sendMail(acc.email, {
+      from: 'Databell Billing', addr: `billing@${DOMAIN}`, tag: 'orders', subject: `Welcome to ${p.name} · ${money(p.price)}`,
+      html: mailShell(acc, `<p>You're now on <b>${p.name}</b>. ${money(p.price)} was paid from your Databell Wallet; your plan renews on ${new Date(acc.sub.renews).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.</p><ul>${p.perks.map((x) => `<li>${x}</li>`).join('')}</ul>`)
+    });
+    saveDB();
+    refreshAll();
+    toast(`Welcome to ${p.name}!`, 'i-star');
+    setTimeout(() => completeQuest(acc, 'subscribe'), 1800);
+  }
+  function checkRenewal(acc) {
+    ensureMember(acc);
+    const sub = acc.sub;
+    if (sub.plan === 'free' || sub.comp || !sub.renews || sub.renews > Date.now()) return false;
+    const p = SUBS[sub.plan];
+    if (acc.wallet >= p.price) {
+      acc.wallet = round2(acc.wallet - p.price);
+      sub.renews += 30 * 864e5;
+      logAct(acc, `${p.name} renewed · ${money(p.price)}`, 'i-star');
+      sendMail(acc.email, { from: 'Databell Billing', addr: `billing@${DOMAIN}`, tag: 'orders', subject: `${p.name} renewed · ${money(p.price)}`, html: mailShell(acc, `<p>Your ${p.name} plan renewed and ${money(p.price)} was paid from your wallet.</p>`) });
+    } else {
+      acc.sub = { plan: 'free' };
+      logAct(acc, `${p.name} ended — not enough wallet balance`, 'i-alert');
+      sendMail(acc.email, { from: 'Databell Billing', addr: `billing@${DOMAIN}`, tag: 'orders', subject: `${p.name} could not renew`, html: mailShell(acc, `<p>Your wallet didn't have ${money(p.price)} for the renewal, so you're back on BDAI Free.</p>`) });
+    }
+    return true;
+  }
+
+  function planTabHTML(acc) {
+    ensureMember(acc);
+    const cur = acc.sub.plan;
+    const s = SUBS[cur];
+    const status = acc.sub.comp ? 'Complimentary for the Founder · never billed'
+      : cur === 'free' ? 'Free forever · upgrade any time'
+        : `Renews ${new Date(acc.sub.renews).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} · ${money(s.price)}/month from your wallet`;
+    return `<div class="plan-now plan-${cur}">${icon(acc.sub.comp ? 'i-crown' : 'i-star')}<div><small>Your BDAI plan</small><strong>${s.name}</strong><span>${status}</span></div></div>
+      <div class="sub-list">${Object.entries(SUBS).map(([k, p]) => {
+        const btn = k === cur ? '<button class="btn btn-ghost btn-sm" disabled>Current plan</button>'
+          : acc.sub.comp ? '<button class="btn btn-ghost btn-sm" disabled>Founder has Team Pro</button>'
+            : `<button class="btn ${k === 'free' ? 'btn-ghost' : 'btn-primary'} btn-sm" data-act="sub-pick" data-plan="${k}">${k === 'free' ? 'Switch to Free' : `Choose ${p.name}`}</button>`;
+        return `<div class="sub-card sub-${k} ${k === cur ? 'on' : ''}"><div class="sub-top"><b>${p.name}</b><span>${p.price ? `${money0(p.price)}<small>/mo</small>` : 'Free'}</span></div><ul class="tick-list">${p.perks.map((x) => `<li>${x}</li>`).join('')}</ul>${btn}</div>`;
+      }).join('')}</div>
+      <p class="muted small">Plans are paid monthly from your Databell Wallet and confirmed with your PIN. Plan discounts and free shipping apply automatically at checkout.</p>`;
+  }
+
+  function rewardsTabHTML(acc) {
+    ensureMember(acc);
+    const r = acc.rewards, plan = subOf(acc), d = today();
+    const todayPts = acc.ledger.filter((x) => x.pts > 0 && new Date(x.t).toLocaleDateString('en-CA') === d && !/^Order #/.test(x.text)).reduce((a, x) => a + x.pts, 0);
+    const checked = r.checkin === d, spun = r.spin === d;
+    const m = (base) => Math.round(base * plan.mult);
+    const quizToday = r.quizDay === d ? r.quizPts : 0;
+    const questsLeft = QUESTS.filter((q) => !r.quests[q.id]).length;
+    return `<div class="rw-head"><div><small>Databell Points</small><strong>${acc.points.toLocaleString()}</strong><span>+${todayPts.toLocaleString()} earned today · ${questsLeft} quests left</span></div><span class="mult-chip">${icon('i-bolt')} ${plan.name} · ${plan.mult}× points</span></div>
+      <div class="rw-grid">
+        <div class="rw-card">${icon('i-gift', 'ic rw-ic')}<b>Daily check-in</b><small>+${m(25)} points every day</small>
+          <button class="btn ${checked ? 'btn-ghost' : 'btn-primary'} btn-sm btn-block" data-act="rw-checkin" ${checked ? 'disabled' : ''}>${checked ? `${icon('i-check')} Checked in · next in ${untilMidnight()}` : 'Check in'}</button></div>
+        <div class="rw-card">
+          <div class="wheel ${spun ? 'done' : ''}"><div class="wheel-disc" id="wheelDisc" style="transform: rotate(${spun ? r.spinDeg : 0}deg)">${SPIN.map((v, i) => `<span style="--a:${i * 45 + 22.5}deg">${v}</span>`).join('')}</div><i class="wheel-pin" aria-hidden="true"></i><em class="wheel-hub">${icon('i-gift')}</em></div>
+          <button class="btn ${spun ? 'btn-ghost' : 'btn-primary'} btn-sm btn-block" data-act="rw-spin" ${spun ? 'disabled' : ''}>${spun ? `Won ${r.spinWon} · next in ${untilMidnight()}` : 'Lucky spin'}</button></div>
+      </div>
+      <ul class="rw-acts">
+        <li>${icon('i-bolt')}<span><b>Tech Pulse quiz</b><small>+${m(20)} per correct answer · ${quizToday}/100 base points today</small></span><button class="btn btn-ghost btn-sm" data-act="quest-go" data-quest="quizace">Play</button></li>
+        <li>${icon('i-book')}<span><b>Read the knowledge base</b><small>+${m(10)} per new article · ${r.articles.length}/${ARTICLES.length} read</small></span><button class="btn btn-ghost btn-sm" data-act="quest-go" data-quest="reader">Read</button></li>
+        <li>${icon('i-award')}<span><b>Enroll in courses</b><small>+${m(15)} per new course · ${r.courses.length}/${COURSES.length} enrolled</small></span><button class="btn btn-ghost btn-sm" data-act="quest-go" data-quest="learner">Browse</button></li>
+      </ul>
+      <h4 class="d-h">${icon('i-award')} Quests</h4>
+      <ul class="quests">${QUESTS.map((q) => {
+        const done = !!r.quests[q.id];
+        return `<li class="quest ${done ? 'done' : ''}">${icon(q.icon)}<span><b>${q.title}</b><small>${q.desc}${q.progress && !done ? ` · ${q.progress(r)}` : ''}</small></span>${done ? `<em class="q-done">${icon('i-check')} Done</em>` : `<button class="btn btn-ghost btn-sm" data-act="quest-go" data-quest="${q.id}">+${m(q.pts)} ${icon('i-arrow')}</button>`}</li>`;
+      }).join('')}</ul>
+      <div class="redeem">${icon('i-wallet')}<span><b>Redeem points</b><small>1,000 points = $10 wallet credit</small></span><button class="btn btn-ghost btn-sm" data-act="rw-redeem" ${acc.points >= 1000 ? '' : 'disabled'}>Redeem</button></div>
+      <h4 class="d-h">${icon('i-history')} Points history</h4>
+      <ul class="activity ledger">${acc.ledger.length ? acc.ledger.slice(0, 14).map((x) => `<li><b class="${x.pts < 0 ? 'neg' : 'pos'}">${x.pts > 0 ? '+' : ''}${x.pts.toLocaleString()}</b><span>${esc(x.text)}</span><small>${ago(x.t)}</small></li>`).join('') : '<li><span class="muted">No points yet — check in to start.</span></li>'}</ul>`;
+  }
+  function questGo(id) {
+    const q = QUESTS.find((x) => x.id === id);
+    if (!q) return;
+    if (q.tab) { acctTab = q.tab; renderAccount(); return; }
+    Overlay.close('acctOv');
+    if (q.run === 'cmd') { setTimeout(openCmd, 150); return; }
+    setTimeout(() => goTo(q.go), 150);
+  }
+  function initExplorer() {
+    const io = new IntersectionObserver((entries) => entries.forEach((en) => { if (en.isIntersecting) rewardActivity('section', en.target.id); }), { threshold: 0.3 });
+    ['labs', 'enhance', 'knowledge', 'shop'].forEach((id) => { const el = $('#' + id); if (el) io.observe(el); });
   }
 
   /* =========================================================
@@ -2301,6 +2765,7 @@
     if (Overlay.isOpen('acctOv')) renderAccount();
     if (Overlay.isOpen('cartOv')) renderCart();
     if (Overlay.isOpen('checkoutOv') && co && co.step !== 'done') renderCheckout();
+    if (Overlay.isOpen('moneyOv')) renderMoney();
   }
 
   /* =========================================================
@@ -2316,6 +2781,9 @@
       { label: acc ? (unlocked() ? 'Open my Databell ID' : 'Unlock Databell ID') : 'Sign in or create a Databell ID', icon: 'i-user', run: acctClick }
     ];
     if (acc) actions.push({ label: 'Open Databell Inbox', icon: 'i-inbox', run: () => openInbox() });
+    actions.push({ label: 'Earn points — daily check-in, lucky spin & quests', icon: 'i-gift', run: () => (me() ? requireUnlocked(() => openAccount('rewards')) : acctClick()) });
+    actions.push({ label: 'Add money — top up, exercises & quizzes', icon: 'i-wallet', run: () => openMoney() });
+    actions.push({ label: 'BDAI subscription plans', icon: 'i-star', run: () => (me() ? requireUnlocked(() => openAccount('plan')) : acctClick()) });
     if (acc && unlocked()) actions.push({ label: 'Lock Databell ID now', icon: 'i-lock', run: () => lockSession(false) }, { label: 'Sign out', icon: 'i-logout', run: signOut });
     if (acc) actions.push({ label: 'Forgot PIN — recover with key or inbox', icon: 'i-key', run: () => auth('forgot', { email: acc.email }) });
     const pages = [['Home', '#home'], ['Company', '#about'], ['Ecosystem', '#ecosystem'], ['DatabellSoftwareLabs', '#labs'], ['TechEnhance', '#enhance'], ['TechKnowledge', '#knowledge'], ['Databell Store', '#shop'], ['Technology stack', '#stack'], ['Impact', '#impact'], ['Client stories', '#stories'], ['Plans', '#plans'], ['FAQ', '#faq'], ['Contact', '#contact']]
@@ -2340,7 +2808,7 @@
     const sel = $('#cmdList .sel');
     if (sel) sel.scrollIntoView({ block: 'nearest' });
   }
-  function openCmd() { $('#cmdInput').value = ''; cmd.sel = 0; Overlay.open('cmdOv'); renderCmd(); $('#cmdInput').focus(); }
+  function openCmd() { $('#cmdInput').value = ''; cmd.sel = 0; Overlay.open('cmdOv'); renderCmd(); $('#cmdInput').focus(); setTimeout(() => rewardActivity('cmdk'), 1500); }
   function runCmd(i) { const it = cmd.items[i]; if (!it) return; Overlay.close('cmdOv'); setTimeout(it.run, 80); }
   function initCmd() {
     const input = $('#cmdInput');
@@ -2397,13 +2865,13 @@
       case 'co-next': co.step = coSteps()[1]; renderCheckout(); break;
       case 'co-back': { const s = coSteps(); co.step = s[Math.max(0, s.indexOf(co.step) - 1)]; renderCheckout(); break; }
       case 'co-cart': Overlay.close('checkoutOv'); openCart(); break;
-      case 'co-topup': if (acc) { topUp(acc, +el.dataset.amt); renderCheckout(); } break;
+      case 'co-topup': if (acc) topUpWithPin(+el.dataset.amt).then((ok) => { if (ok) renderCheckout(); }); break;
       case 'co-pay': payNow(); break;
       case 'co-orders': Overlay.close('checkoutOv'); openAccount('orders'); break;
       case 'co-close': Overlay.close('checkoutOv'); break;
       // account
       case 'tab': acctTab = el.dataset.tab; renderAccount(); break;
-      case 'topup': if (acc) { topUp(acc, +el.dataset.amt); renderAccount(); } break;
+      case 'topup': openMoney('topup'); break;
       case 'lock': lockSession(false); break;
       case 'signout': signOut(); break;
       case 'change-pin': auth('changePin'); break;
@@ -2445,6 +2913,42 @@
         if (key) downloadText('databell-security-key.txt', `Databell ID security key\n\nAccount: ${email}\nKey:     ${key}\nCreated: ${new Date().toString()}\n\nKeep this file private. Anyone with this key can reset your PIN.\n`);
         break;
       }
+      case 'money-open': openMoney(); break;
+      case 'm-tab': addm.tab = el.dataset.tab; addm.quiz = null; renderMoney(); break;
+      case 'm-amt': addm.amount = +el.dataset.amt; renderMoney(); break;
+      case 'm-topup': topUpWithPin(addm.amount); break;
+      case 'm-collect': collectEarnings(); break;
+      case 'm-quiz-start': {
+        const e = ensureEarn(acc);
+        const id = el.dataset.quiz;
+        if (e.quiz[id] && e.quiz[id].day === today()) break;
+        e.quiz[id] = { day: today(), score: 0 };
+        saveDB();
+        addm.quiz = { id, i: 0, score: 0, picked: undefined };
+        renderMoney();
+        break;
+      }
+      case 'm-quiz-pick': {
+        const st = addm.quiz;
+        if (!st || st.picked !== undefined) break;
+        const qz = MONEY_QUIZZES.find((x) => x.id === st.id);
+        st.picked = +el.dataset.i;
+        if (st.picked === qz.qs[st.i].a) {
+          st.score += 1;
+          ensureEarn(acc).quiz[st.id].score = st.score;
+          earn(acc, QUIZ_PAY, `${qz.name} quiz answer`);
+          toast(`Correct! +${money0(QUIZ_PAY)} pending`, 'i-check');
+        }
+        renderMoney();
+        break;
+      }
+      case 'm-quiz-next': if (addm.quiz) { addm.quiz.i += 1; addm.quiz.picked = undefined; renderMoney(); } break;
+      case 'm-quiz-back': addm.quiz = null; renderMoney(); break;
+      case 'rw-checkin': checkIn(); break;
+      case 'rw-spin': spin(el); break;
+      case 'rw-redeem': redeemPoints(); break;
+      case 'sub-pick': choosePlan(el.dataset.plan); break;
+      case 'quest-go': questGo(el.dataset.quest); break;
       case 'pw-toggle': {
         const input = el.parentElement.querySelector('input');
         const show = input.type === 'password';
@@ -2482,11 +2986,14 @@
   function initPlatform() {
     $('#acctBtn').addEventListener('click', acctClick);
     $('#cartBtn').addEventListener('click', openCart);
+    Object.values(db.accounts).forEach(ensureMember);
+    saveDB();
     initShop();
     initCmd();
+    initExplorer();
     refreshBadges();
     // keep "x min ago" labels and order stages fresh while panels are open
-    setInterval(() => { if (Overlay.isOpen('acctOv') && !$('#acctBody details[open]')) renderAccount(); }, 30000);
+    setInterval(() => { if (Overlay.isOpen('acctOv') && !$('#acctBody details[open]') && !$('.wheel.spinning')) renderAccount(); }, 30000);
   }
 
 
