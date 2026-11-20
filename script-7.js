@@ -3063,7 +3063,8 @@
   });
 
   /* ---------------- Boot ---------------- */
-  document.addEventListener('DOMContentLoaded', () => {
+  // Works whether this file loads before or after the page is parsed (index-9 loads it on demand)
+  const boot = () => {
     $('#year').textContent = new Date().getFullYear();
     initTheme();
     initHeader();
@@ -3081,5 +3082,7 @@
     initForms();
     initPlatform();
     runPreloader();
-  });
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })();

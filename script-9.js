@@ -1311,6 +1311,7 @@
     .concat(LAB.map((f) => ({ group: 'Code Lab', label: f.name, hint: f.mode === 'sim' ? 'simulated' : 'runs live', icon: 'i-terminal', run: () => { labOpen(f.id); goTo('#codelab'); } })))
     .concat(ARCH_FLOWS.map((f) => ({ group: 'Architecture', label: `Trace: ${f.name}`, icon: f.icon, run: () => { goTo('#architecture'); setTimeout(() => archTrace(f.id), 500); } }))));
 
-  // script-7.js boots first (deferred scripts run in order), then the Hub
-  document.addEventListener('DOMContentLoaded', initHub);
+  // script-7.js always loads first, so its boot is queued (or done) before the Hub's
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initHub);
+  else initHub();
 })();

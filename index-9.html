@@ -11,11 +11,24 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <!-- Base site (version 7). It is looked for in its own sub-folder first, then next to this file.
+       Change BASE_7 here and in the loader below if the folder is renamed. -->
+  <link rel="stylesheet" href="../App%207%20-%20BDAI%20Technology%20Extension%20Website/style-7.css">
   <link rel="stylesheet" href="style-7.css">
+  <!-- Hub (version 9) -->
   <link rel="stylesheet" href="style-9.css">
   <script>document.documentElement.classList.remove('no-js');try{var t=localStorage.getItem('databell-theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
-  <script src="script-7.js" defer></script>
-  <script src="script-9.js" defer></script>
+  <script>
+    // Load script-7.js from the version-7 sub-folder (or this folder), then script-9.js
+    (function () {
+      var BASE_7 = ['../App 7 - BDAI Technology Extension Website/', ''];
+      function load(src, done, fail) { var s = document.createElement('script'); s.src = encodeURI(src); s.onload = done; s.onerror = fail; document.head.appendChild(s); }
+      (function next(i) {
+        if (i >= BASE_7.length) { load('script-9.js'); return; }
+        load(BASE_7[i] + 'script-7.js', function () { load('script-9.js'); }, function () { next(i + 1); });
+      })(0);
+    })();
+  </script>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
@@ -1334,20 +1347,21 @@
   </div>
   <!-- Load check: shows which file is missing if the page can't find its CSS or JS -->
   <script>
-    window.addEventListener('load', function () {
+    window.addEventListener('load', function () { setTimeout(check, 600); });
+    function check() {
       var css = getComputedStyle(document.documentElement), missing = [];
-      if (!css.getPropertyValue('--bg').trim()) missing.push('style-7.css');
+      if (!css.getPropertyValue('--bg').trim()) missing.push('style-7.css (looked in ../App 7 - BDAI Technology Extension Website/ and in this folder)');
       if (!css.getPropertyValue('--c-math').trim()) missing.push('style-9.css');
-      if (!window.Databell) missing.push('script-7.js (the copy from this branch, with the "Extension API" block at the end)');
+      if (!window.Databell) missing.push('the updated script-7.js (it must have the "Extension API" block near the end; the original version does not)');
       else if (!document.querySelector('#archLayers .anode')) missing.push('script-9.js');
       if (!missing.length) return;
       var box = document.createElement('div');
       box.setAttribute('role', 'alert');
       box.style.cssText = 'position:fixed;left:12px;right:12px;top:12px;z-index:99999;padding:14px 18px;border-radius:12px;background:#7f1d1d;color:#fff;font:15px/1.5 system-ui,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.4)';
       box.innerHTML = '<b>index-9.html could not load:</b> ' + missing.join(', ') +
-        '.<br>Put index-9.html, style-7.css, style-9.css, script-7.js, script-9.js and the assets-8 folder together in one folder, then reload.';
+        '.<br>Expected layout: the -7 files in “App 7 - BDAI Technology Extension Website/”, and index-9.html, style-9.css, script-9.js and assets-8/ together in a sibling folder (or all files in one folder).';
       document.body.appendChild(box);
-    });
+    }
   </script>
 </body>
 </html>
