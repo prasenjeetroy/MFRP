@@ -1332,5 +1332,22 @@
       <div id="modalBody" class="modal-body"></div>
     </article>
   </div>
+  <!-- Load check: shows which file is missing if the page can't find its CSS or JS -->
+  <script>
+    window.addEventListener('load', function () {
+      var css = getComputedStyle(document.documentElement), missing = [];
+      if (!css.getPropertyValue('--bg').trim()) missing.push('style-7.css');
+      if (!css.getPropertyValue('--c-math').trim()) missing.push('style-9.css');
+      if (!window.Databell) missing.push('script-7.js (the copy from this branch, with the "Extension API" block at the end)');
+      else if (!document.querySelector('#archLayers .anode')) missing.push('script-9.js');
+      if (!missing.length) return;
+      var box = document.createElement('div');
+      box.setAttribute('role', 'alert');
+      box.style.cssText = 'position:fixed;left:12px;right:12px;top:12px;z-index:99999;padding:14px 18px;border-radius:12px;background:#7f1d1d;color:#fff;font:15px/1.5 system-ui,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.4)';
+      box.innerHTML = '<b>index-9.html could not load:</b> ' + missing.join(', ') +
+        '.<br>Put index-9.html, style-7.css, style-9.css, script-7.js, script-9.js and the assets-8 folder together in one folder, then reload.';
+      document.body.appendChild(box);
+    });
+  </script>
 </body>
 </html>
