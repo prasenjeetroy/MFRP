@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Essence Lab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Mathematics, science, coding and technology with Mathopea, Experimentium and Databell Software Labs: papers, sheets, quizzes, a survey and live code editors.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&family=Sora:wght@500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap">
+<link rel="stylesheet" href="style-10.css">
+</head>
+<body>
+
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="#top"><span class="brand-mark">&lt;/&gt;</span>The Essence Lab</a>
+    <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="siteNav">menu</button>
+    <nav class="nav" id="siteNav" aria-label="Sections">
+      <a href="#studios">Studios</a>
+      <a href="#essence">Essence</a>
+      <a href="#decks">Presentations</a>
+      <a href="#papers">Papers</a>
+      <a href="#sheets">Math Sheets</a>
+      <a href="#quiz">Quizzes</a>
+      <a href="#survey">Survey</a>
+      <a href="#lab">Code Lab</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+<!-- ============================== HERO ============================== -->
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-copy">
+      <div class="prompt"><span>&gt; welcome()</span><span>guests = 3</span><span>status: "ready"</span></div>
+      <h1>Where <span class="hl-math">mathematics</span>, <span class="hl-sci">experiments</span> and <span class="hl-data">data</span> meet <span class="hl-code">code</span>.</h1>
+      <p class="lede">Three studios, one idea: patterns become programs. Read the papers, practise on generated math sheets, test yourself with quizzes, and write HTML, CSS, JavaScript or Python in the live Code Lab.</p>
+      <div class="cta-row">
+        <a class="btn primary" href="#lab">Open the Code Lab</a>
+        <a class="btn" href="#papers">Read the papers</a>
+        <a class="btn ghost" href="#quiz">Take a quiz</a>
+      </div>
+    </div>
+    <figure class="hero-figure" aria-label="Animated lemniscate of Bernoulli, the infinity curve in the Mathopea logo">
+      <div class="fig-bar"><span class="dots"><i></i><i></i><i></i></span><span>lemniscate.js</span></div>
+      <canvas id="heroCanvas" width="640" height="400"></canvas>
+      <figcaption class="fig-caption"><span>(x² + y²)² = a²(x² − y²)</span><em id="heroReadout">t = 0.00 rad</em></figcaption>
+    </figure>
+  </div>
+  <div class="logo-strip">
+    <div class="wrap">
+      <span class="label">Featuring</span>
+      <a class="logo-chip" href="#studio-mathopea"><img src="assets/mathopea-logo.png" alt="Mathopea logo" width="44" height="44">Mathopea</a>
+      <a class="logo-chip" href="#studio-experimentium"><img class="wide" src="assets/experimentium-logo.png" alt="Experimentium logo" width="111" height="36"></a>
+      <a class="logo-chip" href="#studio-databell"><img src="assets/databell-logo.png" alt="Databell logo" width="44" height="44">Databell Software Labs</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== STUDIOS ============================== -->
+<section class="section" id="studios">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">// chief_guests</span>
+      <h2>Three studios, three ways of knowing</h2>
+      <p>Mathopea proves it, Experimentium tests it, and Databell Software Labs measures it. Every card carries the snippet from the studio's showcase slide. Press <b>Run in lab</b> to try it.</p>
+    </div>
+    <div class="grid grid-3">
+      <article class="card studio" data-studio="mathopea" id="studio-mathopea">
+        <div class="studio-top">
+          <img class="studio-logo" src="assets/mathopea-logo.png" alt="Mathopea infinity logo" width="72" height="72">
+          <div><h3>Mathopea</h3><span class="tag">by Experimentium · math as code</span></div>
+        </div>
+        <p>Mathematics meets programming. Sequences, primes and proofs become short, readable functions, and maths puzzles become coding challenges.</p>
+        <div class="code">
+          <div class="code-head"><span>mathopea.py</span><button type="button" data-load="py:fibonacci">Run in lab</button></div>
+<pre><span class="tok-c"># Fibonacci: a classic maths-meets-code idea</span>
+<span class="tok-k">def</span> <span class="tok-f">fib</span>(n):
+    a, b = <span class="tok-n">0</span>, <span class="tok-n">1</span>
+    <span class="tok-k">for</span> _ <span class="tok-k">in</span> range(n):
+        a, b = b, a + b
+    <span class="tok-k">return</span> a
+print([fib(i) <span class="tok-k">for</span> i <span class="tok-k">in</span> range(<span class="tok-n">10</span>)])
+<span class="tok-c"># [0, 1, 1, 2, 3, 5, 8, 13, 21, 34]</span></pre>
+        </div>
+        <div class="focus"><span class="pill">algorithms</span><span class="pill">logic</span><span class="pill">problem solving</span></div>
+      </article>
+
+      <article class="card studio" data-studio="experimentium" id="studio-experimentium">
+        <div class="studio-top">
+          <img class="studio-logo wide" src="assets/experimentium-logo.png" alt="Experimentium, A Scientific Journey logo" width="150" height="56">
+        </div>
+        <div><h3>Experimentium</h3><span class="tag">a scientific journey · build, test, learn</span></div>
+        <p>Hands-on experimentation with technology. Hypothesis, test, measure: small code experiments make ideas testable in minutes.</p>
+        <div class="code">
+          <div class="code-head"><span>factorial.js</span><button type="button" data-load="js:factorial">Run in lab</button></div>
+<pre><span class="tok-c">// Factorial calculator</span>
+<span class="tok-k">function</span> <span class="tok-f">factorial</span>(n) {
+  <span class="tok-k">if</span> (n &lt; <span class="tok-n">0</span>) <span class="tok-k">return</span> <span class="tok-k">null</span>;
+  <span class="tok-k">let</span> result = <span class="tok-n">1</span>;
+  <span class="tok-k">for</span> (<span class="tok-k">let</span> i = <span class="tok-n">2</span>; i &lt;= n; i++) result *= i;
+  <span class="tok-k">return</span> result;
+}
+console.log(<span class="tok-s">`5! =`</span>, factorial(<span class="tok-n">5</span>)); <span class="tok-c">// 5! = 120</span></pre>
+        </div>
+        <div class="focus"><span class="pill">prototypes</span><span class="pill">testing</span><span class="pill">innovation</span></div>
+      </article>
+
+      <article class="card studio" data-studio="databell" id="studio-databell">
+        <div class="studio-top">
+          <img class="studio-logo" src="assets/databell-logo.png" alt="Databell BDAI logo" width="72" height="72">
+          <div><h3>Databell Software Labs</h3><span class="tag">BDAI · data to decisions</span></div>
+        </div>
+        <p>Software engineering and data. Databases and analytics guide what apps should do next, from raw events to clear insight.</p>
+        <div class="code">
+          <div class="code-head"><span>query.sql</span><button type="button" data-load="py:sql">Run in lab</button></div>
+<pre><span class="tok-c">-- Top 5 most-used app features</span>
+<span class="tok-k">SELECT</span> feature, <span class="tok-f">COUNT</span>(*) <span class="tok-k">AS</span> uses
+<span class="tok-k">FROM</span> app_events
+<span class="tok-k">WHERE</span> event_date &gt;= <span class="tok-s">'2026-01-01'</span>
+<span class="tok-k">GROUP BY</span> feature
+<span class="tok-k">ORDER BY</span> uses <span class="tok-k">DESC</span>
+<span class="tok-k">LIMIT</span> <span class="tok-n">5</span>;</pre>
+        </div>
+        <div class="focus"><span class="pill">apps</span><span class="pill">databases</span><span class="pill">analytics</span></div>
+      </article>
+    </div>
+
+    <h3 class="sub-title">All together: one tiny pipeline <small>together.py</small></h3>
+    <div class="pipeline">
+      <div class="pipeline-copy">
+        <div class="flow" aria-label="Pipeline: Mathopea, then Experimentium, then Databell">
+          <div class="flow-node m">Mathopea<small>define f(n) = √n</small></div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node e">Experimentium<small>run it 100 times</small></div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node d">Databell<small>average the rows</small></div>
+        </div>
+        <p>Maths supplies the model, the experiment produces rows of data, and analysis turns rows into one number you can act on. The mean of √0 … √99 is about 6.61.</p>
+      </div>
+      <div class="code">
+        <div class="code-head"><span>together.py</span><button type="button" data-load="py:together">Run in lab</button></div>
+<pre><span class="tok-c"># Math -&gt; Experiment -&gt; Data</span>
+<span class="tok-k">import</span> math
+<span class="tok-k">def</span> <span class="tok-f">experiment</span>(n):
+    <span class="tok-k">return</span> [math.sqrt(i) <span class="tok-k">for</span> i <span class="tok-k">in</span> range(n)]
+<span class="tok-k">def</span> <span class="tok-f">analyse</span>(rows):
+    <span class="tok-k">return</span> sum(rows) / len(rows)
+print(analyse(experiment(<span class="tok-n">100</span>)))</pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== ESSENCE ============================== -->
+<section class="section alt" id="essence">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">// the_essence</span>
+      <h2>The essence of mathematics, science, coding and technology</h2>
+      <p>Four disciplines, one habit of mind: state the problem precisely, find the pattern, and check the answer against reality.</p>
+    </div>
+    <div class="grid grid-4">
+      <article class="card pillar" data-p="math">
+        <span class="sym">∞</span>
+        <h3>Mathematics</h3>
+        <p>The study of pattern and proof. A theorem, once proved, stays true forever.</p>
+        <ul><li>Abstraction: numbers, shapes, functions</li><li>Proof: certainty from axioms</li><li>Models that describe nature</li></ul>
+      </article>
+      <article class="card pillar" data-p="sci">
+        <span class="sym">⚛</span>
+        <h3>Science</h3>
+        <p>Asking nature questions and letting experiments answer. Every result stays open to a better test.</p>
+        <ul><li>Hypothesis → experiment → measure</li><li>Reproducible results</li><li>Error bars and honest uncertainty</li></ul>
+      </article>
+      <article class="card pillar" data-p="code">
+        <span class="sym">&lt;/&gt;</span>
+        <h3>Coding</h3>
+        <p>Problem solving, not typing. A program is a recipe a computer can follow exactly.</p>
+        <ul><li>Decompose, find patterns, abstract</li><li>Variables, control flow, functions</li><li>Tested, tracked, debugged</li></ul>
+      </article>
+      <article class="card pillar" data-p="tech">
+        <span class="sym">⌬</span>
+        <h3>Technology</h3>
+        <p>A stack of layers, each hiding the complexity of the one below it.</p>
+        <ul><li>Hardware → OS → runtimes → apps</li><li>Source → compiler → machine code</li><li>APIs and the cloud connect it all</li></ul>
+      </article>
+    </div>
+
+    <h3 class="sub-title">Coding is problem solving, not typing <small>four steps</small></h3>
+    <div class="steps">
+      <div class="step"><h4>Decompose</h4><p>Break a big problem into small, solvable pieces.</p></div>
+      <div class="step"><h4>Find patterns</h4><p>Spot what repeats so you can solve it once.</p></div>
+      <div class="step"><h4>Abstract</h4><p>Hide the details; keep only what matters.</p></div>
+      <div class="step"><h4>Write the steps</h4><p>Express the solution as precise instructions.</p></div>
+    </div>
+    <div class="ipo" aria-label="A program is a recipe: input, process, output">
+      <span class="box"><b>INPUT</b> ingredients (data)</span><span>→</span>
+      <span class="box"><b>PROCESS</b> steps (instructions)</span><span>→</span>
+      <span class="box"><b>OUTPUT</b> the finished dish (result)</span>
+    </div>
+
+    <div class="two-col" style="margin-top:48px">
+      <div>
+        <h3 class="sub-title" style="margin-top:0">Technology is a stack of layers</h3>
+        <div class="stack">
+          <div class="layer" style="--i:4"><b>Applications</b><span>browsers, games, banking apps</span></div>
+          <div class="layer" style="--i:3"><b>Frameworks &amp; libraries</b><span>React, Django, NumPy</span></div>
+          <div class="layer" style="--i:2"><b>Languages &amp; runtimes</b><span>Python, JavaScript, Java</span></div>
+          <div class="layer" style="--i:1"><b>Operating system</b><span>Windows, macOS, Linux, Android</span></div>
+          <div class="layer" style="--i:0"><b>Hardware</b><span>CPU, memory, storage, network</span></div>
+        </div>
+        <p class="stack-note">Each layer hides the complexity of the one below it.</p>
+      </div>
+      <div>
+        <h3 class="sub-title" style="margin-top:0">Big-O: how work grows with input</h3>
+        <div class="bigo" id="bigo">
+          <div class="bigo-ctrl"><label for="bigoN">Input size n</label><input type="range" id="bigoN" min="1" max="6" step="1" value="3"><output id="bigoOut">n = 1,000</output></div>
+          <!-- rows rendered by script-10.js -->
+        </div>
+        <p class="stack-note">Bar length uses a log scale: each tick of the slider multiplies n by 10.</p>
+      </div>
+    </div>
+
+    <h3 class="sub-title">The four pillars of object-oriented programming</h3>
+    <div class="oop-grid">
+      <div class="card oop"><h4>Encapsulation</h4><p>Keep data private and expose safe methods. A car dashboard hides the engine.</p><code>self._balance</code></div>
+      <div class="card oop"><h4>Inheritance</h4><p>Child classes reuse and extend a parent. Every Dog is an Animal.</p><code>class Dog(Animal):</code></div>
+      <div class="card oop"><h4>Polymorphism</h4><p>One method name, many behaviours. speak() works for Dog and Cat.</p><code>pet.speak()</code></div>
+      <div class="card oop"><h4>Abstraction</h4><p>Show what it does, hide how it works. You press the pedal, not the fuel pump.</p><code>class Shape(ABC):</code></div>
+    </div>
+
+    <h3 class="sub-title">SOLID: five habits of clean code</h3>
+    <div class="solid">
+      <div><b>S</b><strong>Single Responsibility</strong><span>One reason to change.</span></div>
+      <div><b>O</b><strong>Open / Closed</strong><span>Open for extension, closed for modification.</span></div>
+      <div><b>L</b><strong>Liskov Substitution</strong><span>A subclass works wherever its parent does.</span></div>
+      <div><b>I</b><strong>Interface Segregation</strong><span>Prefer small, focused interfaces.</span></div>
+      <div><b>D</b><strong>Dependency Inversion</strong><span>Depend on abstractions, not concrete classes.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== DECKS ============================== -->
+<section class="section" id="decks">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">// presentations</span>
+      <h2>The two decks, slide by slide</h2>
+      <p>Both presentations, rebuilt for the web. Use the arrow buttons or your keyboard's ← → keys while the deck is focused.</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="Choose a presentation">
+      <button class="tab" role="tab" id="deckTab-bdai" aria-selected="true" data-deck="bdai">The Essence of Coding &amp; Technology · BDAI</button>
+      <button class="tab" role="tab" id="deckTab-guests" aria-selected="false" data-deck="guests">Mathopea, Experimentium &amp; Databell Software Labs</button>
+    </div>
+    <div class="deck" id="deck" tabindex="0" aria-roledescription="slide deck">
+      <div class="slide" id="slide" aria-live="polite"></div>
+      <div class="deck-ctrl">
+        <button class="btn small" type="button" id="prevSlide">← Prev</button>
+        <button class="btn small primary" type="button" id="nextSlide">Next →</button>
+        <span class="count" id="slideCount">01 / 16</span>
+        <div class="deck-dots" id="deckDots"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== PAPERS ============================== -->
+<section class="section alt" id="papers">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">// mathopea_papers</span>
+      <h2>Mathematics papers</h2>
+      <p>Four short expository papers from the Mathopea series. Each includes definitions, theorems with proofs, data tables and a program you can run in the Code Lab.</p>
+    </div>
+    <div class="papers">
+      <div class="paper-list" role="tablist" aria-label="Papers" id="paperList">
+        <button class="paper-btn" role="tab" aria-selected="true" data-paper="p1"><small>MP-01 · Analysis</small><b>Harmonic numbers and a series that never stops growing</b><span>8 min read</span></button>
+        <button class="paper-btn" role="tab" aria-selected="false" data-paper="p2"><small>MP-02 · Number theory</small><b>Fibonacci numbers and the golden ratio</b><span>7 min read</span></button>
+        <button class="paper-btn" role="tab" aria-selected="false" data-paper="p3"><small>MP-03 · Primes</small><b>On the infinitude and distribution of primes</b><span>8 min read</span></button>
+        <button class="paper-btn" role="tab" aria-selected="false" data-paper="p4"><small>MP-04 · Complex analysis</small><b>Euler's identity: five constants in one line</b><span>6 min read</span></button>
+      </div>
+
+      <div>
+<!-- ---------- Paper 1 ---------- -->
+<article class="paper" id="p1" role="tabpanel">
+  <div class="p-meta"><span>Mathopea Paper MP-01</span><span>Analysis · Series</span><span>November 2026</span></div>
+  <h3>Harmonic Numbers and a Series That Never Stops Growing</h3>
+  <p class="authors">Mathopea Studio, by Experimentium</p>
+  <div class="abstract"><b>Abstract</b>The harmonic numbers <span class="math">H<sub>n</sub></span> are the partial sums of 1 + ½ + ⅓ + …. Although each new term is smaller than the last, the sums grow without bound. We give Oresme's fourteenth-century proof of divergence, bound <span class="math">H<sub>n</sub></span> between two logarithms, show that no harmonic number after the first is an integer, and close with an application to the coupon collector's problem.</div>
+  <p class="keywords"><b>Keywords:</b> harmonic series, divergence, Euler–Mascheroni constant, logarithm, coupon collector</p>
+
+  <h4>1. Definition</h4>
+  <p>For every positive integer <span class="math">n</span>, the <i>n</i>-th harmonic number is</p>
+  <span class="display-math" data-eq="1.1"><span class="math">H<sub>n</sub></span> = 1 + <span class="frac"><span>1</span><span>2</span></span> + <span class="frac"><span>1</span><span>3</span></span> + ⋯ + <span class="frac"><span>1</span><span><i>n</i></span></span> = <span class="up">Σ</span><sub><i>k</i>=1</sub><sup><i>n</i></sup> <span class="frac"><span>1</span><span><i>k</i></span></span></span>
+  <p>The first ten values, computed exactly with Python's <code>fractions</code> module, are:</p>
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>n</th><th>H<sub>n</sub> (exact)</th><th>H<sub>n</sub> (decimal)</th><th>ln n + γ</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>1</td><td>1.000000</td><td>0.577216</td></tr>
+      <tr><td>2</td><td>3/2</td><td>1.500000</td><td>1.270363</td></tr>
+      <tr><td>3</td><td>11/6</td><td>1.833333</td><td>1.675828</td></tr>
+      <tr><td>4</td><td>25/12</td><td>2.083333</td><td>1.963510</td></tr>
+      <tr><td>5</td><td>137/60</td><td>2.283333</td><td>2.186654</td></tr>
+      <tr><td>6</td><td>49/20</td><td>2.450000</td><td>2.368975</td></tr>
+      <tr><td>7</td><td>363/140</td><td>2.592857</td><td>2.523126</td></tr>
+      <tr><td>8</td><td>761/280</td><td>2.717857</td><td>2.656657</td></tr>
+      <tr><td>9</td><td>7129/2520</td><td>2.828968</td><td>2.774440</td></tr>
+      <tr><td>10</td><td>7381/2520</td><td>2.928968</td><td>2.879801</td></tr>
+    </tbody>
+  </table></div>
+
+  <h4>2. The harmonic series diverges</h4>
+  <div class="theorem"><b>Theorem 1 (Oresme, c. 1350).</b> The sequence <span class="math">H<sub>n</sub></span> is unbounded. In particular <span class="math">H<sub>2<sup>m</sup></sub> ≥ 1 + <span class="frac"><span><i>m</i></span><span>2</span></span></span> for every <span class="math">m ≥ 0</span>.</div>
+  <p class="proof">Group the terms in blocks that end at powers of two: 1 + ½ + (⅓ + ¼) + (⅕ + ⅙ + ⅐ + ⅛) + …. The block that ends at <span class="math">2<sup>j</sup></span> has <span class="math">2<sup>j−1</sup></span> terms, each at least <span class="math">1/2<sup>j</sup></span>, so the block sums to at least ½. After <span class="math">m</span> blocks the total is at least <span class="math">1 + m/2</span>, which exceeds any bound as <span class="math">m</span> grows.</p>
+  <p>The growth is very slow. To pass 10 you need 12,367 terms; to pass 20 you need about 272 million.</p>
+
+  <h4>3. How fast does it grow?</h4>
+  <p>Comparing the sum with the area under <span class="math">y = 1/x</span> traps each harmonic number between two logarithms:</p>
+  <span class="display-math" data-eq="3.1"><span class="math">ln(<i>n</i> + 1) &lt; H<sub>n</sub> ≤ 1 + ln <i>n</i></span></span>
+  <p>The gap <span class="math">H<sub>n</sub> − ln n</span> decreases and converges to the Euler–Mascheroni constant <span class="math">γ ≈ 0.5772156649</span>. A sharper estimate is</p>
+  <span class="display-math" data-eq="3.2"><span class="math">H<sub>n</sub> ≈ ln <i>n</i> + γ + <span class="frac"><span>1</span><span>2<i>n</i></span></span> − <span class="frac"><span>1</span><span>12<i>n</i><sup>2</sup></span></span></span></span>
+  <p>For <span class="math">n = 10</span> this gives 2.928968, matching the exact value to six decimal places. Nobody knows yet whether <span class="math">γ</span> is rational.</p>
+
+  <h4>4. Only the first harmonic number is an integer</h4>
+  <div class="theorem"><b>Theorem 2 (Taeisinger, 1915).</b> For <span class="math">n ≥ 2</span>, <span class="math">H<sub>n</sub></span> is not an integer.</div>
+  <p class="proof">Let <span class="math">2<sup>s</sup></span> be the largest power of two with <span class="math">2<sup>s</sup> ≤ n</span>, and let <span class="math">L</span> be the least common multiple of 1, …, <span class="math">n</span>. Multiply <span class="math">H<sub>n</sub></span> by <span class="math">L/2</span>. Every term <span class="math">L/(2k)</span> is an integer except the term with <span class="math">k = 2<sup>s</sup></span>, because only that <span class="math">k</span> contains the full power <span class="math">2<sup>s</sup></span>. So <span class="math">(L/2)·H<sub>n</sub></span> equals an integer plus one half, and cannot be an integer. If <span class="math">H<sub>n</sub></span> were an integer, <span class="math">(L/2)·H<sub>n</sub></span> would be one too, since <span class="math">L/2</span> is an integer.</p>
+
+  <h4>5. Application: the coupon collector</h4>
+  <p>A cereal brand hides one of <span class="math">n</span> equally likely cards in each box. The expected number of boxes needed to collect all <span class="math">n</span> cards is</p>
+  <span class="display-math" data-eq="5.1"><span class="math">E[<i>T</i>] = <i>n</i> · H<sub>n</sub></span></span>
+  <p>When you already hold <span class="math">k</span> cards, a new card appears with probability <span class="math">(n−k)/n</span>, so you wait on average <span class="math">n/(n−k)</span> boxes. Summing over <span class="math">k = 0, …, n−1</span> gives <span class="math">n·H<sub>n</sub></span>. For 50 cards that is about 225 boxes.</p>
+
+  <h4>6. Computation</h4>
+  <p>The repository's <code>harmonic_numbers.py</code> computes <span class="math">H<sub>n</sub></span> exactly with <code>Fraction</code>. The Code Lab version prints the table above and checks bound (3.1).</p>
+
+  <h4>References</h4>
+  <ol class="refs">
+    <li>N. Oresme, <i>Quaestiones super Geometriam Euclidis</i>, c. 1350.</li>
+    <li>L. Euler, "De progressionibus harmonicis observationes," 1734.</li>
+    <li>D. E. Knuth, <i>The Art of Computer Programming</i>, Vol. 1, §1.2.7.</li>
+    <li>R. Graham, D. Knuth, O. Patashnik, <i>Concrete Mathematics</i>, ch. 6.</li>
+  </ol>
+  <div class="paper-actions"><button class="btn small primary" type="button" data-load="py:harmonic">Run harmonic_numbers.py in the lab</button><button class="btn small" type="button" data-load="py:coupon">Simulate the coupon collector</button></div>
+</article>
+
+<!-- ---------- Paper 2 ---------- -->
+<article class="paper" id="p2" role="tabpanel" hidden>
+  <div class="p-meta"><span>Mathopea Paper MP-02</span><span>Number theory · Recurrences</span><span>November 2026</span></div>
+  <h3>Fibonacci Numbers and the Golden Ratio</h3>
+  <p class="authors">Mathopea Studio, by Experimentium</p>
+  <div class="abstract"><b>Abstract</b>The Fibonacci sequence starts 0, 1 and adds the last two terms to get the next. We show that the ratio of consecutive terms converges to the golden ratio <span class="math">φ</span>, derive Binet's closed formula, prove Cassini's identity, and note where the sequence appears in plants.</div>
+  <p class="keywords"><b>Keywords:</b> recurrence relation, golden ratio, Binet formula, Cassini identity, phyllotaxis</p>
+
+  <h4>1. Definition</h4>
+  <span class="display-math" data-eq="1.1"><span class="math">F<sub>0</sub> = 0,  F<sub>1</sub> = 1,  F<sub>n</sub> = F<sub>n−1</sub> + F<sub>n−2</sub>  (n ≥ 2)</span></span>
+  <p>The first terms are 0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144.</p>
+
+  <h4>2. Ratios approach φ</h4>
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>n</th><th>F<sub>n</sub></th><th>F<sub>n+1</sub></th><th>F<sub>n+1</sub> / F<sub>n</sub></th><th>distance to φ</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>1</td><td>1</td><td>1.000000</td><td>0.618034</td></tr>
+      <tr><td>2</td><td>1</td><td>2</td><td>2.000000</td><td>0.381966</td></tr>
+      <tr><td>3</td><td>2</td><td>3</td><td>1.500000</td><td>0.118034</td></tr>
+      <tr><td>4</td><td>3</td><td>5</td><td>1.666667</td><td>0.048633</td></tr>
+      <tr><td>5</td><td>5</td><td>8</td><td>1.600000</td><td>0.018034</td></tr>
+      <tr><td>6</td><td>8</td><td>13</td><td>1.625000</td><td>0.006966</td></tr>
+      <tr><td>7</td><td>13</td><td>21</td><td>1.615385</td><td>0.002649</td></tr>
+      <tr><td>8</td><td>21</td><td>34</td><td>1.619048</td><td>0.001014</td></tr>
+      <tr><td>9</td><td>34</td><td>55</td><td>1.617647</td><td>0.000387</td></tr>
+      <tr><td>10</td><td>55</td><td>89</td><td>1.618182</td><td>0.000148</td></tr>
+    </tbody>
+  </table></div>
+  <p>The ratios alternate above and below the limit, and the error shrinks by a factor of about 2.6 (that is, <span class="math">φ<sup>2</sup></span>) at each step.</p>
+  <div class="theorem"><b>Theorem 1.</b> <span class="math">F<sub>n+1</sub>/F<sub>n</sub> → φ = <span class="frac"><span>1 + √5</span><span>2</span></span> ≈ 1.6180339887</span>.</div>
+  <p class="proof">If the limit <span class="math">r</span> exists, dividing the recurrence by <span class="math">F<sub>n</sub></span> gives <span class="math">r = 1 + 1/r</span>, that is, <span class="math">r<sup>2</sup> = r + 1</span>, whose positive root is <span class="math">φ</span>. Existence follows from Binet's formula below, because <span class="math">|ψ/φ| &lt; 1</span>.</p>
+
+  <h4>3. Binet's formula</h4>
+  <p>Look for solutions <span class="math">F<sub>n</sub> = x<sup>n</sup></span>. The recurrence forces <span class="math">x<sup>2</sup> = x + 1</span>, with roots <span class="math">φ</span> and <span class="math">ψ = (1 − √5)/2 ≈ −0.618</span>. Matching <span class="math">F<sub>0</sub></span> and <span class="math">F<sub>1</sub></span> gives</p>
+  <span class="display-math" data-eq="3.1"><span class="math">F<sub>n</sub> = <span class="frac"><span>φ<sup>n</sup> − ψ<sup>n</sup></span><span>√5</span></span></span></span>
+  <p>Since <span class="math">|ψ<sup>n</sup>/√5| &lt; ½</span>, <span class="math">F<sub>n</sub></span> is simply <span class="math">φ<sup>n</sup>/√5</span> rounded to the nearest integer.</p>
+
+  <h4>4. Cassini's identity</h4>
+  <div class="theorem"><b>Theorem 2 (Cassini, 1680).</b> <span class="math">F<sub>n−1</sub>F<sub>n+1</sub> − F<sub>n</sub><sup>2</sup> = (−1)<sup>n</sup></span> for <span class="math">n ≥ 1</span>.</div>
+  <p class="proof">For the matrix <span class="math">Q</span> with rows (1 1) and (1 0), induction shows <span class="math">Q<sup>n</sup></span> has rows <span class="math">(F<sub>n+1</sub> F<sub>n</sub>)</span> and <span class="math">(F<sub>n</sub> F<sub>n−1</sub>)</span>. Take determinants: <span class="math">det Q<sup>n</sup> = (det Q)<sup>n</sup> = (−1)<sup>n</sup></span>, and the left side is exactly <span class="math">F<sub>n+1</sub>F<sub>n−1</sub> − F<sub>n</sub><sup>2</sup></span>.</p>
+  <p>The same matrix gives a fast algorithm: computing <span class="math">Q<sup>n</sup></span> by repeated squaring needs only <span class="math">O(log n)</span> matrix multiplications.</p>
+
+  <h4>5. In nature</h4>
+  <p>Sunflower heads and pine cones show spiral counts such as 21 and 34 or 34 and 55. Seeds placed at successive turns of the golden angle, <span class="math">360°(1 − 1/φ) ≈ 137.5°</span>, pack without gaps, and the visible spirals appear in Fibonacci numbers.</p>
+
+  <h4>References</h4>
+  <ol class="refs">
+    <li>Leonardo of Pisa, <i>Liber Abaci</i>, 1202.</li>
+    <li>J. Binet, "Mémoire sur l'intégration des équations linéaires aux différences finies," 1843.</li>
+    <li>R. Knott, <i>Fibonacci Numbers and the Golden Section</i>, University of Surrey.</li>
+  </ol>
+  <div class="paper-actions"><button class="btn small primary" type="button" data-load="py:golden">Run the golden ratio check</button><button class="btn small" type="button" data-load="web:sunflower">Draw a golden-angle sunflower</button></div>
+</article>
+
+<!-- ---------- Paper 3 ---------- -->
+<article class="paper" id="p3" role="tabpanel" hidden>
+  <div class="p-meta"><span>Mathopea Paper MP-03</span><span>Number theory · Primes</span><span>November 2026</span></div>
+  <h3>On the Infinitude and Distribution of Primes</h3>
+  <p class="authors">Mathopea Studio, by Experimentium</p>
+  <div class="abstract"><b>Abstract</b>A prime is an integer greater than 1 whose only positive divisors are 1 and itself. We present Euclid's proof that the primes never run out, the Sieve of Eratosthenes for listing them, and the Prime Number Theorem, which describes how thinly they are spread. We end with two famous open problems.</div>
+  <p class="keywords"><b>Keywords:</b> primes, Euclid, sieve, prime counting function, prime number theorem</p>
+
+  <h4>1. Primes are the atoms of arithmetic</h4>
+  <p>By the Fundamental Theorem of Arithmetic, every integer <span class="math">n ≥ 2</span> is a product of primes in exactly one way, up to order. For example, <span class="math">360 = 2<sup>3</sup> · 3<sup>2</sup> · 5</span>.</p>
+
+  <h4>2. There are infinitely many primes</h4>
+  <div class="theorem"><b>Theorem 1 (Euclid, c. 300 BC).</b> No finite list contains every prime.</div>
+  <p class="proof">Take any finite list of primes <span class="math">p<sub>1</sub>, …, p<sub>k</sub></span> and let <span class="math">N = p<sub>1</sub>p<sub>2</sub>⋯p<sub>k</sub> + 1</span>. Dividing <span class="math">N</span> by any <span class="math">p<sub>i</sub></span> leaves remainder 1, so no listed prime divides <span class="math">N</span>. But <span class="math">N ≥ 2</span> has at least one prime factor, so that factor is a prime missing from the list.</p>
+
+  <h4>3. Listing primes: the Sieve of Eratosthenes</h4>
+  <p>Write the integers 2 to <span class="math">n</span>. Circle 2 and cross out its multiples, then circle the next uncrossed number and repeat. You only need to sieve with primes up to <span class="math">√n</span>, and the whole process takes <span class="math">O(n log log n)</span> steps.</p>
+
+  <h4>4. How many primes are there below x?</h4>
+  <p>Let <span class="math">π(x)</span> count the primes up to <span class="math">x</span>. Gauss and Legendre guessed that <span class="math">π(x)</span> is close to <span class="math">x / ln x</span>:</p>
+  <div class="table-wrap"><table class="data-table">
+    <thead><tr><th>x</th><th>π(x)</th><th>x / ln x</th><th>ratio</th></tr></thead>
+    <tbody>
+      <tr><td>10</td><td>4</td><td>4.3</td><td>0.921</td></tr>
+      <tr><td>100</td><td>25</td><td>21.7</td><td>1.151</td></tr>
+      <tr><td>1,000</td><td>168</td><td>144.8</td><td>1.161</td></tr>
+      <tr><td>10,000</td><td>1,229</td><td>1,085.7</td><td>1.132</td></tr>
+      <tr><td>100,000</td><td>9,592</td><td>8,685.9</td><td>1.104</td></tr>
+      <tr><td>1,000,000</td><td>78,498</td><td>72,382.4</td><td>1.084</td></tr>
+    </tbody>
+  </table></div>
+  <div class="theorem"><b>Theorem 2 (Prime Number Theorem; Hadamard and de la Vallée Poussin, 1896).</b> <span class="math">π(x) · ln x / x → 1</span> as <span class="math">x → ∞</span>.</div>
+  <p>Put another way, near a large number <span class="math">x</span> roughly one integer in every <span class="math">ln x</span> is prime. Near one million that is about one in 14.</p>
+
+  <h4>5. Open problems</h4>
+  <p><b>Twin prime conjecture.</b> There are infinitely many pairs of primes that differ by 2, such as (11, 13) and (41, 43). Zhang (2013) proved that some gap of at most 70 million occurs infinitely often; the bound now stands at 246.</p>
+  <p><b>Goldbach's conjecture.</b> Every even integer greater than 2 is the sum of two primes, for example 28 = 5 + 23. It has been checked by computer up to 4 × 10<sup>18</sup> but remains unproved.</p>
+
+  <h4>References</h4>
+  <ol class="refs">
+    <li>Euclid, <i>Elements</i>, Book IX, Proposition 20.</li>
+    <li>G. H. Hardy and E. M. Wright, <i>An Introduction to the Theory of Numbers</i>.</li>
+    <li>Y. Zhang, "Bounded gaps between primes," <i>Annals of Mathematics</i>, 2014.</li>
+  </ol>
+  <div class="paper-actions"><button class="btn small primary" type="button" data-load="py:primes">Run the sieve and count primes</button><button class="btn small" type="button" data-load="js:goldbach">Test Goldbach in JavaScript</button></div>
+</article>
+
+<!-- ---------- Paper 4 ---------- -->
+<article class="paper" id="p4" role="tabpanel" hidden>
+  <div class="p-meta"><span>Mathopea Paper MP-04</span><span>Complex analysis</span><span>November 2026</span></div>
+  <h3>Euler's Identity: Five Constants in One Line</h3>
+  <p class="authors">Mathopea Studio, by Experimentium</p>
+  <div class="abstract"><b>Abstract</b>The equation <span class="math">e<sup>iπ</sup> + 1 = 0</span> links the five most important constants in mathematics. We derive it from Euler's formula using power series, explain its geometric meaning as a half-turn of the unit circle, and use it to find the roots of unity.</div>
+  <p class="keywords"><b>Keywords:</b> complex numbers, Euler's formula, Taylor series, unit circle, roots of unity</p>
+
+  <h4>1. The statement</h4>
+  <span class="display-math" data-eq="1.1"><span class="math">e<sup>iπ</sup> + 1 = 0</span></span>
+  <p>It contains <span class="math">0</span> and <span class="math">1</span> (the identities of addition and multiplication), <span class="math">π</span> (geometry), <span class="math">e</span> (growth and calculus) and <span class="math">i</span>, the square root of −1.</p>
+
+  <h4>2. Euler's formula from power series</h4>
+  <p>The Taylor series of the exponential, sine and cosine are</p>
+  <span class="display-math" data-eq="2.1"><span class="math">e<sup>x</sup> = 1 + x + <span class="frac"><span>x<sup>2</sup></span><span>2!</span></span> + <span class="frac"><span>x<sup>3</sup></span><span>3!</span></span> + ⋯,  cos x = 1 − <span class="frac"><span>x<sup>2</sup></span><span>2!</span></span> + <span class="frac"><span>x<sup>4</sup></span><span>4!</span></span> − ⋯,  sin x = x − <span class="frac"><span>x<sup>3</sup></span><span>3!</span></span> + ⋯</span></span>
+  <div class="theorem"><b>Theorem 1 (Euler, 1748).</b> For every real <span class="math">θ</span>, <span class="math">e<sup>iθ</sup> = cos θ + i sin θ</span>.</div>
+  <p class="proof">Substitute <span class="math">x = iθ</span> in the series for <span class="math">e<sup>x</sup></span>. The powers of <span class="math">i</span> cycle through 1, <span class="math">i</span>, −1, −<span class="math">i</span>. The real terms are <span class="math">1 − θ<sup>2</sup>/2! + θ<sup>4</sup>/4! − ⋯ = cos θ</span>, and the imaginary terms are <span class="math">i(θ − θ<sup>3</sup>/3! + ⋯) = i sin θ</span>. The series converge absolutely, so we may regroup them.</p>
+  <p>Setting <span class="math">θ = π</span> gives <span class="math">e<sup>iπ</sup> = cos π + i sin π = −1</span>, which is the identity.</p>
+
+  <h4>3. Geometric meaning</h4>
+  <p>The number <span class="math">e<sup>iθ</sup></span> is the point at angle <span class="math">θ</span> on the unit circle. Multiplying by it rotates the complex plane by <span class="math">θ</span> radians. A rotation by <span class="math">π</span> is a half-turn, which sends 1 to −1.</p>
+
+  <h4>4. Consequence: roots of unity</h4>
+  <p>The equation <span class="math">z<sup>n</sup> = 1</span> has exactly <span class="math">n</span> complex solutions,</p>
+  <span class="display-math" data-eq="4.1"><span class="math">z<sub>k</sub> = e<sup>2πik/n</sup>,  k = 0, 1, …, n − 1</span></span>
+  <p>They sit at the corners of a regular <span class="math">n</span>-gon on the unit circle, and they add up to 0. De Moivre's theorem, <span class="math">(cos θ + i sin θ)<sup>n</sup> = cos nθ + i sin nθ</span>, is the same fact written without exponentials.</p>
+
+  <h4>References</h4>
+  <ol class="refs">
+    <li>L. Euler, <i>Introductio in analysin infinitorum</i>, 1748.</li>
+    <li>T. Needham, <i>Visual Complex Analysis</i>, Oxford, 1997.</li>
+    <li>P. Nahin, <i>Dr. Euler's Fabulous Formula</i>, Princeton, 2006.</li>
+  </ol>
+  <div class="paper-actions"><button class="btn small primary" type="button" data-load="py:euler">Verify Euler's identity in Python</button><button class="btn small" type="button" data-load="web:roots">Draw the roots of unity</button></div>
+</article>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== SHEETS ============================== -->
+<section class="section" id="sheets">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">// math_sheets</span>
+      <h2>Mathematics sheets</h2>
+      <p>A formula reference sheet for quick revision, and a practice worksheet generator that makes a new set of problems every time and marks your answers.</p>
+    </div>
+
+    <h3 class="sub-title" style="margin-top:0">Formula reference sheet</h3>
+    <div class="formula-grid">
+      <div class="card formula-card"><h4>Algebra <small>identities</small></h4><dl>
+        <dt>Square of a sum</dt><dd>(a + b)² = a² + 2ab + b²</dd>
+        <dt>Difference of squares</dt><dd>a² − b² = (a − b)(a + b)</dd>
+        <dt>Quadratic formula, ax² + bx + c = 0</dt><dd>x = <span class="frac"><span>−b ± √(b² − 4ac)</span><span>2a</span></span></dd>
+        <dt>Laws of exponents</dt><dd>aᵐ · aⁿ = aᵐ⁺ⁿ,  (aᵐ)ⁿ = aᵐⁿ</dd>
+      </dl></div>
+      <div class="card formula-card"><h4>Geometry <small>area · volume</small></h4><dl>
+        <dt>Pythagoras (right triangle)</dt><dd>a² + b² = c²</dd>
+        <dt>Circle: circumference, area</dt><dd>C = 2πr,  A = πr²</dd>
+        <dt>Triangle area</dt><dd>A = ½ · base · height</dd>
+        <dt>Sphere: surface, volume</dt><dd>S = 4πr²,  V = <span class="frac"><span>4</span><span>3</span></span>πr³</dd>
+      </dl></div>
+      <div class="card formula-card"><h4>Trigonometry <small>radians</small></h4><dl>
+        <dt>Pythagorean identity</dt><dd>sin²θ + cos²θ = 1</dd>
+        <dt>Tangent</dt><dd>tan θ = sin θ / cos θ</dd>
+        <dt>Special values</dt><dd>sin 30° = ½,  cos 60° = ½,  tan 45° = 1</dd>
+        <dt>Double angle</dt><dd>sin 2θ = 2 sin θ cos θ</dd>
+      </dl></div>
+      <div class="card formula-card"><h4>Calculus <small>derivatives</small></h4><dl>
+        <dt>Power rule</dt><dd>d/dx (xⁿ) = n xⁿ⁻¹</dd>
+        <dt>Exponential and log</dt><dd>d/dx (eˣ) = eˣ,  d/dx (ln x) = 1/x</dd>
+        <dt>Trig</dt><dd>d/dx (sin x) = cos x,  d/dx (cos x) = −sin x</dd>
+        <dt>Product rule</dt><dd>(uv)′ = u′v + uv′</dd>
+      </dl></div>
+      <div class="card formula-card"><h4>Sequences &amp; series <small>sums</small></h4><dl>
+        <dt>Arithmetic sum of n terms</dt><dd>Sₙ = <span class="frac"><span>n</span><span>2</span></span>(a₁ + aₙ)</dd>
+        <dt>Geometric sum, r ≠ 1</dt><dd>Sₙ = a · <span class="frac"><span>1 − rⁿ</span><span>1 − r</span></span></dd>
+        <dt>1 + 2 + ⋯ + n</dt><dd>n(n + 1) / 2</dd>
+        <dt>Harmonic growth</dt><dd>Hₙ ≈ ln n + 0.5772</dd>
+      </dl></div>
+      <div class="card formula-card"><h4>Statistics <small>data</small></h4><dl>
+        <dt>Mean</dt><dd>x̄ = (Σ xᵢ) / n</dd>
+        <dt>Variance (population)</dt><dd>σ² = Σ (xᵢ − x̄)² / n</dd>
+        <dt>Probability of A or B</dt><dd>P(A ∪ B) = P(A) + P(B) − P(A ∩ B)</dd>
+        <dt>Combinations</dt><dd>C(n, k) = n! / (k!(n − k)!)</dd>
+      </dl></div>
+    </div>
+
+    <h3 class="sub-title">Practice worksheet generator</h3>
+    <form class="sheet-ctrl" id="sheetForm">
+      <label class="field">Topic
+        <select id="sheetTopic">
+          <option value="arith">Arithmetic</option>
+          <option value="frac">Fractions</option>
+          <option value="linear">Linear equations</option>
+          <option value="powers">Powers &amp; roots</option>
+          <option value="percent">Percentages</option>
+          <option value="seq">Sequences</option>
+          <option value="mixed">Mixed review</option>
+        </select>
+      </label>
+      <label class="field">Level
+        <select id="sheetLevel"><option value="1">1 · Starter</option><option value="2" selected>2 · Core</option><option value="3">3 · Stretch</option></select>
+      </label>
+      <label class="field">Problems
+        <select id="sheetCount"><option>8</option><option selected>12</option><option>20</option></select>
+      </label>
+      <button class="btn primary" type="submit">New sheet</button>
+      <button class="btn" type="button" id="checkSheet">Check answers</button>
+      <button class="btn ghost" type="button" id="showSheet">Show answers</button>
+    </form>
+    <div class="worksheet" id="worksheet">
+      <div class="ws-head">
+        <h4 id="wsTitle">Worksheet</h4>
+        <div class="ws-meta"><span id="wsCode">Sheet #0000</span><span>Name: ____________</span><span>Date: ________</span></div>
+      </div>
+      <div class="ws-grid" id="wsGrid"></div>
+      <div class="ws-score" id="wsScore" aria-live="polite"></div>
+      <p class="ws-hint">Fractions can be typed as 3/4 or as a decimal. Press Enter in any box to check the sheet.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== QUIZ ============================== -->
+<section class="section alt" id="quiz">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">// quizzes</span>
+      <h2>Quizzes</h2>
+      <p>Pick a topic. Each quiz draws 8 questions in random order and explains every answer. Keys 1–4 choose an option and Enter moves on.</p>
+    </div>
+    <div class="quiz-shell">
+      <div class="quiz-pick" id="quizPick">
+        <button class="quiz-cat" type="button" data-cat="math" aria-pressed="true"><b>Mathematics</b><span>Mathopea · numbers, series, proofs</span></button>
+        <button class="quiz-cat" type="button" data-cat="science" aria-pressed="false"><b>Science</b><span>Experimentium · method and nature</span></button>
+        <button class="quiz-cat" type="button" data-cat="code" aria-pressed="false"><b>Coding &amp; Technology</b><span>Databell · code, OOP, Big-O</span></button>
+        <button class="quiz-cat" type="button" data-cat="mental" aria-pressed="false"><b>Mental math sprint</b><span>Generated fresh each time</span></button>
+      </div>
+      <div class="card quiz-card" id="quizCard" aria-live="polite"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== SURVEY ============================== -->
+<section class="section" id="survey">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">// survey</span>
+      <h2>Studio survey</h2>
+      <p>Tell the studios what you want to learn next. Results update as soon as you submit.</p>
+    </div>
+    <div class="survey-grid">
+      <form class="card survey-form" id="surveyForm" novalidate>
+        <fieldset>
+          <legend>Which studio interests you most?</legend>
+          <div class="choice-row">
+            <label class="choice"><input type="radio" name="studio" id="sv-studio-m" value="Mathopea" required><span>Mathopea</span></label>
+            <label class="choice"><input type="radio" name="studio" id="sv-studio-e" value="Experimentium"><span>Experimentium</span></label>
+            <label class="choice"><input type="radio" name="studio" id="sv-studio-d" value="Databell Software Labs"><span>Databell Software Labs</span></label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Your favourite subject</legend>
+          <div class="choice-row">
+            <label class="choice"><input type="radio" name="subject" id="sv-sub-m" value="Mathematics"><span>Mathematics</span></label>
+            <label class="choice"><input type="radio" name="subject" id="sv-sub-s" value="Science"><span>Science</span></label>
+            <label class="choice"><input type="radio" name="subject" id="sv-sub-c" value="Coding"><span>Coding</span></label>
+            <label class="choice"><input type="radio" name="subject" id="sv-sub-t" value="Technology"><span>Technology</span></label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Which tools do you want to learn? (pick any)</legend>
+          <div class="choice-row">
+            <label class="choice"><input type="checkbox" name="tools" id="sv-t-py" value="Python"><span>Python</span></label>
+            <label class="choice"><input type="checkbox" name="tools" id="sv-t-js" value="JavaScript"><span>JavaScript</span></label>
+            <label class="choice"><input type="checkbox" name="tools" id="sv-t-sql" value="SQL"><span>SQL</span></label>
+            <label class="choice"><input type="checkbox" name="tools" id="sv-t-git" value="Git"><span>Git</span></label>
+            <label class="choice"><input type="checkbox" name="tools" id="sv-t-api" value="APIs"><span>APIs</span></label>
+            <label class="choice"><input type="checkbox" name="tools" id="sv-t-cloud" value="Cloud"><span>Cloud</span></label>
+          </div>
+        </fieldset>
+        <fieldset class="rating-row">
+          <legend>How confident are you with maths? (1 = just starting, 5 = very)</legend>
+          <div class="choice-row">
+            <label class="choice"><input type="radio" name="rating" id="sv-r1" value="1"><span>1</span></label>
+            <label class="choice"><input type="radio" name="rating" id="sv-r2" value="2"><span>2</span></label>
+            <label class="choice"><input type="radio" name="rating" id="sv-r3" value="3"><span>3</span></label>
+            <label class="choice"><input type="radio" name="rating" id="sv-r4" value="4"><span>4</span></label>
+            <label class="choice"><input type="radio" name="rating" id="sv-r5" value="5"><span>5</span></label>
+          </div>
+        </fieldset>
+        <label class="field">One thing you would like a studio to teach (optional)
+          <textarea id="sv-comment" name="comment" maxlength="280" placeholder="For example: how search engines rank pages"></textarea>
+        </label>
+        <div class="cta-row"><button class="btn primary" type="submit">Submit response</button></div>
+        <p class="form-status" id="surveyStatus" role="status"></p>
+      </form>
+      <div class="card results" id="surveyResults">
+        <div>
+          <span class="res-mode" id="surveyMode">Results saved in this browser</span>
+          <div class="res-total" id="surveyTotal">0 responses</div>
+        </div>
+        <div id="surveyCharts"><p class="res-empty">No responses yet. Fill in the form and your answers appear here as bar charts.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== CODE LAB ============================== -->
+<section class="section alt" id="lab">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">// live_code_lab</span>
+      <h2>Live coding editors</h2>
+      <p>Write HTML, CSS and JavaScript with a live preview, or run Python directly in your browser. Pick an example to start, then change anything.</p>
+    </div>
+    <div class="lab" id="labRoot">
+      <div class="lab-bar">
+        <div class="lab-tabs" role="tablist" aria-label="Language">
+          <button class="lab-tab" role="tab" data-lang="html" aria-selected="true"><i>&lt;&gt;</i>index.html</button>
+          <button class="lab-tab" role="tab" data-lang="css" aria-selected="false"><i>#</i>style.css</button>
+          <button class="lab-tab" role="tab" data-lang="js" aria-selected="false"><i>JS</i>script.js</button>
+          <button class="lab-tab" role="tab" data-lang="py" aria-selected="false"><i>Py</i>main.py</button>
+        </div>
+        <div class="lab-actions">
+          <label class="sr-only" for="labExample">Load an example</label>
+          <select id="labExample"></select>
+          <button class="btn ghost" type="button" id="labReset">Reset</button>
+          <button class="btn primary" type="button" id="labRun">▶ Run</button>
+        </div>
+      </div>
+      <div class="lab-body">
+        <div class="editor-wrap">
+          <pre class="gutter" id="labGutter" aria-hidden="true">1</pre>
+          <label class="sr-only" for="labEditor">Code editor</label>
+          <textarea class="editor" id="labEditor" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off"></textarea>
+        </div>
+        <div class="output-pane" id="webOut">
+          <iframe class="preview-frame" id="labFrame" title="Live preview" sandbox="allow-scripts"></iframe>
+          <div class="console" id="labConsole"><div class="console-head"><span>console</span><button type="button" id="clearConsole">clear</button></div></div>
+        </div>
+        <div class="output-pane" id="pyOut" hidden>
+          <pre class="terminal" id="pyTerm"><span class="sys">Python output appears here. Press ▶ Run.</span></pre>
+        </div>
+      </div>
+      <div class="lab-status"><span id="labStatus">Web mode · preview updates as you type</span><span><kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd> to run · <kbd>Tab</kbd> indents · <kbd>Esc</kbd> then <kbd>Tab</kbd> leaves</span></div>
+    </div>
+    <p class="lab-hint">The HTML, CSS and JavaScript tabs build one page together. Python runs on Brython, an in-browser Python 3 that includes the standard library (math, fractions, random, abc and more); the runtime loads the first time you run Python. <code>input()</code> is not supported, so set values in code.</p>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="foot-row">
+      <span class="foot-sign">&gt; return "see you again soon";</span>
+      <p>Mathopea · Experimentium · Databell Software Labs</p>
+    </div>
+    <div class="foot-row">
+      <p>Coding is a way of thinking. Languages change, but the ideas last.</p>
+      <p>Presented by Bhavyam Roy</p>
+    </div>
+  </div>
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="script-10.js"></script>
+</body>
+</html>
