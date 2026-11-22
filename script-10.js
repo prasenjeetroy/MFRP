@@ -36,6 +36,12 @@
     on(f) { this.listeners.push(f); }
   };
   const Points = { award: () => Promise.resolve(0) };
+  // Sign-up flow shared by the account card (inbox section) and the points/security module.
+  const Signup = { state: "unknown", done: null, render: null, renderDone: null, refresh: () => {}, createLocalProfile: null, plan: () => "" };
+  // Accounts version 2: remove every account saved by earlier versions of the site.
+  const LOCAL_ACCOUNT_KEYS = ["lab2-profile", "lab2-inbox", "lab2-points", "lab2-security", "lab2-founder"];
+  ["lab-profile", "lab-inbox", "lab-points", "lab-security", "lab-founder"].forEach((k) => { try { localStorage.removeItem(k); } catch (e) { /* storage blocked */ } });
+  ["lab-locked", "lab-founder-open"].forEach((k) => { try { sessionStorage.removeItem(k); } catch (e) { /* storage blocked */ } });
 
   /* ------------------------------------------------------------------ nav */
   const navToggle = $("#navToggle");
@@ -943,7 +949,7 @@ for n in (3, 4, 6, 12):
       { studio: "Experimentium", text: "Hi from Experimentium. Tell us about an experiment you want to run or a prototype you are building." },
       { studio: "Databell Software Labs", text: "Databell here. Ask about apps, databases, SQL or analytics and we will reply in this inbox." }
     ];
-    const PROFILE_KEY = "lab-profile", LOCAL_INBOX_KEY = "lab-inbox";
+    const PROFILE_KEY = "lab2-profile", LOCAL_INBOX_KEY = "lab2-inbox";
     const card = $("#accountCard"), body = $("#inboxBody"), modeEl = $("#inboxMode"), titleEl = $("#inboxTitle");
     const chipName = $("#chipName"), chipAvatar = $("#chipAvatar"), badge = $("#inboxBadge");
     const S = {
@@ -966,62 +972,64 @@ for n in (3, 4, 6, 12):
     function setBadge(n) { badge.hidden = !n; badge.textContent = String(n); }
 
     /* ---- account card ---- */
+    function syncChip() {
+      const name = signedIn() && !(S.mode === "cloud" && Signup.state === "needed") ? displayName() : "";
+      chipName.textContent = name || (S.mode === "cloud" ? "Finish setup" : "Sign in");
+      if (name) setAvatar(chipAvatar, name, S.mode === "cloud" && S.me ? S.me.avatarUrl : "");
+      else chipAvatar.textContent = "?";
+    }
+    function planHTML() {
+      const plan = Signup.plan();
+      if (!plan) return "";
+      const founder = plan === "BDAI Founder Subscription";
+      return `<span class="role ${founder ? "founder-plan" : ""}">${founder ? "♛ " : ""}${esc(plan)}</span>`;
+    }
     function renderAccount() {
+      if (!Signup.render) { card.innerHTML = `<p class="res-empty">Loading your account…</p>`; return; }
+      if (Signup.done) { Signup.renderDone(card); syncChip(); return; }
       if (S.mode === "cloud") {
+        if (Signup.state === "needed") { Signup.render(card); syncChip(); return; }
         card.innerHTML = `<div class="account-who"><span class="avatar lg" id="accAvatar"></span><div><b id="accName"></b><span>Signed in with your Claude account</span></div></div>
+          ${planHTML()}
           <span class="role ${S.staff ? "staff" : ""}">${S.staff ? "Studio staff · sees every conversation" : "Member"}</span>
-          <p class="account-note">Your Claude account is your login, so this page never asks for a password. ${S.staff ? "You can reply to members as any of the three studios." : "Only you and the studio staff can read your conversation."}</p>`;
+          <p class="account-note">Your Claude account is your login. Your PIN protects your account on this page, and your security key recovers a lost PIN. ${S.staff ? "You can reply to members as any of the three studios." : "Only you and the studio staff can read your conversation."}</p>`;
         $("#accName", card).textContent = displayName();
         setAvatar($("#accAvatar", card), displayName(), S.me.avatarUrl);
-        chipName.textContent = displayName();
-        setAvatar(chipAvatar, displayName(), S.me.avatarUrl);
+        syncChip();
         return;
       }
       if (S.profile) {
-        card.innerHTML = `<div class="account-who"><span class="avatar lg" id="accAvatar"></span><div><b id="accName"></b><span>Local profile · since ${esc(new Date(S.profile.created).toLocaleDateString())}</span></div></div>
+        card.innerHTML = `<div class="account-who"><span class="avatar lg" id="accAvatar"></span><div><b id="accName"></b><span>Account since ${esc(new Date(S.profile.created).toLocaleDateString())}</span></div></div>
+          ${planHTML()}
           <span class="role">Favourite studio: <span id="accStudio"></span></span>
-          <p class="account-note">This copy of the site has no server, so your profile and messages are kept <b>in this browser only</b>. ${S.cloudBlocked ? "Sign in to claude.ai to message the studios for real." : "Open the published version to reach the studios."}</p>
+          <p class="account-note">This copy of the site has no server, so your account, points and messages are kept <b>in this browser only</b>. ${S.cloudBlocked ? "Sign in to claude.ai to message the studios for real." : "Open the published version to reach the studios."}</p>
           <div id="signOutArea"><button class="btn small" type="button" id="signOut">Sign out</button></div>`;
         $("#accName", card).textContent = S.profile.name;
         $("#accStudio", card).textContent = S.profile.studio;
         setAvatar($("#accAvatar", card), S.profile.name);
-        chipName.textContent = S.profile.name;
-        setAvatar(chipAvatar, S.profile.name);
+        syncChip();
         return;
       }
-      card.innerHTML = `<form id="loginForm" novalidate>
-          <div class="account-who"><span class="avatar lg">?</span><div><b>Create account</b><span>Then save your security key and pick a PIN</span></div></div>
-          <label class="field">Display name<input type="text" id="loginName" maxlength="40" autocomplete="nickname" placeholder="e.g. Ada" required></label>
-          <label class="field">Favourite studio<select id="loginStudio">${STUDIOS.map((s) => `<option>${esc(s)}</option>`).join("")}</select></label>
-          <button class="btn primary" type="submit">Create account</button>
-          <p class="form-status" id="loginStatus" role="status"></p>
-        </form>
-        <p class="account-note">${S.cloudBlocked ? "<b>Sign in to claude.ai</b> to message the studios for real. Until then you" : "You"} can use a local profile: it needs only a name, never a password, and stays in this browser.</p>`;
-      chipName.textContent = "Sign in";
-      chipAvatar.textContent = "?";
+      Signup.render(card);
+      syncChip();
     }
-    card.addEventListener("submit", (e) => {
-      if (e.target.id !== "loginForm") return;
-      e.preventDefault();
-      const name = $("#loginName").value.trim().replace(/\s+/g, " ");
-      if (name.length < 2) { const st = $("#loginStatus"); st.textContent = "Enter a display name of at least 2 characters."; st.className = "form-status err"; $("#loginName").focus(); return; }
-      S.profile = { name, studio: $("#loginStudio").value, created: new Date().toISOString() };
+    Signup.refresh = () => renderAccount();
+    Signup.createLocalProfile = (name, studio) => {
+      S.profile = { name, studio, created: new Date().toISOString() };
       store.set(PROFILE_KEY, S.profile);
       renderAll();
-      toast("Account created for " + name + ". Save your security key and choose a PIN.");
-      document.dispatchEvent(new CustomEvent("lab:account-created"));
-      const ta = $("#composeText"); if (ta) ta.focus({ preventScroll: true });
-    });
+    };
     card.addEventListener("click", (e) => {
       if (e.target.id === "signOut") {
-        $("#signOutArea").innerHTML = `<div class="confirm-row"><span>Sign out of this device?</span><button class="btn small primary" type="button" id="signOutYes">Sign out</button><button class="btn small ghost" type="button" id="signOutNo">Cancel</button></div>`;
+        $("#signOutArea").innerHTML = `<div class="confirm-row"><span>Signing out removes this account, its points, PIN and messages from this browser.</span><button class="btn small primary" type="button" id="signOutYes">Sign out</button><button class="btn small ghost" type="button" id="signOutNo">Cancel</button></div>`;
       } else if (e.target.id === "signOutNo") {
         renderAccount();
       } else if (e.target.id === "signOutYes") {
-        S.profile = null;
-        try { localStorage.removeItem(PROFILE_KEY); } catch (err) { /* storage blocked */ }
+        LOCAL_ACCOUNT_KEYS.forEach((k) => { try { localStorage.removeItem(k); } catch (err) { /* storage blocked */ } });
+        S.profile = null; S.local = [];
+        S.layout = "";
         renderAll();
-        toast("Signed out. Your messages stay saved for next time.");
+        toast("Signed out. This account was removed from this browser.");
       }
     });
 
@@ -1265,7 +1273,8 @@ for n in (3, 4, 6, 12):
     const PIN_ITER = 150000, MAX_FAILS = 5;
     const LEVELS = [[0, "Rookie"], [100, "Explorer"], [300, "Builder"], [750, "Scientist"], [1500, "Innovator"], [5000, "Master"], [15000, "Legend"]];
     const EARN = [["+10 / correct", "Quiz answer (300 a day)"], ["+10 + 2 each", "Perfect worksheet (200 a day)"], ["+25", "Survey response (once)"], ["+5", "Message a studio (15 a day)"], ["+1", "Code Lab run (20 a day)"], ["+10,000", "Founder prize (once)"]];
-    const K = { points: "lab-points", security: "lab-security", founder: "lab-founder", locked: "lab-locked", fcUnlocked: "lab-founder-open" };
+    const K = { points: "lab2-points", security: "lab2-security", founder: "lab2-founder", locked: "lab2-locked", fcUnlocked: "lab2-founder-open" };
+    const SEC_DOC = "security-v2"; // private: data/users/<id>/security-v2
     const pointsCard = $("#pointsCard"), leaderList = $("#leaderList"), leaderMode = $("#leaderMode"), secCard = $("#securityCard"), fCard = $("#founderCard");
     const chipPts = $("#chipPts");
 
@@ -1323,12 +1332,12 @@ for n in (3, 4, 6, 12):
     }
     async function readSecurity() {
       if (!cloud()) return store.get(K.security, null);
-      const snap = await Acct.db.doc(`data/users/${Acct.id}/security`).get();
+      const snap = await Acct.db.doc(`data/users/${Acct.id}/${SEC_DOC}`).get();
       return snap.exists ? snap.data() : null;
     }
     async function writeSecurity(doc) {
       if (!cloud()) { store.set(K.security, doc); P.sec = doc; return; }
-      await Acct.db.doc(`data/users/${Acct.id}/security`).set(doc);
+      await Acct.db.doc(`data/users/${Acct.id}/${SEC_DOC}`).set(doc);
       P.sec = doc;
     }
     async function readFounder() {
@@ -1380,7 +1389,7 @@ for n in (3, 4, 6, 12):
       const pct = next ? Math.min(100, ((t - cur[0]) / (next[0] - cur[0])) * 100) : 100;
       pointsCard.innerHTML = `<div class="card-head"><h3>Your points</h3><span class="pill">${cloud() ? "Saved to your account" : "Saved on this device"}</span></div>
         <div class="pts-top"><div class="pts-total">${fmtN(t)}<small>pts</small></div>
-          <div class="level-row"><span class="level">★ ${esc(cur[1])}</span>${d.founder ? '<span class="level founder">♛ Founder</span>' : ""}</div></div>
+          <div class="level-row"><span class="level">★ ${esc(cur[1])}</span>${d.founder ? '<span class="level founder">♛ BDAI Founder Subscription</span>' : '<span class="level">Member plan</span>'}</div></div>
         <div class="progress"><span>${next ? `${fmtN(next[0] - t)} points to ${esc(next[1])}` : "Top level reached"}</span><span class="track"><i style="width:${pct.toFixed(1)}%"></i></span></div>
         <div><h4 style="font-size:0.95rem;margin-bottom:6px">Recent points</h4>${(d.history || []).length
           ? `<ul class="history">${d.history.map((h) => `<li><span class="amt ${h.amt < 0 ? "neg" : ""}">${h.amt > 0 ? "+" : ""}${fmtN(h.amt)}</span><span>${esc(h.reason)}</span><time>${esc(fmtDate(h.at))}</time></li>`).join("")}</ul>`
@@ -1453,17 +1462,8 @@ for n in (3, 4, 6, 12):
         return;
       }
       const head = `<div class="card-head"><h3>PIN &amp; security key</h3><span class="sec-status"><span class="sec-dot ${P.sec ? "on" : ""}"></span>${P.sec ? "Protected" : "Not set up"}</span></div>`;
-      if (!P.sec || v === "setup") {
-        if (!P.view.key) P.view.key = makeSecurityKey();
-        secCard.innerHTML = head + `<p class="account-note">Set up your account security. The generator below makes a recovery key just for this account. You need it if you ever lose your PIN. ${cloud() ? "The key and PIN are stored as one-way hashes in your private account storage, which nobody else on this page can read." : "The key and PIN are stored as one-way hashes in this browser."}</p>
-          <form id="secSetup" novalidate>
-            ${keygenHTML()}
-            <label class="field">Choose a PIN (4–8 digits)<input type="password" id="secPin1" inputmode="numeric" maxlength="8" autocomplete="new-password"></label>
-            <label class="field">Confirm PIN<input type="password" id="secPin2" inputmode="numeric" maxlength="8" autocomplete="new-password"></label>
-            <button class="btn primary" type="submit">Save PIN and security key</button>
-            <p class="form-status" id="secStatus" role="status"></p>
-          </form>`;
-        $("#keyBox").textContent = P.view.key;
+      if (!P.sec) {
+        secCard.innerHTML = head + `<div class="locked"><span>Finish creating your account to set your PIN and security key.</span><a class="btn small primary" href="#accountCard">Finish setup</a></div>`;
         return;
       }
       if (v === "change") {
@@ -1547,15 +1547,7 @@ for n in (3, 4, 6, 12):
       const v = (x) => ($("#" + x) ? $("#" + x).value.trim() : "");
       btn.disabled = true;
       try {
-        if (id === "secSetup") {
-          if (!validPin(v("secPin1"))) return status("Use 4 to 8 digits for your PIN.");
-          if (v("secPin1") !== v("secPin2")) return status("The two PINs do not match.");
-          if (!$("#keySaved").checked) return status("Save your security key, then tick the box to confirm.");
-          status("Saving…", true);
-          await setPinAndKey(v("secPin1"), false, P.view.key);
-          P.view = { sec: "home" }; renderSecurity(); renderFounder();
-          toast("Account security set up");
-        } else if (id === "secChange") {
+        if (id === "secChange") {
           if (!validPin(v("secNew1"))) return status("Use 4 to 8 digits for the new PIN.");
           if (v("secNew1") !== v("secNew2")) return status("The new PINs do not match.");
           const r = await checkPin(v("secOld"));
@@ -1599,17 +1591,11 @@ for n in (3, 4, 6, 12):
         return;
       }
       if (!P.founder) {
-        if (!P.sec) { fCard.innerHTML = head + `<p class="account-note">Founder setup needs a PIN and security key on this account first. Set them up in the PIN &amp; security key card, then come back here.</p>`; return; }
-        fCard.innerHTML = head + `<p class="account-note">Enter the 45-character BDAI founder code (letters, numbers and special characters). It is checked against a one-way hash, so this page never contains the code. The founder account receives the <b>${fmtN(FOUNDER_PRIZE)}-point founder prize</b>. After setup, you only need your PIN.</p>
-          <form id="founderSetup" novalidate>
-            <label class="field">Founder code (45 characters)<input type="password" id="fCode" autocomplete="off" spellcheck="false" maxlength="60"></label>
-            <button class="btn primary" type="submit">Set up founder account</button>
-            <p class="form-status" id="fStatus" role="status"></p>
-          </form>`;
+        fCard.innerHTML = head + `<p class="account-note">Founder access is set up when an account is created: tick <b>Set up as BDAI founder</b>, paste the 45-character founder code, then set your PIN and security key. The founder receives <b>${fmtN(FOUNDER_PRIZE)} points</b> and the <b>BDAI Founder Subscription</b>.</p>`;
         return;
       }
       if (sget(K.fcUnlocked) !== Acct.id) {
-        fCard.innerHTML = head + `<div class="founder-badge"><span class="crown">♛</span><div><b>You are the founder</b><div class="account-note">Since ${esc(fmtDate(P.founder.since))}</div></div></div>
+        fCard.innerHTML = head + `<div class="founder-badge"><span class="crown">♛</span><div><b>You are the founder</b><div class="account-note">BDAI Founder Subscription · active since ${esc(fmtDate(P.founder.since))}</div></div></div>
           <form id="founderPin" novalidate>
             <label class="field">PIN<input type="password" id="fPin" inputmode="numeric" maxlength="8" autocomplete="current-password"></label>
             <button class="btn primary" type="submit">Open founder console</button>
@@ -1619,7 +1605,7 @@ for n in (3, 4, 6, 12):
       }
       const totalPts = cloud() ? P.leaders.reduce((a, r) => a + (Number(r.total) || 0), 0) : (P.mine ? P.mine.total : 0);
       const members = cloud() ? P.leaders.filter((r) => r.id !== Acct.id) : [];
-      fCard.innerHTML = head + `<div class="founder-badge"><span class="crown">♛</span><div><b>Founder console</b><div class="account-note">Opened with your PIN · founder since ${esc(fmtDate(P.founder.since))}</div></div></div>
+      fCard.innerHTML = head + `<div class="founder-badge"><span class="crown">♛</span><div><b>Founder console</b><div class="account-note">Opened with your PIN · BDAI Founder Subscription active since ${esc(fmtDate(P.founder.since))}</div></div></div>
         <div class="stat-row"><div class="stat"><b>${fmtN(cloud() ? P.leaders.length : 1)}</b><span>accounts with points</span></div><div class="stat"><b>${fmtN(totalPts)}</b><span>points across the site</span></div><div class="stat"><b>${fmtN(FOUNDER_PRIZE)}</b><span>founder prize</span></div></div>
         ${cloud() ? (members.length ? `<form id="awardForm" novalidate>
             <label class="field">Award points to<select id="awardTo">${members.map((m) => `<option value="${esc(m.id)}" data-name="${esc(m.id)}"></option>`).join("")}</select></label>
@@ -1638,24 +1624,7 @@ for n in (3, 4, 6, 12):
       const btn = $("button[type=submit]", e.target);
       btn.disabled = true;
       try {
-        if (e.target.id === "founderSetup") {
-          const code = $("#fCode").value.trim();
-          if (code.length !== FOUNDER_CODE_LEN) return fStatus(`The founder code has ${FOUNDER_CODE_LEN} characters. You entered ${code.length}.`);
-          fStatus("Checking…", true);
-          if ((await sha256("bdai-founder-v2|" + code)) !== FOUNDER_CODE_HASH) { $("#fCode").value = ""; return fStatus("That founder code is not correct."); }
-          const existing = await readFounder();
-          if (existing) { P.founder = existing; renderFounder(); return; }
-          const rec = { uid: cloud() ? Acct.id : "local", since: new Date().toISOString() };
-          if (cloud()) {
-            try { await Acct.db.doc("founder/current").set(rec); }
-            catch (err) { return fStatus(err && (err.code === "not_granted" || err.code === "permission_denied") ? "Founder setup needs Editor access to this page. Ask the page owner to make you an Editor." : "Founder setup did not save (" + ((err && err.code) || "error") + ")."); }
-          } else store.set(K.founder, rec);
-          P.founder = rec;
-          await award(FOUNDER_PRIZE, "BDAI founder prize", { once: "founderPrize", founder: true });
-          sset(K.fcUnlocked, Acct.id);
-          renderFounder();
-          toast("Founder account set up · +10,000 points");
-        } else if (e.target.id === "founderPin") {
+        if (e.target.id === "founderPin") {
           const r = await checkPin($("#fPin").value.trim());
           if (!r.ok) { $("#fPin").value = ""; fStatus(r.msg); if (r.blocked) { P.view.sec = "forgot"; renderSecurity(); } return; }
           sset(K.fcUnlocked, Acct.id);
@@ -1676,18 +1645,165 @@ for n in (3, 4, 6, 12):
       } finally { if (btn.isConnected) btn.disabled = false; }
     });
 
+    /* ---- sign-up: 1 account (+ founder code) → 2 PIN & security key → 3 done ---- */
+    const accCard = $("#accountCard");
+    const W = { step: 1, name: "", studio: "Mathopea", founder: false, key: null };
+    const STUDIO_NAMES = ["Mathopea", "Experimentium", "Databell Software Labs"];
+    const planOf = (d) => (d && d.subscription && d.subscription.plan) || (d && d.founder ? "BDAI Founder Subscription" : (d ? "Member" : ""));
+    Signup.plan = () => (Acct.id && P.mine ? planOf(P.mine) : "");
+    const stepsHTML = (n) => `<div class="steps-mini" aria-label="Step ${n} of 3">${["Account", "PIN &amp; key", "Done"].map((t, i) => `<span class="${i + 1 === n ? "on" : i + 1 < n ? "past" : ""}">${i + 1} · ${t}</span>`).join("")}</div>`;
+    const suStatus = (msg, ok) => { const st = $("#suStatus", accCard); if (st) { st.textContent = msg; st.className = "form-status " + (ok ? "ok" : "err"); } };
+    Signup.render = function renderSignup(card) {
+      const cloudMode = Acct.mode === "cloud";
+      if (W.step === 2) {
+        if (!W.key) W.key = makeSecurityKey();
+        card.innerHTML = `<form id="suStep2" class="signup" novalidate>
+            ${stepsHTML(2)}
+            <div class="account-who"><span class="avatar lg" id="suAvatar"></span><div><b id="suName2"></b><span>${W.founder ? "♛ BDAI founder account" : "Member account"}</span></div></div>
+            ${keygenHTML()}
+            <label class="field">Choose a PIN (4–8 digits)<input type="password" id="suPin1" inputmode="numeric" maxlength="8" autocomplete="new-password"></label>
+            <label class="field">Confirm PIN<input type="password" id="suPin2" inputmode="numeric" maxlength="8" autocomplete="new-password"></label>
+            <div class="btn-row"><button class="btn primary" type="submit">Create account</button><button class="btn ghost" type="button" id="suBack">Back</button></div>
+            <p class="form-status" id="suStatus" role="status"></p>
+          </form>`;
+        $("#keyBox", card).textContent = W.key;
+        $("#suName2", card).textContent = W.name;
+        $("#suAvatar", card).textContent = (W.name.match(/[A-Za-z0-9]/) || ["?"])[0].toUpperCase();
+        return;
+      }
+      const taken = !!P.founder, blocked = cloudMode && !Acct.staff;
+      const note = taken ? "Founder access is already set up on this site."
+        : blocked ? "Founder setup needs Editor access to this page."
+        : "Paste the 45-character founder code to get 10,000 points and the BDAI Founder Subscription.";
+      card.innerHTML = `<form id="suStep1" class="signup" novalidate>
+          ${stepsHTML(1)}
+          <div class="account-who"><span class="avatar lg">?</span><div><b>Create your account</b><span>${cloudMode ? "Signed in with your Claude account" : "Saved in this browser"}</span></div></div>
+          ${cloudMode ? `<p class="account-note">Account name: <b id="suCloudName"></b></p>` : `<label class="field">Display name<input type="text" id="suName" maxlength="40" autocomplete="nickname" placeholder="e.g. Ada"></label>`}
+          <label class="field">Favourite studio<select id="suStudio">${STUDIO_NAMES.map((n) => `<option ${n === W.studio ? "selected" : ""}>${esc(n)}</option>`).join("")}</select></label>
+          <label class="check-row founder-check"><input type="checkbox" id="suFounder" ${taken || blocked ? "disabled" : ""} ${W.founder && !taken && !blocked ? "checked" : ""}><span><b>Set up as BDAI founder</b><small>${esc(note)}</small></span></label>
+          <label class="field" id="suCodeWrap" ${W.founder && !taken && !blocked ? "" : "hidden"}>Founder code (45 characters)<input type="password" id="suCode" autocomplete="off" spellcheck="false" maxlength="60" placeholder="Paste the founder code"></label>
+          <button class="btn primary" type="submit">Next: PIN &amp; security key</button>
+          <p class="form-status" id="suStatus" role="status"></p>
+        </form>`;
+      if (cloudMode) $("#suCloudName", card).textContent = Acct.name || "Your Claude account";
+      else if (W.name) $("#suName", card).value = W.name;
+    };
+    Signup.renderDone = function renderDone(card) {
+      const d = Signup.done;
+      card.innerHTML = `<div class="signup">
+          ${stepsHTML(3)}
+          <div class="done-hero"><span class="done-mark ${d.founder ? "founder" : ""}">${d.founder ? "♛" : "✓"}</span><div><b>Welcome, <span id="doneName"></span>!</b><span>Your account is ready.</span></div></div>
+          ${d.founder ? `<div class="sub-card">
+              <div class="sub-top"><b>BDAI Founder Subscription</b><span class="level founder">Active</span></div>
+              <div class="pts-total">+${fmtN(FOUNDER_PRIZE)}<small>points</small></div>
+              <ul class="perks"><li>${fmtN(FOUNDER_PRIZE)}-point founder prize</li><li>♛ Founder badge on the leaderboard</li><li>Founder console, opened with your PIN</li><li>Award points to members</li></ul>
+            </div>` : `<p class="account-note">You are on the free <b>Member</b> plan. Earn points with quizzes, perfect worksheets, the survey and the Code Lab.</p>`}
+          <p class="account-note">From now on you only need your PIN${d.founder ? " to open the founder console" : ""}. Keep your security key safe; it resets a lost PIN.</p>
+          <div class="btn-row"><button class="btn primary" type="button" id="doneQuiz">Start a quiz</button><button class="btn" type="button" id="doneAccount">Go to my account</button></div>
+        </div>`;
+      $("#doneName", card).textContent = d.name;
+    };
+    accCard.addEventListener("change", (e) => {
+      if (e.target.id === "suFounder") {
+        W.founder = e.target.checked;
+        $("#suCodeWrap", accCard).hidden = !W.founder;
+        if (W.founder) $("#suCode", accCard).focus();
+      }
+    });
+    accCard.addEventListener("click", async (e) => {
+      const t = e.target.closest("button, [data-sec]");
+      if (!t) return;
+      if (t.dataset.sec === "regen" && accCard.contains($("#suStep2"))) { W.key = makeSecurityKey(); $("#keyBox", accCard).textContent = W.key; $("#keySaved", accCard).checked = false; return; }
+      if (t.dataset.sec === "copy-key" && accCard.contains($("#suStep2"))) {
+        try { await navigator.clipboard.writeText(W.key); toast("Security key copied"); }
+        catch (err) { const r = document.createRange(); r.selectNodeContents($("#keyBox", accCard)); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); toast("Key selected. Press Ctrl+C to copy."); }
+        return;
+      }
+      if (t.id === "suBack") { W.step = 1; Signup.render(accCard); return; }
+      if (t.id === "doneQuiz" || t.id === "doneAccount") {
+        Signup.done = null; Signup.refresh();
+        const target = t.id === "doneQuiz" ? $("#quiz") : accCard;
+        target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+      }
+    });
+    accCard.addEventListener("submit", async (e) => {
+      if (e.target.id !== "suStep1" && e.target.id !== "suStep2") return;
+      e.preventDefault();
+      const cloudMode = Acct.mode === "cloud";
+      const btn = $("button[type=submit]", e.target);
+      btn.disabled = true;
+      try {
+        if (e.target.id === "suStep1") {
+          const name = cloudMode ? (Acct.name || "Member") : $("#suName", accCard).value.trim().replace(/\s+/g, " ");
+          if (!cloudMode && name.length < 2) { suStatus("Enter a display name of at least 2 characters."); $("#suName", accCard).focus(); return; }
+          W.name = name; W.studio = $("#suStudio", accCard).value;
+          const fBox = $("#suFounder", accCard);
+          W.founder = !!(fBox && fBox.checked && !fBox.disabled);
+          if (W.founder) {
+            const codeEl = $("#suCode", accCard), code = codeEl.value.trim();
+            if (code.length !== FOUNDER_CODE_LEN) { suStatus(`The founder code has ${FOUNDER_CODE_LEN} characters. You entered ${code.length}.`); return; }
+            suStatus("Checking the founder code…", true);
+            const ok = (await sha256("bdai-founder-v2|" + code)) === FOUNDER_CODE_HASH;
+            codeEl.value = "";
+            if (!ok) { suStatus("That founder code is not correct."); return; }
+            if (await readFounder()) { suStatus("Founder access is already set up on this site."); return; }
+          }
+          W.step = 2; W.key = makeSecurityKey();
+          Signup.render(accCard);
+          $("#keyBox", accCard).scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" });
+          return;
+        }
+        // step 2: create the account
+        const pin1 = $("#suPin1", accCard).value.trim(), pin2 = $("#suPin2", accCard).value.trim();
+        if (!validPin(pin1)) { suStatus("Use 4 to 8 digits for your PIN."); return; }
+        if (pin1 !== pin2) { suStatus("The two PINs do not match."); return; }
+        if (!$("#keySaved", accCard).checked) { suStatus("Save your security key, then tick the box to confirm."); return; }
+        suStatus("Creating your account…", true);
+        const now = new Date().toISOString();
+        if (W.founder) {
+          if (await readFounder()) { W.step = 1; W.founder = false; Signup.render(accCard); suStatus("Founder access was just set up by another account."); return; }
+          const rec = { uid: cloudMode ? Acct.id : "local", since: now };
+          if (cloudMode) {
+            try { await Acct.db.doc("founder/current").set(rec); }
+            catch (err) { suStatus(err && (err.code === "not_granted" || err.code === "permission_denied") ? "Founder setup needs Editor access to this page." : "Founder setup did not save (" + ((err && err.code) || "error") + ")."); return; }
+          } else store.set(K.founder, rec);
+        }
+        await setPinAndKey(pin1, false, W.key);
+        const pts = blankPoints();
+        pts.subscription = { plan: W.founder ? "BDAI Founder Subscription" : "Member", since: now };
+        pts.updatedAt = now;
+        if (W.founder) {
+          pts.total = FOUNDER_PRIZE; pts.founder = true; pts.claims.founderPrize = true;
+          pts.history = [{ amt: FOUNDER_PRIZE, reason: "BDAI founder prize", at: now }];
+        }
+        if (cloudMode) await Acct.db.doc("points/" + Acct.id).set(pts); else store.set(K.points, pts);
+        Signup.done = { founder: W.founder, name: W.name };
+        const studio = W.studio, name = W.name, wasFounder = W.founder;
+        Object.assign(W, { step: 1, name: "", founder: false, key: null });
+        if (cloudMode) { Signup.state = "done"; P.mine = pts; renderAllP(); Signup.refresh(); }
+        else Signup.createLocalProfile(name, studio);
+        toast(wasFounder ? "Founder account created · +10,000 points" : "Account created");
+      } catch (err) {
+        suStatus("Your account was not created (" + ((err && err.code) || (err && err.message) || "error") + "). Try again.");
+      } finally { if (btn.isConnected) btn.disabled = false; }
+    });
+
     /* ---- wiring ---- */
     function renderAllP() { renderPoints(); renderLeaders(); renderSecurity(); renderFounder(); applyLock(); }
     async function load() {
       P.unsubs.forEach((u) => { try { u(); } catch (e) { /* ignore */ } });
       P.unsubs = []; P.view = {};
       P.mine = null; P.sec = null; P.founder = null; P.leaders = [];
-      if (!Acct.id) { renderAllP(); return; }
+      if (!Acct.id) { Signup.state = "needed"; renderAllP(); Signup.refresh(); return; }
       try {
         if (cloud()) {
           const db = Acct.db;
           P.sec = await readSecurity().catch(() => null);
-          P.unsubs.push(db.doc("points/" + Acct.id).onSnapshot((s) => { P.mine = Object.assign(blankPoints(), s.exists ? s.data() : {}); renderPoints(); renderLeaders(); }, () => {}));
+          P.unsubs.push(db.doc("points/" + Acct.id).onSnapshot((s) => {
+            P.mine = Object.assign(blankPoints(), s.exists ? s.data() : {});
+            renderPoints(); renderLeaders();
+            if (Signup.state === "done" && !Signup.done) Signup.refresh();
+          }, () => {}));
           P.unsubs.push(db.collection("points").orderBy("total", "desc").limit(20).onSnapshot((s) => {
             P.leaders = s.docs.map((d) => ({ id: d.id, total: (d.data() || {}).total || 0, founder: !!(d.data() || {}).founder }));
             renderLeaders(); if (isFounder()) renderFounder();
@@ -1700,13 +1816,10 @@ for n in (3, 4, 6, 12):
           P.founder = store.get(K.founder, null);
         }
       } catch (err) { /* render what we have */ }
+      Signup.state = Acct.id && P.sec ? "done" : "needed";
       renderAllP();
+      Signup.refresh();
     }
-    document.addEventListener("lab:account-created", () => {
-      if (P.sec) return;
-      P.view = { sec: "setup" }; renderSecurity();
-      secCard.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
-    });
     let lastKey = "";
     Acct.on(() => { const key = Acct.mode + ":" + Acct.id; if (key !== lastKey) { lastKey = key; load(); } });
     lastKey = Acct.mode + ":" + Acct.id;
