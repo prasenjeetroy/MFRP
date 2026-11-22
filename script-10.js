@@ -990,10 +990,10 @@ for n in (3, 4, 6, 12):
         return;
       }
       card.innerHTML = `<form id="loginForm" novalidate>
-          <div class="account-who"><span class="avatar lg">?</span><div><b>Sign in</b><span>Create a profile to use the inbox</span></div></div>
+          <div class="account-who"><span class="avatar lg">?</span><div><b>Create account</b><span>Then save your security key and pick a PIN</span></div></div>
           <label class="field">Display name<input type="text" id="loginName" maxlength="40" autocomplete="nickname" placeholder="e.g. Ada" required></label>
           <label class="field">Favourite studio<select id="loginStudio">${STUDIOS.map((s) => `<option>${esc(s)}</option>`).join("")}</select></label>
-          <button class="btn primary" type="submit">Sign in</button>
+          <button class="btn primary" type="submit">Create account</button>
           <p class="form-status" id="loginStatus" role="status"></p>
         </form>
         <p class="account-note">${S.cloudBlocked ? "<b>Sign in to claude.ai</b> to message the studios for real. Until then you" : "You"} can use a local profile: it needs only a name, never a password, and stays in this browser.</p>`;
@@ -1008,7 +1008,8 @@ for n in (3, 4, 6, 12):
       S.profile = { name, studio: $("#loginStudio").value, created: new Date().toISOString() };
       store.set(PROFILE_KEY, S.profile);
       renderAll();
-      toast("Signed in as " + name);
+      toast("Account created for " + name + ". Save your security key and choose a PIN.");
+      document.dispatchEvent(new CustomEvent("lab:account-created"));
       const ta = $("#composeText"); if (ta) ta.focus({ preventScroll: true });
     });
     card.addEventListener("click", (e) => {
@@ -1250,15 +1251,17 @@ for n in (3, 4, 6, 12):
 
   /* -------------------------------------------- points · security · founder */
   // Points: earned on quizzes, perfect worksheets, the survey, messages and Code Lab runs.
-  // Security: every account can set a PIN and gets its own security key (letters + numbers).
-  //   Both are stored only as salted PBKDF2 hashes, in the account's private storage.
-  // Founder: claimed once with the BDAI founder code AND the 45-character founder key. The page
-  //   holds only SHA-256 hashes of those, never the codes. The founder prize is 10,000 points.
-  //   After setup, the founder console opens with the PIN alone.
+  // Security: when an account is set up, a generator makes its own recovery key
+  //   (5 groups of 4 letters, numbers and special characters, e.g. H@QS-TRQC-H5LC-E5UN-4FST)
+  //   and the member chooses a PIN. Both are stored only as salted PBKDF2 hashes, in the
+  //   account's private storage. The key resets a lost PIN.
+  // Founder: claimed once with the 45-character BDAI founder code (letters, numbers and special
+  //   characters). The page holds only its SHA-256 hash, never the code. The founder prize is
+  //   10,000 points. After setup, the founder console opens with the PIN alone.
   (function pointsSecurityFounder() {
     const FOUNDER_PRIZE = 10000;
-    const FOUNDER_CODE_HASH = "5ee8789f4a3ec8040838d1157269deef9e74ccdba286458e00a4d772e2141c34";
-    const FOUNDER_KEY_HASH = "27ae5cef1bf8895c949cb36c01d4e6fa67c2fc619ac1e769f726c4bb0f8c48ee";
+    const FOUNDER_CODE_HASH = "d5c4e6e0888e2de884c4393abba3d3861107a04514eb91388c3db89fadafb254";
+    const FOUNDER_CODE_LEN = 45;
     const PIN_ITER = 150000, MAX_FAILS = 5;
     const LEVELS = [[0, "Rookie"], [100, "Explorer"], [300, "Builder"], [750, "Scientist"], [1500, "Innovator"], [5000, "Master"], [15000, "Legend"]];
     const EARN = [["+10 / correct", "Quiz answer (300 a day)"], ["+10 + 2 each", "Perfect worksheet (200 a day)"], ["+25", "Survey response (once)"], ["+5", "Message a studio (15 a day)"], ["+1", "Code Lab run (20 a day)"], ["+10,000", "Founder prize (once)"]];
@@ -1274,14 +1277,29 @@ for n in (3, 4, 6, 12):
       const k = await crypto.subtle.importKey("raw", enc.encode(secret), "PBKDF2", false, ["deriveBits"]);
       return hex(await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: enc.encode(salt), iterations: iter }, k, 256));
     }
-    function makeSecurityKey() {
-      // 32 symbols, letters and numbers, no look-alikes (I, O, 0, 1). 256 is a multiple of 32: no bias.
-      const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-      const bytes = crypto.getRandomValues(new Uint8Array(32));
-      const raw = Array.from(bytes, (b) => A[b & 31]).join("");
-      return raw.match(/.{4}/g).join("-");
+    // Security-key generator: 20 characters in 5 groups of 4, e.g. H@QS-TRQC-H5LC-E5UN-4FST.
+    // Capital letters and numbers (no look-alikes I, O, 0, 1) with one or two special
+    // characters at random positions. Every key has at least one letter and one number.
+    const KEY_LETTERS = "ABCDEFGHJKLMNPQRSTUVWXYZ", KEY_DIGITS = "23456789", KEY_SPECIALS = "@#$%&*!?+=";
+    const KEY_BASE = KEY_LETTERS + KEY_DIGITS, KEY_LEN = 20;
+    function randomIndex(n) {
+      // Unbiased: reject bytes that would skew the modulo.
+      const limit = 256 - (256 % n), buf = new Uint8Array(1);
+      for (;;) { crypto.getRandomValues(buf); if (buf[0] < limit) return buf[0] % n; }
     }
-    const normKey = (s) => String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    function makeSecurityKey() {
+      for (;;) {
+        const chars = [];
+        for (let i = 0; i < KEY_LEN; i++) chars.push(KEY_BASE[randomIndex(KEY_BASE.length)]);
+        const specials = 1 + randomIndex(2);
+        const used = new Set();
+        while (used.size < specials) used.add(randomIndex(KEY_LEN));
+        used.forEach((pos) => { chars[pos] = KEY_SPECIALS[randomIndex(KEY_SPECIALS.length)]; });
+        const raw = chars.join("");
+        if (/[A-Z]/.test(raw) && /[2-9]/.test(raw)) return raw.match(/.{4}/g).join("-");
+      }
+    }
+    const normKey = (s) => String(s || "").toUpperCase().replace(/[\s-]/g, "");
     const today = () => new Date().toISOString().slice(0, 10);
     const sget = (k) => { try { return sessionStorage.getItem(k); } catch (e) { return null; } };
     const sset = (k, v) => { try { v == null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) { /* blocked */ } };
@@ -1435,25 +1453,17 @@ for n in (3, 4, 6, 12):
         return;
       }
       const head = `<div class="card-head"><h3>PIN &amp; security key</h3><span class="sec-status"><span class="sec-dot ${P.sec ? "on" : ""}"></span>${P.sec ? "Protected" : "Not set up"}</span></div>`;
-      if (v === "show-key") {
-        secCard.innerHTML = head + `<p>This is your personal security key. It is different for every account. Write it down or store it in a password manager; you need it if you forget your PIN.</p>
-          <div class="key-box" id="keyBox"></div>
-          <div class="btn-row"><button class="btn small" type="button" data-sec="copy-key">Copy key</button></div>
-          <p class="warn-note">The key is shown only now. The site keeps a one-way hash, so nobody can show it to you again.</p>
-          <label class="check-row"><input type="checkbox" id="keySaved"><span>I have saved my security key somewhere safe.</span></label>
-          <button class="btn primary" type="button" data-sec="done-key" disabled id="keyDone">Done</button>`;
-        $("#keyBox").textContent = P.view.key;
-        $("#keySaved").addEventListener("change", (e) => { $("#keyDone").disabled = !e.target.checked; });
-        return;
-      }
       if (!P.sec || v === "setup") {
-        secCard.innerHTML = head + `<p class="account-note">Choose a 4–8 digit PIN. The site then creates your own security key from letters and numbers. ${cloud() ? "Both are stored as one-way hashes in your private account storage, which nobody else on this page can read." : "Both are stored as one-way hashes in this browser."}</p>
+        if (!P.view.key) P.view.key = makeSecurityKey();
+        secCard.innerHTML = head + `<p class="account-note">Set up your account security. The generator below makes a recovery key just for this account. You need it if you ever lose your PIN. ${cloud() ? "The key and PIN are stored as one-way hashes in your private account storage, which nobody else on this page can read." : "The key and PIN are stored as one-way hashes in this browser."}</p>
           <form id="secSetup" novalidate>
-            <label class="field">New PIN<input type="password" id="secPin1" inputmode="numeric" maxlength="8" autocomplete="new-password"></label>
+            ${keygenHTML()}
+            <label class="field">Choose a PIN (4–8 digits)<input type="password" id="secPin1" inputmode="numeric" maxlength="8" autocomplete="new-password"></label>
             <label class="field">Confirm PIN<input type="password" id="secPin2" inputmode="numeric" maxlength="8" autocomplete="new-password"></label>
-            <button class="btn primary" type="submit">Set PIN and create security key</button>
+            <button class="btn primary" type="submit">Save PIN and security key</button>
             <p class="form-status" id="secStatus" role="status"></p>
           </form>`;
+        $("#keyBox").textContent = P.view.key;
         return;
       }
       if (v === "change") {
@@ -1466,8 +1476,8 @@ for n in (3, 4, 6, 12):
         return;
       }
       if (v === "forgot") {
-        secCard.innerHTML = head + `<p class="account-note">Enter your security key to choose a new PIN. Dashes and capital letters do not matter.</p><form id="secForgot" novalidate>
-            <label class="field">Security key<input type="text" id="secKey" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"></label>
+        secCard.innerHTML = head + `<p class="account-note">Enter your security key to choose a new PIN. Dashes, spaces and letter case do not matter.</p><form id="secForgot" novalidate>
+            <label class="field">Security key<input type="text" id="secKey" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX"></label>
             <label class="field">New PIN<input type="password" id="secNew1" inputmode="numeric" maxlength="8" autocomplete="new-password"></label>
             <label class="field">Confirm new PIN<input type="password" id="secNew2" inputmode="numeric" maxlength="8" autocomplete="new-password"></label>
             <div class="btn-row"><button class="btn primary" type="submit">Reset PIN</button><button class="btn ghost" type="button" data-sec="home">Cancel</button></div>
@@ -1475,10 +1485,13 @@ for n in (3, 4, 6, 12):
         return;
       }
       if (v === "newkey") {
-        secCard.innerHTML = head + `<p class="account-note">Enter your PIN to replace your security key. Your old key stops working.</p><form id="secNewKey" novalidate>
+        if (!P.view.key) P.view.key = makeSecurityKey();
+        secCard.innerHTML = head + `<p class="account-note">Generate a new recovery key, save it, then enter your PIN to switch to it. Your old key stops working.</p><form id="secNewKey" novalidate>
+            ${keygenHTML()}
             <label class="field">PIN<input type="password" id="secOld" inputmode="numeric" maxlength="8" autocomplete="current-password"></label>
-            <div class="btn-row"><button class="btn primary" type="submit">Create new key</button><button class="btn ghost" type="button" data-sec="home">Cancel</button></div>
+            <div class="btn-row"><button class="btn primary" type="submit">Save new key</button><button class="btn ghost" type="button" data-sec="home">Cancel</button></div>
             <p class="form-status" id="secStatus" role="status"></p></form>`;
+        $("#keyBox").textContent = P.view.key;
         return;
       }
       secCard.innerHTML = head + `<p class="account-note">PIN set ${esc(fmtDate(P.sec.createdAt))}${P.sec.keyAt && P.sec.keyAt !== P.sec.createdAt ? ` · security key replaced ${esc(fmtDate(P.sec.keyAt))}` : ""}. Lock this device when you step away; your PIN unlocks it.</p>
@@ -1489,14 +1502,23 @@ for n in (3, 4, 6, 12):
           <button class="btn small ghost" type="button" data-sec="newkey">New security key</button>
         </div>`;
     }
+    function keygenHTML() {
+      return `<div class="keygen">
+          <span class="keygen-label">Your security key</span>
+          <div class="key-box" id="keyBox" aria-live="polite"></div>
+          <div class="btn-row"><button class="btn small" type="button" data-sec="regen">↻ Generate another</button><button class="btn small" type="button" data-sec="copy-key">Copy key</button></div>
+          <p class="warn-note">Write it down or keep it in a password manager now. The site stores only a one-way hash, so it cannot show this key again.</p>
+          <label class="check-row"><input type="checkbox" id="keySaved"><span>I have saved my security key somewhere safe.</span></label>
+        </div>`;
+    }
     function status(msg, ok) { const st = $("#secStatus"); if (st) { st.textContent = msg; st.className = "form-status " + (ok ? "ok" : "err"); } }
-    async function setPinAndKey(pin, keepKey) {
+    async function setPinAndKey(pin, keepKey, givenKey) {
       const now = new Date().toISOString();
       const doc = Object.assign({}, P.sec || {}, { pinSalt: randHex(16), iter: PIN_ITER, fails: 0, pinAt: now });
       doc.pinHash = await pbkdf2(pin, doc.pinSalt, PIN_ITER);
       let key = null;
       if (!keepKey) {
-        key = makeSecurityKey();
+        key = givenKey || makeSecurityKey();
         doc.keySalt = randHex(16);
         doc.keyHash = await pbkdf2(normKey(key), doc.keySalt, PIN_ITER);
         doc.keyAt = now;
@@ -1514,9 +1536,9 @@ for n in (3, 4, 6, 12):
         catch (err) { const r = document.createRange(); r.selectNodeContents($("#keyBox")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Key selected. Press Ctrl+C to copy."); }
         return;
       }
-      if (a === "done-key") { P.view.key = null; P.view.sec = "home"; renderSecurity(); renderFounder(); return; }
+      if (a === "regen") { P.view.key = makeSecurityKey(); $("#keyBox").textContent = P.view.key; const c = $("#keySaved"); if (c) c.checked = false; return; }
       if (a === "lock") { sset(K.locked, Acct.id); sset(K.fcUnlocked, null); applyLock(); renderFounder(); $("#unlockForm").scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" }); toast("Locked. Enter your PIN to unlock."); return; }
-      P.view.sec = a; renderSecurity();
+      P.view.sec = a; P.view.key = null; renderSecurity();
       const first = $("input", secCard); if (first) first.focus();
     });
     secCard.addEventListener("submit", async (e) => {
@@ -1528,9 +1550,11 @@ for n in (3, 4, 6, 12):
         if (id === "secSetup") {
           if (!validPin(v("secPin1"))) return status("Use 4 to 8 digits for your PIN.");
           if (v("secPin1") !== v("secPin2")) return status("The two PINs do not match.");
-          status("Creating your security key…", true);
-          P.view.key = await setPinAndKey(v("secPin1"));
-          P.view.sec = "show-key"; renderSecurity();
+          if (!$("#keySaved").checked) return status("Save your security key, then tick the box to confirm.");
+          status("Saving…", true);
+          await setPinAndKey(v("secPin1"), false, P.view.key);
+          P.view = { sec: "home" }; renderSecurity(); renderFounder();
+          toast("Account security set up");
         } else if (id === "secChange") {
           if (!validPin(v("secNew1"))) return status("Use 4 to 8 digits for the new PIN.");
           if (v("secNew1") !== v("secNew2")) return status("The new PINs do not match.");
@@ -1540,7 +1564,7 @@ for n in (3, 4, 6, 12):
           P.view.sec = "home"; renderSecurity(); toast("PIN changed");
         } else if (id === "secForgot") {
           const key = normKey(v("secKey"));
-          if (key.length !== 32) return status("A security key has 32 letters and numbers.");
+          if (key.length !== KEY_LEN) return status("A security key has 20 characters in 5 groups of 4, like H@QS-TRQC-H5LC-E5UN-4FST.");
           if (!validPin(v("secNew1"))) return status("Use 4 to 8 digits for the new PIN.");
           if (v("secNew1") !== v("secNew2")) return status("The new PINs do not match.");
           status("Checking your key…", true);
@@ -1549,14 +1573,14 @@ for n in (3, 4, 6, 12):
           sset(K.locked, null); applyLock();
           P.view.sec = "home"; renderSecurity(); renderFounder(); toast("New PIN set");
         } else if (id === "secNewKey") {
+          if (!$("#keySaved").checked) return status("Save the new security key, then tick the box to confirm.");
           const r = await checkPin(v("secOld"));
           if (!r.ok) return status(r.msg);
           const now = new Date().toISOString();
-          const key = makeSecurityKey();
           const doc = Object.assign({}, P.sec, { keySalt: randHex(16), keyAt: now });
-          doc.keyHash = await pbkdf2(normKey(key), doc.keySalt, doc.iter || PIN_ITER);
+          doc.keyHash = await pbkdf2(normKey(P.view.key), doc.keySalt, doc.iter || PIN_ITER);
           await writeSecurity(doc);
-          P.view.key = key; P.view.sec = "show-key"; renderSecurity();
+          P.view = { sec: "home" }; renderSecurity(); toast("New security key saved");
         }
       } catch (err) {
         status("That did not save (" + ((err && err.code) || (err && err.message) || "error") + "). Try again.");
@@ -1576,10 +1600,9 @@ for n in (3, 4, 6, 12):
       }
       if (!P.founder) {
         if (!P.sec) { fCard.innerHTML = head + `<p class="account-note">Founder setup needs a PIN and security key on this account first. Set them up in the PIN &amp; security key card, then come back here.</p>`; return; }
-        fCard.innerHTML = head + `<p class="account-note">Enter the BDAI founder code and the 45-character founder key. Both are checked against one-way hashes, so this page never contains them. The founder account receives the <b>${fmtN(FOUNDER_PRIZE)}-point founder prize</b>. After setup, you only need your PIN.</p>
+        fCard.innerHTML = head + `<p class="account-note">Enter the 45-character BDAI founder code (letters, numbers and special characters). It is checked against a one-way hash, so this page never contains the code. The founder account receives the <b>${fmtN(FOUNDER_PRIZE)}-point founder prize</b>. After setup, you only need your PIN.</p>
           <form id="founderSetup" novalidate>
-            <label class="field">Founder code<input type="password" id="fCode" autocomplete="off" spellcheck="false"></label>
-            <label class="field">Founder key (45 letters and numbers)<input type="password" id="fKey" autocomplete="off" spellcheck="false" maxlength="60"></label>
+            <label class="field">Founder code (45 characters)<input type="password" id="fCode" autocomplete="off" spellcheck="false" maxlength="60"></label>
             <button class="btn primary" type="submit">Set up founder account</button>
             <p class="form-status" id="fStatus" role="status"></p>
           </form>`;
@@ -1616,11 +1639,10 @@ for n in (3, 4, 6, 12):
       btn.disabled = true;
       try {
         if (e.target.id === "founderSetup") {
-          const code = $("#fCode").value.trim(), key = $("#fKey").value.trim();
-          if (!code || !key) return fStatus("Enter both the founder code and the founder key.");
+          const code = $("#fCode").value.trim();
+          if (code.length !== FOUNDER_CODE_LEN) return fStatus(`The founder code has ${FOUNDER_CODE_LEN} characters. You entered ${code.length}.`);
           fStatus("Checking…", true);
-          const [hc, hk] = await Promise.all([sha256("bdai-founder-v1|code:" + code), sha256("bdai-founder-v1|key:" + key)]);
-          if (hc !== FOUNDER_CODE_HASH || hk !== FOUNDER_KEY_HASH) { $("#fKey").value = ""; return fStatus("The founder code or key is not correct."); }
+          if ((await sha256("bdai-founder-v2|" + code)) !== FOUNDER_CODE_HASH) { $("#fCode").value = ""; return fStatus("That founder code is not correct."); }
           const existing = await readFounder();
           if (existing) { P.founder = existing; renderFounder(); return; }
           const rec = { uid: cloud() ? Acct.id : "local", since: new Date().toISOString() };
@@ -1680,6 +1702,11 @@ for n in (3, 4, 6, 12):
       } catch (err) { /* render what we have */ }
       renderAllP();
     }
+    document.addEventListener("lab:account-created", () => {
+      if (P.sec) return;
+      P.view = { sec: "setup" }; renderSecurity();
+      secCard.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    });
     let lastKey = "";
     Acct.on(() => { const key = Acct.mode + ":" + Acct.id; if (key !== lastKey) { lastKey = key; load(); } });
     lastKey = Acct.mode + ":" + Acct.id;
