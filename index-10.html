@@ -16,17 +16,18 @@
 <header class="site-header">
   <div class="wrap">
     <a class="brand" href="#top"><span class="brand-mark">&lt;/&gt;</span>The Essence Lab</a>
-    <a class="account-chip" id="accountChip" href="#inbox" aria-label="Account and inbox"><span class="avatar" id="chipAvatar" aria-hidden="true">?</span><span class="chip-name" id="chipName">Sign in</span></a>
+    <a class="account-chip" id="accountChip" href="#inbox" aria-label="Account and inbox"><span class="avatar" id="chipAvatar" aria-hidden="true">?</span><span class="chip-name" id="chipName">Sign in</span><span class="chip-pts" id="chipPts" hidden>0 pts</span></a>
     <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="siteNav">menu</button>
     <nav class="nav" id="siteNav" aria-label="Sections">
       <a href="#studios">Studios</a>
       <a href="#essence">Essence</a>
-      <a href="#decks">Presentations</a>
+      <a href="#decks">Decks</a>
       <a href="#papers">Papers</a>
-      <a href="#sheets">Math Sheets</a>
-      <a href="#quiz">Quizzes</a>
+      <a href="#sheets">Sheets</a>
+      <a href="#quiz">Quiz</a>
       <a href="#survey">Survey</a>
       <a href="#inbox">Inbox <span class="badge" id="inboxBadge" hidden>0</span></a>
+      <a href="#points">Points</a>
       <a href="#lab">Code Lab</a>
     </nav>
   </div>
@@ -677,8 +678,36 @@ print(analyse(experiment(<span class="tok-n">100</span>)))</pre>
           <h3 id="inboxTitle">Inbox</h3>
           <span class="pill" id="inboxMode">On this device</span>
         </div>
+        <div class="lock-only locked-note"><span>🔒 Your account is locked on this device.</span><a class="btn small primary" href="#points">Unlock with your PIN</a></div>
         <div id="inboxBody"></div>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== POINTS · SECURITY · FOUNDER ============================== -->
+<section class="section alt" id="points">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">// points · security · founder</span>
+      <h2>Points, security and founder access</h2>
+      <p>Earn points across the site, protect your account with a PIN and a personal security key, and run the studios from the founder console.</p>
+    </div>
+    <form class="card lock-only lock-banner" id="unlockForm" novalidate>
+      <div><b>🔒 Account locked on this device</b><span>Enter your PIN to unlock your inbox, points and founder console.</span></div>
+      <label class="sr-only" for="unlockPin">PIN</label>
+      <input type="password" id="unlockPin" inputmode="numeric" maxlength="8" autocomplete="off" placeholder="PIN">
+      <button class="btn primary" type="submit">Unlock</button>
+      <p class="form-status" id="unlockStatus" role="status"></p>
+    </form>
+    <div class="pts-grid">
+      <article class="card pts-card lockable" id="pointsCard" aria-live="polite"><p class="res-empty">Loading points…</p></article>
+      <article class="card leader-card" id="leaderCard">
+        <div class="card-head"><h3>Leaderboard</h3><span class="pill" id="leaderMode">This device</span></div>
+        <ol class="leader" id="leaderList"></ol>
+      </article>
+      <article class="card sec-card" id="securityCard"><p class="res-empty">Loading security…</p></article>
+      <article class="card founder-card lockable" id="founderCard"><p class="res-empty">Loading founder access…</p></article>
     </div>
   </div>
 </section>

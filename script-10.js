@@ -29,6 +29,14 @@
     toastTimer = setTimeout(() => t.classList.remove("show"), 2200);
   }
 
+  // Shared account state (set by the sign-in module) and the points API (set by the points module).
+  const Acct = {
+    mode: "local", id: null, name: "", db: null, user: null, staff: false, listeners: [],
+    set(patch) { Object.assign(this, patch); this.listeners.forEach((f) => { try { f(this); } catch (e) { /* keep going */ } }); },
+    on(f) { this.listeners.push(f); }
+  };
+  const Points = { award: () => Promise.resolve(0) };
+
   /* ------------------------------------------------------------------ nav */
   const navToggle = $("#navToggle");
   const nav = $("#siteNav");
@@ -363,11 +371,16 @@
         if (ok) right++;
       });
       const pct = problems.length ? Math.round((right / problems.length) * 100) : 0;
+      if (problems.length && right === problems.length && !problems.awarded && $("#showSheet").dataset.on !== "1" && !problems.peeked) {
+        problems.awarded = true;
+        Points.award(10 + 2 * problems.length, "Perfect worksheet · " + $("#wsTitle").textContent, { bucket: "sheet", dailyMax: 200 });
+      }
       $("#wsScore").textContent = answered ? `Score: ${right} / ${problems.length} (${pct}%)${answered < problems.length ? ` · ${problems.length - answered} unanswered` : right === problems.length ? " · perfect sheet!" : ""}` : "Type an answer in at least one box first.";
     }
     function show() {
       const btn = $("#showSheet"), on = btn.dataset.on !== "1";
       btn.dataset.on = on ? "1" : "0";
+      if (on) problems.peeked = true;
       btn.textContent = on ? "Hide answers" : "Show answers";
       $$(".ws-item").forEach((el) => {
         const p = problems[el.dataset.i], a = $(".ws-ans", el);
@@ -479,6 +492,8 @@
     }
     function finish() {
       const pct = Math.round((score / qs.length) * 100);
+      const catName = { math: "Mathematics", science: "Science", code: "Coding & Technology", mental: "Mental math" }[cat];
+      if (score > 0) Points.award(score * 10, `Quiz · ${catName} ${score}/${qs.length}`, { bucket: "quiz", dailyMax: 300 });
       const best = store.get("lab-quiz-best", {});
       const prev = best[cat] || 0;
       if (score > prev) { best[cat] = score; store.set("lab-quiz-best", best); }
@@ -565,6 +580,7 @@
           await db.collection("responses").add(data);
           setStatus("Thanks! Your response was added to the shared results.", "ok");
           form.reset();
+          Points.award(25, "Survey response", { once: "survey" });
           return;
         } catch (err) {
           setStatus("The shared results could not be updated (" + (err && err.code ? err.code : "error") + "). Your answers were saved in this browser instead.", "err");
@@ -575,6 +591,7 @@
       render();
       if (!db) setStatus("Thanks! Your response was saved in this browser.", "ok");
       form.reset();
+      Points.award(25, "Survey response", { once: "survey" });
     });
 
     render();
@@ -833,7 +850,10 @@ for n in (3, 4, 6, 12):
       }).catch(() => { btn.disabled = false; });
     }
 
-    function run() { mode === "py" ? runPy() : runWeb(); }
+    function run() {
+      mode === "py" ? runPy() : runWeb();
+      Points.award(1, "Code Lab run", { bucket: "code", dailyMax: 20, quiet: true });
+    }
 
     /* --- editor behaviour --- */
     let debounce;
@@ -1059,6 +1079,7 @@ for n in (3, 4, 6, 12):
         renderMemberMessages();
         st.textContent = "Saved in this browser. Open the published version of the site to reach " + studio + ".";
         st.className = "form-status ok";
+        Points.award(5, "Message to " + studio, { bucket: "msg", dailyMax: 15 });
         return;
       }
       const btn = $("#composeForm button");
@@ -1073,6 +1094,7 @@ for n in (3, 4, 6, 12):
         ta.value = "";
         st.textContent = "Sent to " + studio + ". Replies appear here.";
         st.className = "form-status ok";
+        Points.award(5, "Message to " + studio, { bucket: "msg", dailyMax: 15 });
       } catch (err) {
         st.textContent = "Your message was not sent (" + ((err && err.code) || "error") + "). Check your connection and try again.";
         st.className = "form-status err";
@@ -1160,7 +1182,12 @@ for n in (3, 4, 6, 12):
     }
 
     /* ---- orchestration ---- */
+    function publishAcct() {
+      if (S.mode === "cloud") Acct.set({ mode: "cloud", id: S.me.id, name: S.me.name || "", db: S.db, user: S.user, staff: S.staff });
+      else Acct.set({ mode: "local", id: S.profile ? "local" : null, name: S.profile ? S.profile.name : "", db: null, user: null, staff: false });
+    }
     function renderAll() {
+      publishAcct();
       renderAccount();
       if (S.mode === "cloud" && S.staff) {
         titleEl.textContent = "Studio inbox";
@@ -1219,6 +1246,444 @@ for n in (3, 4, 6, 12):
         subscribeCloud();
       }).catch(() => {});
     }
+  })();
+
+  /* -------------------------------------------- points · security · founder */
+  // Points: earned on quizzes, perfect worksheets, the survey, messages and Code Lab runs.
+  // Security: every account can set a PIN and gets its own security key (letters + numbers).
+  //   Both are stored only as salted PBKDF2 hashes, in the account's private storage.
+  // Founder: claimed once with the BDAI founder code AND the 45-character founder key. The page
+  //   holds only SHA-256 hashes of those, never the codes. The founder prize is 10,000 points.
+  //   After setup, the founder console opens with the PIN alone.
+  (function pointsSecurityFounder() {
+    const FOUNDER_PRIZE = 10000;
+    const FOUNDER_CODE_HASH = "5ee8789f4a3ec8040838d1157269deef9e74ccdba286458e00a4d772e2141c34";
+    const FOUNDER_KEY_HASH = "27ae5cef1bf8895c949cb36c01d4e6fa67c2fc619ac1e769f726c4bb0f8c48ee";
+    const PIN_ITER = 150000, MAX_FAILS = 5;
+    const LEVELS = [[0, "Rookie"], [100, "Explorer"], [300, "Builder"], [750, "Scientist"], [1500, "Innovator"], [5000, "Master"], [15000, "Legend"]];
+    const EARN = [["+10 / correct", "Quiz answer (300 a day)"], ["+10 + 2 each", "Perfect worksheet (200 a day)"], ["+25", "Survey response (once)"], ["+5", "Message a studio (15 a day)"], ["+1", "Code Lab run (20 a day)"], ["+10,000", "Founder prize (once)"]];
+    const K = { points: "lab-points", security: "lab-security", founder: "lab-founder", locked: "lab-locked", fcUnlocked: "lab-founder-open" };
+    const pointsCard = $("#pointsCard"), leaderList = $("#leaderList"), leaderMode = $("#leaderMode"), secCard = $("#securityCard"), fCard = $("#founderCard");
+    const chipPts = $("#chipPts");
+
+    const enc = new TextEncoder();
+    const hex = (buf) => Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join("");
+    const randHex = (n) => hex(crypto.getRandomValues(new Uint8Array(n)));
+    const sha256 = async (s) => hex(await crypto.subtle.digest("SHA-256", enc.encode(s)));
+    async function pbkdf2(secret, salt, iter) {
+      const k = await crypto.subtle.importKey("raw", enc.encode(secret), "PBKDF2", false, ["deriveBits"]);
+      return hex(await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt: enc.encode(salt), iterations: iter }, k, 256));
+    }
+    function makeSecurityKey() {
+      // 32 symbols, letters and numbers, no look-alikes (I, O, 0, 1). 256 is a multiple of 32: no bias.
+      const A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+      const bytes = crypto.getRandomValues(new Uint8Array(32));
+      const raw = Array.from(bytes, (b) => A[b & 31]).join("");
+      return raw.match(/.{4}/g).join("-");
+    }
+    const normKey = (s) => String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const today = () => new Date().toISOString().slice(0, 10);
+    const sget = (k) => { try { return sessionStorage.getItem(k); } catch (e) { return null; } };
+    const sset = (k, v) => { try { v == null ? sessionStorage.removeItem(k) : sessionStorage.setItem(k, v); } catch (e) { /* blocked */ } };
+    const fmtDate = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleDateString([], { day: "numeric", month: "short", year: "numeric" }); };
+    const fmtN = (n) => Number(n || 0).toLocaleString("en-US");
+    const levelOf = (t) => { let i = 0; LEVELS.forEach(([min], j) => { if (t >= min) i = j; }); return i; };
+
+    const P = { mine: null, sec: null, founder: null, leaders: [], names: {}, unsubs: [], queue: Promise.resolve(), warned: false, view: {} };
+    const cloud = () => Acct.mode === "cloud" && Acct.db && Acct.id;
+    const blankPoints = () => ({ total: 0, history: [], claims: {}, daily: { date: today(), buckets: {} }, founder: false, updatedAt: null });
+
+    /* ---- storage ---- */
+    async function readPoints(uid) {
+      if (!cloud()) return Object.assign(blankPoints(), store.get(K.points, {}));
+      const snap = await Acct.db.doc("points/" + (uid || Acct.id)).get();
+      return Object.assign(blankPoints(), snap.exists ? JSON.parse(JSON.stringify(snap.data())) : {});
+    }
+    async function writePoints(doc, uid) {
+      if (!cloud()) { store.set(K.points, doc); P.mine = doc; return; }
+      await Acct.db.doc("points/" + (uid || Acct.id)).set(doc);
+    }
+    async function readSecurity() {
+      if (!cloud()) return store.get(K.security, null);
+      const snap = await Acct.db.doc(`data/users/${Acct.id}/security`).get();
+      return snap.exists ? snap.data() : null;
+    }
+    async function writeSecurity(doc) {
+      if (!cloud()) { store.set(K.security, doc); P.sec = doc; return; }
+      await Acct.db.doc(`data/users/${Acct.id}/security`).set(doc);
+      P.sec = doc;
+    }
+    async function readFounder() {
+      if (!cloud()) return store.get(K.founder, null);
+      const snap = await Acct.db.doc("founder/current").get();
+      return snap.exists ? snap.data() : null;
+    }
+
+    /* ---- points ---- */
+    function award(amount, reason, opts = {}) {
+      if (!Acct.id) {
+        if (!P.warned && !opts.quiet) { toast("Sign in to collect points"); P.warned = true; }
+        return Promise.resolve(0);
+      }
+      P.queue = P.queue.then(async () => {
+        const doc = await readPoints();
+        if (!doc.daily || doc.daily.date !== today()) doc.daily = { date: today(), buckets: {} };
+        if (opts.once && doc.claims[opts.once]) return 0;
+        let amt = Math.round(amount);
+        if (opts.bucket && opts.dailyMax) {
+          const used = doc.daily.buckets[opts.bucket] || 0;
+          amt = Math.max(0, Math.min(amt, opts.dailyMax - used));
+          doc.daily.buckets[opts.bucket] = used + amt;
+        }
+        if (amt <= 0) return 0;
+        if (opts.once) doc.claims[opts.once] = true;
+        if (opts.founder) doc.founder = true;
+        const at = new Date().toISOString();
+        doc.total = (Number(doc.total) || 0) + amt;
+        doc.history = [{ amt, reason: String(reason).slice(0, 80), at }].concat(doc.history || []).slice(0, 20);
+        doc.updatedAt = at;
+        await writePoints(doc);
+        if (!cloud()) renderPoints();
+        if (!opts.quiet) toast(`+${fmtN(amt)} points · ${reason}`);
+        return amt;
+      }).catch((err) => { if (!opts.quiet) toast("Points could not be saved (" + ((err && err.code) || "error") + ")"); return 0; });
+      return P.queue;
+    }
+    Points.award = award;
+
+    function renderPoints() {
+      if (!Acct.id) {
+        pointsCard.innerHTML = `<div class="card-head"><h3>Your points</h3></div><div class="locked"><span>Sign in to start collecting points.</span><a class="btn small primary" href="#inbox">Sign in</a></div>${earnHTML()}`;
+        chipPts.hidden = true;
+        return;
+      }
+      const d = P.mine || blankPoints(), t = Number(d.total) || 0, li = levelOf(t);
+      const next = LEVELS[li + 1], cur = LEVELS[li];
+      const pct = next ? Math.min(100, ((t - cur[0]) / (next[0] - cur[0])) * 100) : 100;
+      pointsCard.innerHTML = `<div class="card-head"><h3>Your points</h3><span class="pill">${cloud() ? "Saved to your account" : "Saved on this device"}</span></div>
+        <div class="pts-top"><div class="pts-total">${fmtN(t)}<small>pts</small></div>
+          <div class="level-row"><span class="level">★ ${esc(cur[1])}</span>${d.founder ? '<span class="level founder">♛ Founder</span>' : ""}</div></div>
+        <div class="progress"><span>${next ? `${fmtN(next[0] - t)} points to ${esc(next[1])}` : "Top level reached"}</span><span class="track"><i style="width:${pct.toFixed(1)}%"></i></span></div>
+        <div><h4 style="font-size:0.95rem;margin-bottom:6px">Recent points</h4>${(d.history || []).length
+          ? `<ul class="history">${d.history.map((h) => `<li><span class="amt ${h.amt < 0 ? "neg" : ""}">${h.amt > 0 ? "+" : ""}${fmtN(h.amt)}</span><span>${esc(h.reason)}</span><time>${esc(fmtDate(h.at))}</time></li>`).join("")}</ul>`
+          : `<p class="res-empty">No points yet. Finish a quiz or a perfect worksheet to earn your first ones.</p>`}</div>
+        ${earnHTML()}`;
+      chipPts.hidden = false;
+      chipPts.textContent = fmtN(t) + " pts";
+      if (!cloud()) renderLeaders();
+    }
+    function earnHTML() {
+      return `<div><h4 style="font-size:0.95rem;margin-bottom:6px">How to earn</h4><ul class="earn-list">${EARN.map(([a, b]) => `<li><b>${esc(a)}</b>${esc(b)}</li>`).join("")}</ul></div>`;
+    }
+    function renderLeaders() {
+      leaderMode.textContent = cloud() ? "Everyone on this page" : "This device";
+      let rows;
+      if (cloud()) rows = P.leaders;
+      else rows = Acct.id && P.mine ? [{ id: "local", total: P.mine.total, founder: P.mine.founder }] : [];
+      if (!rows.length) { leaderList.innerHTML = `<li class="res-empty" style="display:block">No points yet. Be the first on the board.</li>`; return; }
+      leaderList.innerHTML = rows.map((r) => `<li class="${r.id === Acct.id ? "me" : ""}"><span class="avatar" data-av="${esc(r.id)}"></span><span class="nm"></span><span class="pt">${fmtN(r.total)}</span></li>`).join("");
+      $$("li", leaderList).forEach((li, i) => {
+        const r = rows[i];
+        const name = r.id === Acct.id ? (Acct.name || "You") + " (you)" : P.names[r.id] || "Member";
+        $(".nm", li).textContent = name;
+        if (r.founder) { const s = document.createElement("small"); s.textContent = "♛ founder"; $(".nm", li).appendChild(s); }
+        $(".avatar", li).textContent = (name.match(/[A-Za-z0-9]/) || ["?"])[0].toUpperCase();
+      });
+    }
+    async function resolveNames(ids) {
+      const missing = ids.filter((id) => id !== Acct.id && !(id in P.names));
+      if (!missing.length || !Acct.user) return;
+      try {
+        const ps = await Acct.user.profiles(missing);
+        missing.forEach((id) => { P.names[id] = (ps && ps[id] && ps[id].name) || "Member"; });
+        renderLeaders(); renderFounder();
+      } catch (e) { /* keep generic names */ }
+    }
+
+    /* ---- lock ---- */
+    function isLocked() { return !!(Acct.id && P.sec && sget(K.locked) === (Acct.id || "")); }
+    function applyLock() {
+      document.documentElement.classList.toggle("is-locked", isLocked());
+    }
+    async function checkPin(pin) {
+      const sec = P.sec;
+      if (!sec) return { ok: false, msg: "Set up a PIN first." };
+      if ((sec.fails || 0) >= MAX_FAILS) return { ok: false, msg: "Too many wrong PINs. Use your security key to set a new PIN.", blocked: true };
+      const ok = (await pbkdf2(pin, sec.pinSalt, sec.iter || PIN_ITER)) === sec.pinHash;
+      const updated = Object.assign({}, sec, { fails: ok ? 0 : (sec.fails || 0) + 1 });
+      if (ok !== true || sec.fails) await writeSecurity(updated);
+      if (ok) return { ok: true };
+      const left = MAX_FAILS - updated.fails;
+      return { ok: false, msg: left > 0 ? `Wrong PIN. ${left} ${left === 1 ? "try" : "tries"} left before you need your security key.` : "Too many wrong PINs. Use your security key to set a new PIN.", blocked: left <= 0 };
+    }
+    $("#unlockForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const st = $("#unlockStatus"), inp = $("#unlockPin");
+      st.textContent = "Checking…"; st.className = "form-status";
+      const r = await checkPin(inp.value.trim());
+      inp.value = "";
+      if (r.ok) { sset(K.locked, null); applyLock(); st.textContent = ""; toast("Unlocked"); renderSecurity(); }
+      else { st.textContent = r.msg; st.className = "form-status err"; if (r.blocked) { P.view.sec = "forgot"; renderSecurity(); } }
+    });
+
+    /* ---- security card ---- */
+    const validPin = (p) => /^\d{4,8}$/.test(p);
+    function renderSecurity() {
+      const v = P.view.sec || "home";
+      if (!Acct.id) {
+        secCard.innerHTML = `<div class="card-head"><h3>PIN &amp; security key</h3></div><div class="locked"><span>Sign in first, then protect your account with a PIN.</span><a class="btn small primary" href="#inbox">Sign in</a></div>`;
+        return;
+      }
+      const head = `<div class="card-head"><h3>PIN &amp; security key</h3><span class="sec-status"><span class="sec-dot ${P.sec ? "on" : ""}"></span>${P.sec ? "Protected" : "Not set up"}</span></div>`;
+      if (v === "show-key") {
+        secCard.innerHTML = head + `<p>This is your personal security key. It is different for every account. Write it down or store it in a password manager; you need it if you forget your PIN.</p>
+          <div class="key-box" id="keyBox"></div>
+          <div class="btn-row"><button class="btn small" type="button" data-sec="copy-key">Copy key</button></div>
+          <p class="warn-note">The key is shown only now. The site keeps a one-way hash, so nobody can show it to you again.</p>
+          <label class="check-row"><input type="checkbox" id="keySaved"><span>I have saved my security key somewhere safe.</span></label>
+          <button class="btn primary" type="button" data-sec="done-key" disabled id="keyDone">Done</button>`;
+        $("#keyBox").textContent = P.view.key;
+        $("#keySaved").addEventListener("change", (e) => { $("#keyDone").disabled = !e.target.checked; });
+        return;
+      }
+      if (!P.sec || v === "setup") {
+        secCard.innerHTML = head + `<p class="account-note">Choose a 4–8 digit PIN. The site then creates your own security key from letters and numbers. ${cloud() ? "Both are stored as one-way hashes in your private account storage, which nobody else on this page can read." : "Both are stored as one-way hashes in this browser."}</p>
+          <form id="secSetup" novalidate>
+            <label class="field">New PIN<input type="password" id="secPin1" inputmode="numeric" maxlength="8" autocomplete="new-password"></label>
+            <label class="field">Confirm PIN<input type="password" id="secPin2" inputmode="numeric" maxlength="8" autocomplete="new-password"></label>
+            <button class="btn primary" type="submit">Set PIN and create security key</button>
+            <p class="form-status" id="secStatus" role="status"></p>
+          </form>`;
+        return;
+      }
+      if (v === "change") {
+        secCard.innerHTML = head + `<form id="secChange" novalidate>
+            <label class="field">Current PIN<input type="password" id="secOld" inputmode="numeric" maxlength="8" autocomplete="current-password"></label>
+            <label class="field">New PIN<input type="password" id="secNew1" inputmode="numeric" maxlength="8" autocomplete="new-password"></label>
+            <label class="field">Confirm new PIN<input type="password" id="secNew2" inputmode="numeric" maxlength="8" autocomplete="new-password"></label>
+            <div class="btn-row"><button class="btn primary" type="submit">Change PIN</button><button class="btn ghost" type="button" data-sec="home">Cancel</button></div>
+            <p class="form-status" id="secStatus" role="status"></p></form>`;
+        return;
+      }
+      if (v === "forgot") {
+        secCard.innerHTML = head + `<p class="account-note">Enter your security key to choose a new PIN. Dashes and capital letters do not matter.</p><form id="secForgot" novalidate>
+            <label class="field">Security key<input type="text" id="secKey" autocomplete="off" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX"></label>
+            <label class="field">New PIN<input type="password" id="secNew1" inputmode="numeric" maxlength="8" autocomplete="new-password"></label>
+            <label class="field">Confirm new PIN<input type="password" id="secNew2" inputmode="numeric" maxlength="8" autocomplete="new-password"></label>
+            <div class="btn-row"><button class="btn primary" type="submit">Reset PIN</button><button class="btn ghost" type="button" data-sec="home">Cancel</button></div>
+            <p class="form-status" id="secStatus" role="status"></p></form>`;
+        return;
+      }
+      if (v === "newkey") {
+        secCard.innerHTML = head + `<p class="account-note">Enter your PIN to replace your security key. Your old key stops working.</p><form id="secNewKey" novalidate>
+            <label class="field">PIN<input type="password" id="secOld" inputmode="numeric" maxlength="8" autocomplete="current-password"></label>
+            <div class="btn-row"><button class="btn primary" type="submit">Create new key</button><button class="btn ghost" type="button" data-sec="home">Cancel</button></div>
+            <p class="form-status" id="secStatus" role="status"></p></form>`;
+        return;
+      }
+      secCard.innerHTML = head + `<p class="account-note">PIN set ${esc(fmtDate(P.sec.createdAt))}${P.sec.keyAt && P.sec.keyAt !== P.sec.createdAt ? ` · security key replaced ${esc(fmtDate(P.sec.keyAt))}` : ""}. Lock this device when you step away; your PIN unlocks it.</p>
+        <div class="btn-row">
+          <button class="btn small primary" type="button" data-sec="lock">🔒 Lock now</button>
+          <button class="btn small" type="button" data-sec="change">Change PIN</button>
+          <button class="btn small" type="button" data-sec="forgot">Forgot PIN?</button>
+          <button class="btn small ghost" type="button" data-sec="newkey">New security key</button>
+        </div>`;
+    }
+    function status(msg, ok) { const st = $("#secStatus"); if (st) { st.textContent = msg; st.className = "form-status " + (ok ? "ok" : "err"); } }
+    async function setPinAndKey(pin, keepKey) {
+      const now = new Date().toISOString();
+      const doc = Object.assign({}, P.sec || {}, { pinSalt: randHex(16), iter: PIN_ITER, fails: 0, pinAt: now });
+      doc.pinHash = await pbkdf2(pin, doc.pinSalt, PIN_ITER);
+      let key = null;
+      if (!keepKey) {
+        key = makeSecurityKey();
+        doc.keySalt = randHex(16);
+        doc.keyHash = await pbkdf2(normKey(key), doc.keySalt, PIN_ITER);
+        doc.keyAt = now;
+      }
+      if (!doc.createdAt) doc.createdAt = now;
+      await writeSecurity(doc);
+      return key;
+    }
+    secCard.addEventListener("click", async (e) => {
+      const b = e.target.closest("[data-sec]");
+      if (!b) return;
+      const a = b.dataset.sec;
+      if (a === "copy-key") {
+        try { await navigator.clipboard.writeText(P.view.key); toast("Security key copied"); }
+        catch (err) { const r = document.createRange(); r.selectNodeContents($("#keyBox")); const s = getSelection(); s.removeAllRanges(); s.addRange(r); toast("Key selected. Press Ctrl+C to copy."); }
+        return;
+      }
+      if (a === "done-key") { P.view.key = null; P.view.sec = "home"; renderSecurity(); renderFounder(); return; }
+      if (a === "lock") { sset(K.locked, Acct.id); sset(K.fcUnlocked, null); applyLock(); renderFounder(); $("#unlockForm").scrollIntoView({ block: "center", behavior: reduceMotion ? "auto" : "smooth" }); toast("Locked. Enter your PIN to unlock."); return; }
+      P.view.sec = a; renderSecurity();
+      const first = $("input", secCard); if (first) first.focus();
+    });
+    secCard.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const id = e.target.id, btn = $("button[type=submit]", e.target);
+      const v = (x) => ($("#" + x) ? $("#" + x).value.trim() : "");
+      btn.disabled = true;
+      try {
+        if (id === "secSetup") {
+          if (!validPin(v("secPin1"))) return status("Use 4 to 8 digits for your PIN.");
+          if (v("secPin1") !== v("secPin2")) return status("The two PINs do not match.");
+          status("Creating your security key…", true);
+          P.view.key = await setPinAndKey(v("secPin1"));
+          P.view.sec = "show-key"; renderSecurity();
+        } else if (id === "secChange") {
+          if (!validPin(v("secNew1"))) return status("Use 4 to 8 digits for the new PIN.");
+          if (v("secNew1") !== v("secNew2")) return status("The new PINs do not match.");
+          const r = await checkPin(v("secOld"));
+          if (!r.ok) return status(r.msg);
+          await setPinAndKey(v("secNew1"), true);
+          P.view.sec = "home"; renderSecurity(); toast("PIN changed");
+        } else if (id === "secForgot") {
+          const key = normKey(v("secKey"));
+          if (key.length !== 32) return status("A security key has 32 letters and numbers.");
+          if (!validPin(v("secNew1"))) return status("Use 4 to 8 digits for the new PIN.");
+          if (v("secNew1") !== v("secNew2")) return status("The new PINs do not match.");
+          status("Checking your key…", true);
+          if ((await pbkdf2(key, P.sec.keySalt, P.sec.iter || PIN_ITER)) !== P.sec.keyHash) return status("That security key does not match this account.");
+          await setPinAndKey(v("secNew1"), true);
+          sset(K.locked, null); applyLock();
+          P.view.sec = "home"; renderSecurity(); renderFounder(); toast("New PIN set");
+        } else if (id === "secNewKey") {
+          const r = await checkPin(v("secOld"));
+          if (!r.ok) return status(r.msg);
+          const now = new Date().toISOString();
+          const key = makeSecurityKey();
+          const doc = Object.assign({}, P.sec, { keySalt: randHex(16), keyAt: now });
+          doc.keyHash = await pbkdf2(normKey(key), doc.keySalt, doc.iter || PIN_ITER);
+          await writeSecurity(doc);
+          P.view.key = key; P.view.sec = "show-key"; renderSecurity();
+        }
+      } catch (err) {
+        status("That did not save (" + ((err && err.code) || (err && err.message) || "error") + "). Try again.");
+      } finally { if (btn.isConnected) btn.disabled = false; }
+    });
+
+    /* ---- founder card ---- */
+    const isFounder = () => !!(P.founder && Acct.id && P.founder.uid === (cloud() ? Acct.id : "local"));
+    function renderFounder() {
+      const head = `<div class="card-head"><h3>Founder access · BDAI</h3>${P.founder ? '<span class="level founder">♛ set up</span>' : '<span class="pill">Not claimed</span>'}</div>`;
+      if (!Acct.id) { fCard.innerHTML = head + `<div class="locked"><span>Sign in to set up or open founder access.</span><a class="btn small primary" href="#inbox">Sign in</a></div>`; return; }
+      if (P.founder && !isFounder()) {
+        fCard.innerHTML = head + `<div class="founder-badge"><span class="crown">♛</span><div><b id="fName"></b><div class="account-note">Founder since ${esc(fmtDate(P.founder.since))}</div></div></div><p class="account-note">Founder access is already set up for another account.</p>`;
+        const fn = P.names[P.founder.uid];
+        $("#fName").textContent = fn && fn !== "Member" ? fn : "The BDAI founder";
+        return;
+      }
+      if (!P.founder) {
+        if (!P.sec) { fCard.innerHTML = head + `<p class="account-note">Founder setup needs a PIN and security key on this account first. Set them up in the PIN &amp; security key card, then come back here.</p>`; return; }
+        fCard.innerHTML = head + `<p class="account-note">Enter the BDAI founder code and the 45-character founder key. Both are checked against one-way hashes, so this page never contains them. The founder account receives the <b>${fmtN(FOUNDER_PRIZE)}-point founder prize</b>. After setup, you only need your PIN.</p>
+          <form id="founderSetup" novalidate>
+            <label class="field">Founder code<input type="password" id="fCode" autocomplete="off" spellcheck="false"></label>
+            <label class="field">Founder key (45 letters and numbers)<input type="password" id="fKey" autocomplete="off" spellcheck="false" maxlength="60"></label>
+            <button class="btn primary" type="submit">Set up founder account</button>
+            <p class="form-status" id="fStatus" role="status"></p>
+          </form>`;
+        return;
+      }
+      if (sget(K.fcUnlocked) !== Acct.id) {
+        fCard.innerHTML = head + `<div class="founder-badge"><span class="crown">♛</span><div><b>You are the founder</b><div class="account-note">Since ${esc(fmtDate(P.founder.since))}</div></div></div>
+          <form id="founderPin" novalidate>
+            <label class="field">PIN<input type="password" id="fPin" inputmode="numeric" maxlength="8" autocomplete="current-password"></label>
+            <button class="btn primary" type="submit">Open founder console</button>
+            <p class="form-status" id="fStatus" role="status"></p>
+          </form>`;
+        return;
+      }
+      const totalPts = cloud() ? P.leaders.reduce((a, r) => a + (Number(r.total) || 0), 0) : (P.mine ? P.mine.total : 0);
+      const members = cloud() ? P.leaders.filter((r) => r.id !== Acct.id) : [];
+      fCard.innerHTML = head + `<div class="founder-badge"><span class="crown">♛</span><div><b>Founder console</b><div class="account-note">Opened with your PIN · founder since ${esc(fmtDate(P.founder.since))}</div></div></div>
+        <div class="stat-row"><div class="stat"><b>${fmtN(cloud() ? P.leaders.length : 1)}</b><span>accounts with points</span></div><div class="stat"><b>${fmtN(totalPts)}</b><span>points across the site</span></div><div class="stat"><b>${fmtN(FOUNDER_PRIZE)}</b><span>founder prize</span></div></div>
+        ${cloud() ? (members.length ? `<form id="awardForm" novalidate>
+            <label class="field">Award points to<select id="awardTo">${members.map((m) => `<option value="${esc(m.id)}" data-name="${esc(m.id)}"></option>`).join("")}</select></label>
+            <label class="field">Points (−1,000 to 1,000)<input type="number" id="awardAmt" min="-1000" max="1000" step="1" value="50"></label>
+            <label class="field">Reason<input type="text" id="awardWhy" maxlength="60" value="Founder award"></label>
+            <button class="btn primary" type="submit">Award points</button>
+            <p class="form-status" id="fStatus" role="status"></p></form>` : `<p class="res-empty">When members earn points, you can award them bonus points here.</p>`)
+          : `<p class="account-note">This copy of the site runs without a server, so the console shows only this device. Open the published version to award points to members.</p>`}
+        <div class="btn-row"><a class="btn small" href="#inbox">Open studio inbox</a><button class="btn small ghost" type="button" id="founderClose">Close console</button></div>`;
+      $$("#awardTo option", fCard).forEach((o) => { o.textContent = (P.names[o.value] || "Member") + " · " + fmtN((P.leaders.find((r) => r.id === o.value) || {}).total) + " pts"; });
+    }
+    const fStatus = (msg, ok) => { const st = $("#fStatus"); if (st) { st.textContent = msg; st.className = "form-status " + (ok ? "ok" : "err"); } };
+    fCard.addEventListener("click", (e) => { if (e.target.id === "founderClose") { sset(K.fcUnlocked, null); renderFounder(); } });
+    fCard.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = $("button[type=submit]", e.target);
+      btn.disabled = true;
+      try {
+        if (e.target.id === "founderSetup") {
+          const code = $("#fCode").value.trim(), key = $("#fKey").value.trim();
+          if (!code || !key) return fStatus("Enter both the founder code and the founder key.");
+          fStatus("Checking…", true);
+          const [hc, hk] = await Promise.all([sha256("bdai-founder-v1|code:" + code), sha256("bdai-founder-v1|key:" + key)]);
+          if (hc !== FOUNDER_CODE_HASH || hk !== FOUNDER_KEY_HASH) { $("#fKey").value = ""; return fStatus("The founder code or key is not correct."); }
+          const existing = await readFounder();
+          if (existing) { P.founder = existing; renderFounder(); return; }
+          const rec = { uid: cloud() ? Acct.id : "local", since: new Date().toISOString() };
+          if (cloud()) {
+            try { await Acct.db.doc("founder/current").set(rec); }
+            catch (err) { return fStatus(err && (err.code === "not_granted" || err.code === "permission_denied") ? "Founder setup needs Editor access to this page. Ask the page owner to make you an Editor." : "Founder setup did not save (" + ((err && err.code) || "error") + ")."); }
+          } else store.set(K.founder, rec);
+          P.founder = rec;
+          await award(FOUNDER_PRIZE, "BDAI founder prize", { once: "founderPrize", founder: true });
+          sset(K.fcUnlocked, Acct.id);
+          renderFounder();
+          toast("Founder account set up · +10,000 points");
+        } else if (e.target.id === "founderPin") {
+          const r = await checkPin($("#fPin").value.trim());
+          if (!r.ok) { $("#fPin").value = ""; fStatus(r.msg); if (r.blocked) { P.view.sec = "forgot"; renderSecurity(); } return; }
+          sset(K.fcUnlocked, Acct.id);
+          renderFounder();
+        } else if (e.target.id === "awardForm") {
+          const to = $("#awardTo").value, amt = Math.round(Number($("#awardAmt").value)), why = $("#awardWhy").value.trim() || "Founder award";
+          if (!to || !Number.isFinite(amt) || !amt || Math.abs(amt) > 1000) return fStatus("Choose a member and an amount between −1,000 and 1,000 (not 0).");
+          const doc = await readPoints(to);
+          const at = new Date().toISOString();
+          doc.total = Math.max(0, (Number(doc.total) || 0) + amt);
+          doc.history = [{ amt, reason: why.slice(0, 60) + " (founder)", at }].concat(doc.history || []).slice(0, 20);
+          doc.updatedAt = at;
+          await writePoints(doc, to);
+          fStatus(`${amt > 0 ? "Awarded" : "Removed"} ${fmtN(Math.abs(amt))} points.`, true);
+        }
+      } catch (err) {
+        fStatus("That did not work (" + ((err && err.code) || (err && err.message) || "error") + ").");
+      } finally { if (btn.isConnected) btn.disabled = false; }
+    });
+
+    /* ---- wiring ---- */
+    function renderAllP() { renderPoints(); renderLeaders(); renderSecurity(); renderFounder(); applyLock(); }
+    async function load() {
+      P.unsubs.forEach((u) => { try { u(); } catch (e) { /* ignore */ } });
+      P.unsubs = []; P.view = {};
+      P.mine = null; P.sec = null; P.founder = null; P.leaders = [];
+      if (!Acct.id) { renderAllP(); return; }
+      try {
+        if (cloud()) {
+          const db = Acct.db;
+          P.sec = await readSecurity().catch(() => null);
+          P.unsubs.push(db.doc("points/" + Acct.id).onSnapshot((s) => { P.mine = Object.assign(blankPoints(), s.exists ? s.data() : {}); renderPoints(); renderLeaders(); }, () => {}));
+          P.unsubs.push(db.collection("points").orderBy("total", "desc").limit(20).onSnapshot((s) => {
+            P.leaders = s.docs.map((d) => ({ id: d.id, total: (d.data() || {}).total || 0, founder: !!(d.data() || {}).founder }));
+            renderLeaders(); if (isFounder()) renderFounder();
+            resolveNames(P.leaders.map((r) => r.id));
+          }, () => { leaderMode.textContent = "Leaderboard unavailable"; }));
+          P.unsubs.push(db.doc("founder/current").onSnapshot((s) => { P.founder = s.exists ? s.data() : null; if (P.founder) resolveNames([P.founder.uid]); renderFounder(); }, () => {}));
+        } else {
+          P.mine = Object.assign(blankPoints(), store.get(K.points, {}));
+          P.sec = store.get(K.security, null);
+          P.founder = store.get(K.founder, null);
+        }
+      } catch (err) { /* render what we have */ }
+      renderAllP();
+    }
+    let lastKey = "";
+    Acct.on(() => { const key = Acct.mode + ":" + Acct.id; if (key !== lastKey) { lastKey = key; load(); } });
+    lastKey = Acct.mode + ":" + Acct.id;
+    load();
   })();
 
 })();
