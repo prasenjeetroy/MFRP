@@ -16,6 +16,7 @@
 <header class="site-header">
   <div class="wrap">
     <a class="brand" href="#top"><span class="brand-mark">&lt;/&gt;</span>The Essence Lab</a>
+    <a class="account-chip" id="accountChip" href="#inbox" aria-label="Account and inbox"><span class="avatar" id="chipAvatar" aria-hidden="true">?</span><span class="chip-name" id="chipName">Sign in</span></a>
     <button class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="siteNav">menu</button>
     <nav class="nav" id="siteNav" aria-label="Sections">
       <a href="#studios">Studios</a>
@@ -25,6 +26,7 @@
       <a href="#sheets">Math Sheets</a>
       <a href="#quiz">Quizzes</a>
       <a href="#survey">Survey</a>
+      <a href="#inbox">Inbox <span class="badge" id="inboxBadge" hidden>0</span></a>
       <a href="#lab">Code Lab</a>
     </nav>
   </div>
@@ -653,6 +655,29 @@ print(analyse(experiment(<span class="tok-n">100</span>)))</pre>
           <div class="res-total" id="surveyTotal">0 responses</div>
         </div>
         <div id="surveyCharts"><p class="res-empty">No responses yet. Fill in the form and your answers appear here as bar charts.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================== ACCOUNT + INBOX ============================== -->
+<section class="section" id="inbox">
+  <div class="wrap">
+    <div class="section-head">
+      <span class="eyebrow">// account.login() · inbox</span>
+      <h2>Sign in and message the studios</h2>
+      <p>Ask Mathopea a maths question, pitch an experiment to Experimentium, or ask Databell Software Labs about data. Replies arrive in your inbox.</p>
+    </div>
+    <div class="inbox-grid">
+      <aside class="card account" id="accountCard" aria-live="polite">
+        <p class="res-empty">Loading your account…</p>
+      </aside>
+      <div class="card inbox" id="inboxPanel">
+        <div class="inbox-head">
+          <h3 id="inboxTitle">Inbox</h3>
+          <span class="pill" id="inboxMode">On this device</span>
+        </div>
+        <div id="inboxBody"></div>
       </div>
     </div>
   </div>

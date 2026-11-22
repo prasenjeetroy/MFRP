@@ -909,4 +909,316 @@ for n in (3, 4, 6, 12):
     setLang("html");
     runWeb();
   })();
+  /* ------------------------------------------------------ account + inbox */
+  // Two modes:
+  //  • cloud — published as a claude.ai artifact: the viewer's Claude account is the login,
+  //    and messages live in the artifact's shared database (inbox/<viewer id>/messages).
+  //    Each member reads only their own conversation; Editors/the owner see all and reply.
+  //  • local — plain static hosting (no server): a name-only profile and messages kept in
+  //    this browser. No password is ever asked for or stored.
+  (function account() {
+    const STUDIOS = ["Mathopea", "Experimentium", "Databell Software Labs"];
+    const WELCOME = [
+      { studio: "Mathopea", text: "Welcome! Send us a maths question, a puzzle you are stuck on, or an idea for the next Mathopea paper." },
+      { studio: "Experimentium", text: "Hi from Experimentium. Tell us about an experiment you want to run or a prototype you are building." },
+      { studio: "Databell Software Labs", text: "Databell here. Ask about apps, databases, SQL or analytics and we will reply in this inbox." }
+    ];
+    const PROFILE_KEY = "lab-profile", LOCAL_INBOX_KEY = "lab-inbox";
+    const card = $("#accountCard"), body = $("#inboxBody"), modeEl = $("#inboxMode"), titleEl = $("#inboxTitle");
+    const chipName = $("#chipName"), chipAvatar = $("#chipAvatar"), badge = $("#inboxBadge");
+    const S = {
+      mode: "local", profile: store.get(PROFILE_KEY, null), local: store.get(LOCAL_INBOX_KEY, []),
+      db: null, user: null, me: null, staff: false, cloudBlocked: false,
+      thread: null, messages: [], threads: [], names: {}, open: null, openMsgs: [],
+      unsubs: [], convUnsub: null, layout: ""
+    };
+
+    const initials = (name) => (String(name || "?").trim().split(/\s+/).map((w) => w[0]).slice(0, 2).join("") || "?").toUpperCase();
+    const fmtTime = (iso) => { const d = new Date(iso); return isNaN(d) ? "" : d.toLocaleString([], { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }); };
+    const signedIn = () => (S.mode === "cloud" ? !!S.me : !!S.profile);
+    const displayName = () => (S.mode === "cloud" ? (S.me && S.me.name) || "You" : S.profile && S.profile.name);
+
+    function setAvatar(el, name, url) {
+      el.textContent = "";
+      if (url) { const img = document.createElement("img"); img.src = url; img.alt = ""; el.appendChild(img); }
+      else el.textContent = initials(name);
+    }
+    function setBadge(n) { badge.hidden = !n; badge.textContent = String(n); }
+
+    /* ---- account card ---- */
+    function renderAccount() {
+      if (S.mode === "cloud") {
+        card.innerHTML = `<div class="account-who"><span class="avatar lg" id="accAvatar"></span><div><b id="accName"></b><span>Signed in with your Claude account</span></div></div>
+          <span class="role ${S.staff ? "staff" : ""}">${S.staff ? "Studio staff · sees every conversation" : "Member"}</span>
+          <p class="account-note">Your Claude account is your login, so this page never asks for a password. ${S.staff ? "You can reply to members as any of the three studios." : "Only you and the studio staff can read your conversation."}</p>`;
+        $("#accName", card).textContent = displayName();
+        setAvatar($("#accAvatar", card), displayName(), S.me.avatarUrl);
+        chipName.textContent = displayName();
+        setAvatar(chipAvatar, displayName(), S.me.avatarUrl);
+        return;
+      }
+      if (S.profile) {
+        card.innerHTML = `<div class="account-who"><span class="avatar lg" id="accAvatar"></span><div><b id="accName"></b><span>Local profile · since ${esc(new Date(S.profile.created).toLocaleDateString())}</span></div></div>
+          <span class="role">Favourite studio: <span id="accStudio"></span></span>
+          <p class="account-note">This copy of the site has no server, so your profile and messages are kept <b>in this browser only</b>. ${S.cloudBlocked ? "Sign in to claude.ai to message the studios for real." : "Open the published version to reach the studios."}</p>
+          <div id="signOutArea"><button class="btn small" type="button" id="signOut">Sign out</button></div>`;
+        $("#accName", card).textContent = S.profile.name;
+        $("#accStudio", card).textContent = S.profile.studio;
+        setAvatar($("#accAvatar", card), S.profile.name);
+        chipName.textContent = S.profile.name;
+        setAvatar(chipAvatar, S.profile.name);
+        return;
+      }
+      card.innerHTML = `<form id="loginForm" novalidate>
+          <div class="account-who"><span class="avatar lg">?</span><div><b>Sign in</b><span>Create a profile to use the inbox</span></div></div>
+          <label class="field">Display name<input type="text" id="loginName" maxlength="40" autocomplete="nickname" placeholder="e.g. Ada" required></label>
+          <label class="field">Favourite studio<select id="loginStudio">${STUDIOS.map((s) => `<option>${esc(s)}</option>`).join("")}</select></label>
+          <button class="btn primary" type="submit">Sign in</button>
+          <p class="form-status" id="loginStatus" role="status"></p>
+        </form>
+        <p class="account-note">${S.cloudBlocked ? "<b>Sign in to claude.ai</b> to message the studios for real. Until then you" : "You"} can use a local profile: it needs only a name, never a password, and stays in this browser.</p>`;
+      chipName.textContent = "Sign in";
+      chipAvatar.textContent = "?";
+    }
+    card.addEventListener("submit", (e) => {
+      if (e.target.id !== "loginForm") return;
+      e.preventDefault();
+      const name = $("#loginName").value.trim().replace(/\s+/g, " ");
+      if (name.length < 2) { const st = $("#loginStatus"); st.textContent = "Enter a display name of at least 2 characters."; st.className = "form-status err"; $("#loginName").focus(); return; }
+      S.profile = { name, studio: $("#loginStudio").value, created: new Date().toISOString() };
+      store.set(PROFILE_KEY, S.profile);
+      renderAll();
+      toast("Signed in as " + name);
+      const ta = $("#composeText"); if (ta) ta.focus({ preventScroll: true });
+    });
+    card.addEventListener("click", (e) => {
+      if (e.target.id === "signOut") {
+        $("#signOutArea").innerHTML = `<div class="confirm-row"><span>Sign out of this device?</span><button class="btn small primary" type="button" id="signOutYes">Sign out</button><button class="btn small ghost" type="button" id="signOutNo">Cancel</button></div>`;
+      } else if (e.target.id === "signOutNo") {
+        renderAccount();
+      } else if (e.target.id === "signOutYes") {
+        S.profile = null;
+        try { localStorage.removeItem(PROFILE_KEY); } catch (err) { /* storage blocked */ }
+        renderAll();
+        toast("Signed out. Your messages stay saved for next time.");
+      }
+    });
+
+    /* ---- member inbox ---- */
+    function msgHTML(m) {
+      const out = m.from === "member";
+      const who = S.staff && S.mode === "cloud"
+        ? (out ? esc(S.names[S.open] || "Member") + " → " + esc(m.studio) : esc(m.studio) + " (staff reply)")
+        : (out ? "You → " + esc(m.studio) : esc(m.studio));
+      return `<div class="msg ${out ? "out" : "in"}" data-studio="${esc(m.studio)}"><div class="msg-meta"><b>${who}</b>${m.at ? `<time>${esc(fmtTime(m.at))}</time>` : ""}${m.welcome ? '<span class="pill">welcome</span>' : ""}</div><p>${esc(m.text)}</p></div>`;
+    }
+    function memberLayout() {
+      body.innerHTML = `<div class="thread" id="memberThread"></div><div id="composeArea"></div>`;
+      S.layout = "member";
+    }
+    function renderMemberMessages() {
+      const list = S.mode === "cloud" ? S.messages : S.local;
+      const box = $("#memberThread");
+      const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 40;
+      box.innerHTML = WELCOME.map((w) => msgHTML({ from: "studio", studio: w.studio, text: w.text, welcome: true })).join("") + list.map(msgHTML).join("");
+      if (atBottom || list.length) box.scrollTop = box.scrollHeight;
+    }
+    function renderCompose() {
+      const area = $("#composeArea");
+      if (!signedIn()) {
+        area.innerHTML = `<div class="locked"><span>Sign in to send a message to a studio.</span><a class="btn small primary" href="#accountCard" id="goSignIn">Sign in</a></div>`;
+        return;
+      }
+      const fav = S.mode === "local" && S.profile ? S.profile.studio : STUDIOS[0];
+      area.innerHTML = `<form class="compose" id="composeForm">
+          <label class="field">To<select id="composeTo">${STUDIOS.map((s) => `<option ${s === fav ? "selected" : ""}>${esc(s)}</option>`).join("")}</select></label>
+          <label class="field">Message<textarea id="composeText" maxlength="2000" rows="2" placeholder="Write your question or idea…"></textarea></label>
+          <button class="btn primary" type="submit">Send</button>
+        </form><p class="form-status" id="composeStatus" role="status"></p>`;
+    }
+    body.addEventListener("click", (e) => {
+      if (e.target.id === "goSignIn") { e.preventDefault(); const n = $("#loginName"); card.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "center" }); if (n) n.focus({ preventScroll: true }); }
+    });
+    body.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && e.target.tagName === "TEXTAREA") { e.preventDefault(); e.target.form.requestSubmit(); }
+    });
+    body.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (e.target.id === "composeForm") return sendMember();
+      if (e.target.id === "replyForm") return sendReply();
+    });
+    async function sendMember() {
+      const ta = $("#composeText"), st = $("#composeStatus"), studio = $("#composeTo").value;
+      const text = ta.value.trim().slice(0, 2000);
+      if (!text) { st.textContent = "Write a message first."; st.className = "form-status err"; return; }
+      const msg = { from: "member", studio, text, at: new Date().toISOString() };
+      if (S.mode === "local") {
+        S.local.push(msg);
+        store.set(LOCAL_INBOX_KEY, S.local);
+        ta.value = "";
+        renderMemberMessages();
+        st.textContent = "Saved in this browser. Open the published version of the site to reach " + studio + ".";
+        st.className = "form-status ok";
+        return;
+      }
+      const btn = $("#composeForm button");
+      btn.disabled = true;
+      try {
+        const uid = S.me.id;
+        await S.db.collection(`inbox/${uid}/messages`).add(Object.assign({ author: uid }, msg));
+        const ref = S.db.doc("inbox/" + uid);
+        const meta = { lastAt: msg.at, lastText: text.slice(0, 120), lastStudio: studio, lastFrom: "member", needsReply: true };
+        const snap = await ref.get();
+        if (snap.exists) await ref.update(meta); else await ref.set(Object.assign({ memberUnread: 0, startedAt: msg.at }, meta));
+        ta.value = "";
+        st.textContent = "Sent to " + studio + ". Replies appear here.";
+        st.className = "form-status ok";
+      } catch (err) {
+        st.textContent = "Your message was not sent (" + ((err && err.code) || "error") + "). Check your connection and try again.";
+        st.className = "form-status err";
+      } finally { btn.disabled = false; }
+    }
+
+    /* ---- staff inbox (cloud, editors and owner) ---- */
+    function staffLayout() {
+      body.innerHTML = `<div class="staff"><div class="thread-list" id="threadList"></div><div class="staff-conv" id="staffConv"></div></div>`;
+      S.layout = "staff";
+    }
+    function renderThreads() {
+      const list = $("#threadList");
+      if (!S.threads.length) { list.innerHTML = `<p class="res-empty">No conversations yet. When a member sends a message, it appears here.</p>`; return; }
+      list.innerHTML = S.threads.map((t) => `<button class="thread-item" type="button" data-uid="${esc(t.id)}" aria-current="${t.id === S.open}">
+          <span class="ti-top"><b data-name="${esc(t.id)}"></b><time>${esc(fmtTime(t.lastAt))}</time></span>
+          <span class="pv"></span>${t.needsReply ? '<span class="needs">● needs reply</span>' : ""}</button>`).join("");
+      $$(".thread-item", list).forEach((b, i) => {
+        const t = S.threads[i];
+        $("b", b).textContent = S.names[t.id] || "Member";
+        $(".pv", b).textContent = (t.lastFrom === "member" ? "" : "You: ") + (t.lastText || "");
+      });
+    }
+    function renderStaffConv() {
+      const conv = $("#staffConv");
+      if (!S.open) { conv.innerHTML = `<p class="res-empty">Choose a conversation to read it and reply as a studio.</p>`; return; }
+      if (!$("#staffThread", conv)) {
+        conv.innerHTML = `<div class="thread" id="staffThread"></div>
+          <form class="compose" id="replyForm">
+            <label class="field">Reply as<select id="replyAs">${STUDIOS.map((s) => `<option>${esc(s)}</option>`).join("")}</select></label>
+            <label class="field">Reply<textarea id="replyText" maxlength="2000" rows="2" placeholder="Write a reply…"></textarea></label>
+            <button class="btn primary" type="submit">Reply</button>
+          </form><p class="form-status" id="replyStatus" role="status"></p>`;
+      }
+      const box = $("#staffThread");
+      box.innerHTML = S.openMsgs.length ? S.openMsgs.map(msgHTML).join("") : `<p class="res-empty">Loading messages…</p>`;
+      box.scrollTop = box.scrollHeight;
+      const last = [...S.openMsgs].reverse().find((m) => m.from === "member");
+      if (last && STUDIOS.includes(last.studio) && !$("#replyText").value) $("#replyAs").value = last.studio;
+    }
+    $("#inboxPanel").addEventListener("click", (e) => {
+      const item = e.target.closest(".thread-item");
+      if (!item || S.mode !== "cloud") return;
+      openThread(item.dataset.uid);
+    });
+    function openThread(uid) {
+      if (S.convUnsub) S.convUnsub();
+      S.open = uid; S.openMsgs = [];
+      $("#staffConv").innerHTML = "";
+      renderThreads(); renderStaffConv();
+      S.convUnsub = S.db.collection(`inbox/${uid}/messages`).orderBy("at", "asc").limit(500).onSnapshot((snap) => {
+        S.openMsgs = snap.docs.map((d) => d.data() || {});
+        renderStaffConv();
+      }, (err) => { $("#staffThread").innerHTML = `<p class="res-empty">This conversation could not load (${esc((err && err.code) || "error")}).</p>`; });
+    }
+    async function sendReply() {
+      const ta = $("#replyText"), st = $("#replyStatus"), studio = $("#replyAs").value, uid = S.open;
+      const text = ta.value.trim().slice(0, 2000);
+      if (!text) { st.textContent = "Write a reply first."; st.className = "form-status err"; return; }
+      const btn = $("#replyForm button");
+      btn.disabled = true;
+      try {
+        const at = new Date().toISOString();
+        await S.db.collection(`inbox/${uid}/messages`).add({ from: "studio", studio, text, at, author: S.me.id });
+        const ref = S.db.doc("inbox/" + uid);
+        const snap = await ref.get();
+        const unread = snap.exists ? Number((snap.data() || {}).memberUnread) || 0 : 0;
+        await ref.update({ lastAt: at, lastText: text.slice(0, 120), lastStudio: studio, lastFrom: "studio", needsReply: false, memberUnread: unread + 1 });
+        ta.value = "";
+        st.textContent = "Reply sent as " + studio + ".";
+        st.className = "form-status ok";
+      } catch (err) {
+        st.textContent = "The reply was not sent (" + ((err && err.code) || "error") + "). Try again.";
+        st.className = "form-status err";
+      } finally { btn.disabled = false; }
+    }
+    async function resolveNames(ids) {
+      const missing = ids.filter((id) => !(id in S.names));
+      if (!missing.length || !S.user) return;
+      try {
+        const ps = await S.user.profiles(missing);
+        missing.forEach((id) => { S.names[id] = (ps && ps[id] && ps[id].name) || "Member"; });
+        renderThreads();
+      } catch (err) { /* names stay generic */ }
+    }
+
+    /* ---- orchestration ---- */
+    function renderAll() {
+      renderAccount();
+      if (S.mode === "cloud" && S.staff) {
+        titleEl.textContent = "Studio inbox";
+        modeEl.textContent = "Shared · members see only their own messages";
+        if (S.layout !== "staff") staffLayout();
+        renderThreads(); renderStaffConv();
+        setBadge(S.threads.filter((t) => t.needsReply).length);
+      } else {
+        titleEl.textContent = signedIn() ? "Your inbox" : "Inbox";
+        modeEl.textContent = S.mode === "cloud" ? "Private · you and the studio staff" : "On this device";
+        if (S.layout !== "member") memberLayout();
+        renderMemberMessages(); renderCompose();
+        setBadge(S.mode === "cloud" && S.thread ? Number(S.thread.memberUnread) || 0 : 0);
+      }
+    }
+    function markRead() {
+      if (S.mode !== "cloud" || S.staff || !S.thread || !(Number(S.thread.memberUnread) > 0)) return;
+      const r = $("#inbox").getBoundingClientRect();
+      if (r.top > innerHeight || r.bottom < 0 || document.hidden) return;
+      S.db.doc("inbox/" + S.me.id).update({ memberUnread: 0 }).catch(() => {});
+    }
+    function subscribeCloud() {
+      const fail = (what) => (err) => { modeEl.textContent = what + " could not load (" + ((err && err.code) || "error") + ")"; };
+      if (S.staff) {
+        S.unsubs.push(S.db.collection("inbox").orderBy("lastAt", "desc").limit(200).onSnapshot((snap) => {
+          S.threads = snap.docs.map((d) => Object.assign({ id: d.id }, d.data() || {}));
+          renderThreads();
+          setBadge(S.threads.filter((t) => t.needsReply).length);
+          resolveNames(S.threads.map((t) => t.id));
+        }, fail("Conversations")));
+        return;
+      }
+      const uid = S.me.id;
+      S.unsubs.push(S.db.doc("inbox/" + uid).onSnapshot((snap) => {
+        S.thread = snap.exists ? snap.data() : null;
+        setBadge(S.thread ? Number(S.thread.memberUnread) || 0 : 0);
+        markRead();
+      }, fail("Inbox")));
+      S.unsubs.push(S.db.collection(`inbox/${uid}/messages`).orderBy("at", "asc").limit(500).onSnapshot((snap) => {
+        S.messages = snap.docs.map((d) => d.data() || {});
+        renderMemberMessages();
+      }, fail("Messages")));
+    }
+    window.addEventListener("scroll", () => { clearTimeout(S.readTimer); S.readTimer = setTimeout(markRead, 300); }, { passive: true });
+    document.addEventListener("visibilitychange", markRead);
+
+    renderAll();
+
+    if (window.claude && typeof window.claude.use === "function") {
+      Promise.all([window.claude.use("user"), window.claude.use("db")]).then(async ([u, d]) => {
+        if (!u || !d) { S.cloudBlocked = true; renderAll(); return; }
+        const me = await u.me();
+        if (!me || !me.id) { S.cloudBlocked = true; renderAll(); return; }
+        Object.assign(S, { mode: "cloud", user: u, db: d, me, staff: await u.canEdit(), layout: "" });
+        renderAll();
+        subscribeCloud();
+      }).catch(() => {});
+    }
+  })();
+
 })();

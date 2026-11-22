@@ -143,6 +143,7 @@ code, kbd, pre { font-family: var(--font-mono); }
 img { max-width: 100%; display: block; }
 :focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; border-radius: 4px; }
 button, input, select, textarea { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 .wrap {
@@ -1137,3 +1138,140 @@ button, input, select, textarea { font: inherit; color: inherit; }
   html { scroll-behavior: auto; }
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* ---------- account + inbox ---------- */
+.account-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 8px;
+  padding: 4px 12px 4px 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--fg);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 500;
+  white-space: nowrap;
+  max-width: 200px;
+  order: 3;
+}
+.site-header .nav { order: 2; }
+.site-header .nav-toggle { order: 4; }
+.account-chip:hover { border-color: var(--accent); }
+.chip-name { overflow: hidden; text-overflow: ellipsis; }
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--cyan));
+  color: var(--on-accent);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.78rem;
+  flex: none;
+  overflow: hidden;
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+.avatar.lg { width: 56px; height: 56px; font-size: 1.2rem; }
+.badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--bad);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin-left: 4px;
+}
+@media (max-width: 900px) {
+  .account-chip { margin-left: auto; }
+  .nav-toggle { margin-left: 8px; }
+}
+@media (max-width: 420px) {
+  .chip-name { display: none; }
+  .account-chip { padding-right: 4px; }
+}
+
+.inbox-grid { display: grid; grid-template-columns: 300px minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 900px) { .inbox-grid { grid-template-columns: minmax(0, 1fr); } }
+.account { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
+.account-who { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.account-who div { display: grid; gap: 2px; min-width: 0; }
+.account-who b { font-family: var(--font-display); font-size: 1.1rem; overflow-wrap: anywhere; }
+.account-who div span { color: var(--muted); font-size: 0.82rem; }
+.role {
+  justify-self: start;
+  max-width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  padding: 3px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+}
+.role.staff { border-color: var(--pink); color: var(--pink); }
+.account form { display: grid; gap: 12px; }
+.account .field input, .account .field select { width: 100%; }
+.account-note { color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
+.account-note b { color: var(--fg); }
+.confirm-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; font-size: 0.85rem; }
+
+.inbox { display: grid; gap: 16px; min-height: 420px; align-content: start; }
+.inbox-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.inbox-head h3 { font-size: 1.15rem; }
+.thread { display: grid; gap: 10px; max-height: 440px; overflow-y: auto; padding-right: 4px; align-content: start; }
+.msg {
+  max-width: 82%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.msg.out { justify-self: end; background: var(--accent-soft); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
+.msg.in { justify-self: start; }
+.msg[data-studio="Mathopea"] { border-left: 3px solid var(--pink); }
+.msg[data-studio="Experimentium"] { border-left: 3px solid var(--mint); }
+.msg[data-studio="Databell Software Labs"] { border-left: 3px solid var(--cyan); }
+.msg.out[data-studio] { border-left-width: 1px; border-right: 3px solid var(--accent); }
+.msg-meta { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 0.76rem; color: var(--muted); }
+.msg-meta b { color: var(--fg); font-family: var(--font-display); font-size: 0.82rem; }
+.msg p { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.92rem; }
+.msg .pill { font-size: 0.68rem; padding: 1px 8px; }
+.compose { display: grid; grid-template-columns: 200px minmax(0, 1fr) auto; gap: 10px; align-items: end; border-top: 1px solid var(--line); padding-top: 14px; }
+.compose textarea { width: 100%; resize: vertical; min-height: 44px; }
+.compose .field select { width: 100%; }
+@media (max-width: 620px) { .compose { grid-template-columns: minmax(0, 1fr); } }
+.locked { border: 1px dashed var(--line); border-radius: 10px; padding: 14px; color: var(--muted); font-size: 0.9rem; display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+
+.staff { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 760px) { .staff { grid-template-columns: minmax(0, 1fr); } }
+.thread-list { display: grid; gap: 6px; max-height: 520px; overflow-y: auto; align-content: start; }
+.thread-item {
+  text-align: left;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.thread-item[aria-current="true"] { border-color: var(--accent); background: var(--accent-soft); }
+.thread-item .ti-top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.thread-item b { font-size: 0.9rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.thread-item time { font-size: 0.72rem; color: var(--muted); white-space: nowrap; }
+.thread-item span.pv { font-size: 0.8rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.needs { font-family: var(--font-mono); font-size: 0.68rem; color: var(--warn); }
+.staff-conv { display: grid; gap: 12px; min-width: 0; }
