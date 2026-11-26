@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>BDAI Young Innovators</title>
+  <meta name="description" content="BDAI teaches kids aged 6–16 technology, digital creativity and artificial intelligence, with lessons designed by Databell Studio.">
+  <link rel="icon" href="assets/bdai-bulb.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Lexend:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="style-10.css">
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <!-- ============ NAV ============ -->
+  <header class="nav" id="top">
+    <div class="nav__inner wrap">
+      <a class="brand" href="#top" aria-label="BDAI home">
+        <img src="assets/bdai-bulb.png" alt="" width="40" height="40">
+        <span class="brand__word">BDAI</span>
+        <span class="brand__tag">Innovating Tomorrow</span>
+      </a>
+      <button class="nav__toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks">
+        <span></span><span></span><span></span>
+        <span class="sr">Menu</span>
+      </button>
+      <nav class="nav__links" id="navLinks" aria-label="Main">
+        <a href="#tracks">Tracks</a>
+        <a href="#lab">Creativity Lab</a>
+        <a href="#playground">AI Playground</a>
+        <a href="#studio">Databell Studio</a>
+        <a class="nav__portal" href="#portal">Student Portal</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+
+    <!-- ============ HERO ============ -->
+    <section class="hero">
+      <canvas class="hero__aura" id="aura" aria-hidden="true"></canvas>
+      <div class="hero__inner wrap">
+        <div class="hero__copy">
+          <p class="eyebrow">Ages 6–16 · Online &amp; in-studio</p>
+          <h1 class="hero__title">
+            Kids who <span class="hl hl--cyan">code</span>,
+            <span class="hl hl--pink">create</span> and
+            <span class="hl hl--violet">teach machines</span> to think.
+          </h1>
+          <p class="hero__lede">
+            BDAI runs hands-on courses in technology, digital art and artificial intelligence.
+            Every lesson is designed and animated by Databell Studio, so learning feels like playing a great game.
+          </p>
+          <div class="hero__ctas">
+            <a class="btn btn--primary" href="#playground">Try the AI Playground</a>
+            <a class="btn btn--ghost" href="#portal">Open Student Portal</a>
+          </div>
+          <ul class="hero__facts" aria-label="Program at a glance">
+            <li><strong>3</strong> learning tracks</li>
+            <li><strong>3</strong> levels by age</li>
+            <li><strong>Weekly</strong> live studios</li>
+          </ul>
+        </div>
+
+        <figure class="hero__terminal" aria-label="Example of a first program a student writes">
+          <div class="term__bar"><i></i><i></i><i></i><span>my_first_robot.py</span></div>
+          <pre class="term__code" id="typeCode"></pre>
+          <figcaption class="term__out">
+            <span class="term__prompt">output ▸</span>
+            <span id="typeOut">…</span>
+          </figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============ TRACKS ============ -->
+    <section class="section" id="tracks">
+      <div class="wrap">
+        <div class="section__head">
+          <p class="eyebrow">Three tracks, one curious kid</p>
+          <h2>Pick a level and see what your child will build.</h2>
+          <div class="seg" role="tablist" aria-label="Choose an age level" id="levelSeg">
+            <button role="tab" aria-selected="true" data-level="explorer" id="lvl-explorer">Explorer <small>6–8</small></button>
+            <button role="tab" aria-selected="false" data-level="builder" id="lvl-builder">Builder <small>9–12</small></button>
+            <button role="tab" aria-selected="false" data-level="innovator" id="lvl-innovator">Innovator <small>13–16</small></button>
+          </div>
+        </div>
+
+        <div class="tracks">
+          <article class="track track--tech">
+            <div class="track__icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48"><rect x="10" y="10" width="28" height="28" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><rect x="18" y="18" width="12" height="12" rx="2" fill="currentColor"/><path d="M16 4v6M24 4v6M32 4v6M16 38v6M24 38v6M32 38v6M4 16h6M4 24h6M4 32h6M38 16h6M38 24h6M38 32h6" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+            </div>
+            <h3>Technology for Kids</h3>
+            <p class="track__blurb">Coding, circuits and robots. Kids learn how the devices around them really work, then make their own.</p>
+            <p class="track__label">Projects at this level</p>
+            <ul class="track__list" data-track="tech"></ul>
+          </article>
+
+          <article class="track track--create">
+            <div class="track__icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48"><path d="M8 40c6 0 8-4 8-8a6 6 0 1 1 6 6c0 2-2 2-14 2Z" fill="currentColor"/><path d="M22 28 40 8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="36" cy="34" r="3" fill="currentColor"/><circle cx="12" cy="14" r="3" fill="currentColor"/></svg>
+            </div>
+            <h3>Digital Creativity</h3>
+            <p class="track__blurb">Pixel art, animation, music and game design. Screens become a canvas instead of a place to scroll.</p>
+            <p class="track__label">Projects at this level</p>
+            <ul class="track__list" data-track="create"></ul>
+          </article>
+
+          <article class="track track--ai">
+            <div class="track__icon" aria-hidden="true">
+              <svg viewBox="0 0 48 48"><circle cx="10" cy="14" r="4" fill="currentColor"/><circle cx="10" cy="34" r="4" fill="currentColor"/><circle cx="24" cy="10" r="4" fill="currentColor"/><circle cx="24" cy="24" r="4" fill="currentColor"/><circle cx="24" cy="38" r="4" fill="currentColor"/><circle cx="38" cy="24" r="5" fill="currentColor"/><path d="M10 14 24 10M10 14l14 14M10 14l14 24M10 34 24 10M10 34l14-10M10 34l14 4M24 10l14 14M24 24h14M24 38l14-14" stroke="currentColor" stroke-width="1.5" opacity=".6"/></svg>
+            </div>
+            <h3>Artificial Intelligence</h3>
+            <p class="track__blurb">How machines learn from examples, where they get things wrong, and how to use AI kindly and safely.</p>
+            <p class="track__label">Projects at this level</p>
+            <ul class="track__list" data-track="ai"></ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ WEEK RHYTHM ============ -->
+    <section class="section section--tight">
+      <div class="wrap">
+        <ol class="rhythm" aria-label="How a learning week works">
+          <li><span class="rhythm__step">1</span><div><h3>Learn</h3><p>A 10-minute animated lesson from Databell Studio introduces one big idea.</p></div></li>
+          <li><span class="rhythm__step">2</span><div><h3>Make</h3><p>Kids build it in a live studio with a mentor, in groups of eight or fewer.</p></div></li>
+          <li><span class="rhythm__step">3</span><div><h3>Share</h3><p>Projects go into the Student Portal gallery, where friends and family can cheer them on.</p></div></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ============ CREATIVITY LAB ============ -->
+    <section class="section section--panel" id="lab">
+      <div class="wrap lab">
+        <div class="lab__copy">
+          <p class="eyebrow eyebrow--pink">Creativity Lab</p>
+          <h2>Draw a 16 × 16 sprite.</h2>
+          <p>
+            Every video game character starts as a grid of pixels. Pick a colour, switch on mirror mode
+            for perfect symmetry, and watch your sprite come alive in the preview.
+          </p>
+          <div class="lab__preview">
+            <canvas id="spritePreview" width="64" height="64" aria-label="Your sprite, animated"></canvas>
+            <div>
+              <p class="lab__previewTitle">Game preview</p>
+              <p class="lab__meta"><span id="pixelCount">0</span> pixels painted · <span id="colorCount">0</span> colours</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="lab__tool">
+          <div class="lab__toolbar" role="toolbar" aria-label="Drawing tools">
+            <div class="tools">
+              <button class="tool is-on" data-tool="pen" aria-pressed="true" id="tool-pen">Pen</button>
+              <button class="tool" data-tool="fill" aria-pressed="false" id="tool-fill">Fill</button>
+              <button class="tool" data-tool="erase" aria-pressed="false" id="tool-erase">Eraser</button>
+              <button class="tool" data-toggle="mirror" aria-pressed="true" id="tool-mirror">Mirror</button>
+            </div>
+            <div class="tools">
+              <button class="tool tool--quiet" id="pixelExample">Example</button>
+              <button class="tool tool--quiet" id="pixelClear">Clear</button>
+            </div>
+          </div>
+          <canvas id="pixelCanvas" class="pixel" width="512" height="512" aria-label="16 by 16 pixel drawing grid"></canvas>
+          <div class="swatches" id="swatches" role="radiogroup" aria-label="Colour"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ AI PLAYGROUND ============ -->
+    <section class="section" id="playground">
+      <div class="wrap play">
+        <div class="play__copy">
+          <p class="eyebrow eyebrow--cyan">AI Playground</p>
+          <h2>Teach the robot to sort fruit from vegetables.</h2>
+          <p>
+            The robot has never seen food before. Show it examples: how sweet is it, how crunchy is it?
+            It colours the whole map with its best guess by asking the <em>nearest neighbours</em>
+            you gave it. That is how a real machine-learning model called k-NN works.
+          </p>
+
+          <div class="play__controls">
+            <div class="seg seg--small" role="radiogroup" aria-label="Label for new examples">
+              <button role="radio" aria-checked="true" data-cls="0" id="cls-fruit" class="cls cls--fruit">Add fruit</button>
+              <button role="radio" aria-checked="false" data-cls="1" id="cls-veg" class="cls cls--veg">Add vegetable</button>
+            </div>
+            <label class="slider" for="kSlider">
+              <span>Neighbours to ask: <strong id="kVal">3</strong></span>
+              <input type="range" id="kSlider" min="1" max="9" step="2" value="3">
+            </label>
+            <div class="play__btns">
+              <button class="tool tool--quiet" id="knnReset">Start over</button>
+              <button class="tool tool--quiet" id="knnClear">Empty the map</button>
+            </div>
+          </div>
+
+          <div class="guess" id="guess" aria-live="polite">
+            <span class="guess__label">Robot's guess</span>
+            <span class="guess__text" id="guessText">Point at the map to ask the robot.</span>
+          </div>
+        </div>
+
+        <figure class="play__board">
+          <div class="board">
+            <canvas id="knnCanvas" aria-label="Map of examples. Click to add one."></canvas>
+            <span class="axis axis--x">sweeter →</span>
+            <span class="axis axis--y">crunchier →</span>
+          </div>
+          <figcaption><span id="exampleCount">0</span> examples · click or tap the map to add one</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <!-- ============ STUDENT PORTAL ============ -->
+    <section class="section section--panel" id="portal">
+      <div class="wrap">
+        <div class="section__head section__head--split">
+          <div>
+            <p class="eyebrow eyebrow--violet">Student Portal</p>
+            <h2>Everything a young maker needs, in one place.</h2>
+            <p class="section__sub">Projects, badges, live class times and progress that parents can see too. Here is a preview with an example student.</p>
+          </div>
+          <form class="signin" id="signin" autocomplete="off">
+            <label for="studentName">Preview as</label>
+            <div class="signin__row">
+              <input id="studentName" name="studentName" type="text" maxlength="20" placeholder="Your first name" required>
+              <button class="btn btn--primary btn--sm" type="submit">Enter</button>
+            </div>
+          </form>
+        </div>
+
+        <div class="portal" id="portalApp">
+          <aside class="portal__side">
+            <div class="portal__me">
+              <div class="avatar" id="avatar" aria-hidden="true">M</div>
+              <div>
+                <p class="portal__name" id="pName">Mira</p>
+                <p class="portal__rank" id="pRank">Level 7 · Pixel Pilot</p>
+              </div>
+            </div>
+            <nav class="portal__tabs" role="tablist" aria-label="Portal sections">
+              <button role="tab" aria-selected="true" data-tab="home" id="tab-home">Dashboard</button>
+              <button role="tab" aria-selected="false" data-tab="projects" id="tab-projects">My projects</button>
+              <button role="tab" aria-selected="false" data-tab="badges" id="tab-badges">Badges</button>
+              <button role="tab" aria-selected="false" data-tab="schedule" id="tab-schedule">Schedule</button>
+            </nav>
+            <span class="chip chip--muted">Example data</span>
+          </aside>
+
+          <div class="portal__main">
+            <!-- Dashboard -->
+            <div class="pane" data-pane="home" role="tabpanel" aria-labelledby="tab-home">
+              <div class="pane__hello">
+                <h3 id="greet">Good to see you, Mira.</h3>
+                <p>Your next live studio starts <strong>Thursday at 4:30 PM</strong>.</p>
+              </div>
+              <div class="stats">
+                <div class="stat">
+                  <p class="stat__label">XP to Level 8</p>
+                  <p class="stat__num"><span id="xpNow">1,240</span><small> / 1,500</small></p>
+                  <div class="bar"><span id="xpBar" style="width:82.7%"></span></div>
+                </div>
+                <div class="stat">
+                  <p class="stat__label">Learning streak</p>
+                  <p class="stat__num">9<small> days</small></p>
+                  <div class="streak" id="streak" aria-label="Last 14 days, 9 active"></div>
+                </div>
+                <div class="stat">
+                  <p class="stat__label">Badges earned</p>
+                  <p class="stat__num">6<small> of 12</small></p>
+                  <p class="stat__note">Next: <strong>Data Detective</strong></p>
+                </div>
+              </div>
+              <div class="pane__grid">
+                <div class="card">
+                  <p class="card__title">Keep going</p>
+                  <ul class="projects projects--mini" id="miniProjects"></ul>
+                </div>
+                <div class="card">
+                  <p class="card__title">Mentor note</p>
+                  <blockquote class="note">
+                    “Your robot sorted 18 of 20 pictures correctly. Try adding more examples of green apples. It keeps calling them limes!”
+                    <cite>Ms. Ananya, AI Track mentor</cite>
+                  </blockquote>
+                </div>
+              </div>
+            </div>
+
+            <!-- Projects -->
+            <div class="pane" data-pane="projects" role="tabpanel" aria-labelledby="tab-projects" hidden>
+              <h3 class="pane__title">My projects</h3>
+              <ul class="projects" id="allProjects"></ul>
+            </div>
+
+            <!-- Badges -->
+            <div class="pane" data-pane="badges" role="tabpanel" aria-labelledby="tab-badges" hidden>
+              <h3 class="pane__title">Badges</h3>
+              <ul class="badges" id="badges"></ul>
+            </div>
+
+            <!-- Schedule -->
+            <div class="pane" data-pane="schedule" role="tabpanel" aria-labelledby="tab-schedule" hidden>
+              <h3 class="pane__title">This week</h3>
+              <ul class="schedule" id="schedule"></ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ DATABELL STUDIO ============ -->
+    <section class="section studio" id="studio">
+      <div class="wrap studio__inner">
+        <img class="studio__logo" src="assets/databell-mark.png" alt="Databell, a BDAI studio" width="360" height="360">
+        <div class="studio__copy">
+          <p class="eyebrow eyebrow--pink">Made by Databell Studio</p>
+          <h2>The creative studio behind every BDAI lesson.</h2>
+          <p>
+            Databell is BDAI's in-house studio of designers, animators and engineers. They turn hard ideas
+            like neural networks or binary numbers into short stories, games and characters kids remember.
+          </p>
+          <ul class="studio__list">
+            <li><strong>Animated lessons</strong><span>Short episodes that explain one idea each.</span></li>
+            <li><strong>Learning games</strong><span>Browser games where the rules teach the concept.</span></li>
+            <li><strong>Maker kits</strong><span>Printable worksheets, circuit cards and sprite packs.</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ SAFETY ============ -->
+    <section class="section section--tight">
+      <div class="wrap">
+        <div class="section__head">
+          <p class="eyebrow">For parents</p>
+          <h2>Safe, guided AI for young minds.</h2>
+        </div>
+        <div class="promises">
+          <div><h3>A mentor in every session</h3><p>Live studios are always run by a trained educator, never left to a chatbot.</p></div>
+          <div><h3>Kid-safe tools</h3><p>Students use AI tools chosen and set up for their age, with content filters on.</p></div>
+          <div><h3>Progress you can see</h3><p>Parents get their own view of the Student Portal with projects and mentor notes.</p></div>
+          <div><h3>Privacy first</h3><p>We collect only what a class needs, and never sell children's data.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ JOIN ============ -->
+    <section class="section join" id="join">
+      <div class="wrap join__inner">
+        <div>
+          <p class="eyebrow eyebrow--cyan">Join a free trial class</p>
+          <h2>Find the right first class.</h2>
+          <p>Tell us a little about your child and we will suggest a track and level.</p>
+        </div>
+        <form class="join__form" id="joinForm" novalidate>
+          <div class="field">
+            <label for="parentName">Parent's name</label>
+            <input id="parentName" name="parentName" type="text" required>
+          </div>
+          <div class="field">
+            <label for="childAge">Child's age</label>
+            <input id="childAge" name="childAge" type="number" min="6" max="16" required>
+          </div>
+          <div class="field field--full">
+            <label for="interest">Most excited about</label>
+            <select id="interest" name="interest">
+              <option value="tech">Coding and robots</option>
+              <option value="create">Art, animation and games</option>
+              <option value="ai">Artificial intelligence</option>
+            </select>
+          </div>
+          <button class="btn btn--primary field--full" type="submit">Suggest a class</button>
+          <p class="join__result field--full" id="joinResult" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ FOOTER ============ -->
+  <footer class="footer">
+    <div class="wrap footer__inner">
+      <div class="footer__brands">
+        <img src="assets/bdai-mark.png" alt="BDAI, Innovating Tomorrow" width="96" height="96">
+        <img src="assets/databell-mark.png" alt="Databell Studio" width="96" height="96">
+      </div>
+      <p class="footer__text">BDAI · Innovating Tomorrow<br>Lessons designed by Databell Studio</p>
+      <a class="footer__top" href="#top">Back to top ↑</a>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="script-10.js"></script>
+</body>
+</html>
