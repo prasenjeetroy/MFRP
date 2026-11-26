@@ -996,21 +996,23 @@ button {
 
   /* =======================================================
      7. Student Portal: accounts for students, parents,
-        teachers and founders
+        teachers and founders, with inbox, PIN and security key
      -------------------------------------------------------
-     PREVIEW MODE. Accounts live in this browser's storage so the
-     whole flow can be tried without a server. Before launch,
-     replace `Accounts` with calls to your real backend, and check
-     passwords and setup codes on the server, never in this file.
+     PREVIEW MODE. Accounts and messages live in this browser's
+     storage so the whole flow can be tried without a server.
+     Before launch, replace `Accounts` with calls to your backend
+     and check passwords, PINs and codes on the server.
      ======================================================= */
   const portalApp = $("#portalApp");
   if (portalApp) {
     const CONFIG = {
-      teacherInviteCode: "BDAI-TEACH-2026",   // given to new teachers by the founder
-      founderSetupCode: "BDAI-FOUNDER-2026",  // only the founder knows this
+      teacherInviteCode: "BDAI-TEACH-2026", // the founder shares this with new teachers
+      // Only a SHA-256 fingerprint of the founder code is kept here, never the code itself.
+      founderCodeHash: "a79965daddd35937316429c6b0874297c4eb18bd675b3ccb266a55f8059d458d",
       demoPassword: "demo1234",
+      maxPinTries: 5,
     };
-    const DB_KEY = "bdai.portal.v2";
+    const DB_KEY = "bdai.portal.v3";
     const SESSION_KEY = "bdai.portal.session";
 
     const BADGES = [
@@ -1037,21 +1039,28 @@ button {
     const levelOf = (xp) => 1 + Math.floor((xp || 0) / 200);
     const rankOf = (xp) => RANKS[Math.min(levelOf(xp) - 1, RANKS.length - 1)];
     const today = () => new Date().toISOString().slice(0, 10);
+    const nowISO = () => new Date().toISOString();
     const fmtDate = (iso) => {
-      const d = new Date(iso + "T12:00:00");
-      return isNaN(d) ? iso : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      const d = new Date(String(iso).length <= 10 ? iso + "T12:00:00" : iso);
+      return isNaN(d) ? "" : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    };
+    const fmtWhen = (iso) => {
+      const d = new Date(iso);
+      return isNaN(d) ? "" : d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
     };
     const streakOf = (days) => Array.from({ length: 14 }, (_, i) => i >= 14 - days);
 
     function seed() {
       const s = (o) => Object.assign({ demo: true, createdAt: "2026-09-01" }, o);
+      let n = 0;
+      const msg = (from, to, subject, body, at, read, batch) => ({ id: "m" + (++n), from, to, subject, body, at, read: !!read, batch: batch || null });
       return {
         users: [
           s({ id: "u-founder", role: "founder", name: "BDAI Founder", username: "founder" }),
           s({ id: "u-ananya", role: "teacher", name: "Ms. Ananya Rao", username: "ananya", track: "ai" }),
           s({ id: "u-rohan", role: "teacher", name: "Mr. Rohan Mehta", username: "rohan", track: "create" }),
           s({ id: "u-leela", role: "teacher", name: "Ms. Leela Iyer", username: "leela", track: "tech" }),
-          s({ id: "u-mira", role: "student", name: "Mira Sharma", username: "mira", age: 11, track: "ai", teacherId: "u-ananya",
+          s({ id: "u-mira", role: "student", name: "Mira Sharma", username: "mira", age: 11, track: "ai", teacherId: "u-ananya", demoPin: "1234",
             xp: 1240, streak: [false, true, false, false, false].concat(streakOf(9).slice(5)),
             projects: [
               { name: "Fruit-sorting robot", track: "ai", pct: 72 },
@@ -1085,15 +1094,30 @@ button {
           s({ id: "u-priya", role: "parent", name: "Priya Sharma", username: "priya", childIds: ["u-mira", "u-arjun"] }),
           s({ id: "u-david", role: "parent", name: "David Chen", username: "david", childIds: ["u-zoe"] }),
         ],
+        messages: [
+          ...["u-ananya", "u-rohan", "u-leela"].map((t) => msg("u-founder", t, "Welcome to the new term",
+            "Thank you for teaching at BDAI this term. Please add a note for every student after each live studio, so parents can follow along.",
+            "2026-11-18T09:00:00", t !== "u-rohan", "seed-b1")),
+          msg("u-leela", "u-priya", "Arjun's maze robot", "Arjun fixed a tricky bug in his maze code by himself this week. Next class we add a light sensor.", "2026-11-22T16:45:00", true),
+          msg("u-david", "u-rohan", "Zoe's club brand", "Zoe has been talking about her club brand all week. Is there a way she can show it to the whole school?", "2026-11-23T20:15:00", false),
+          msg("u-mira", "u-ananya", "Question about green apples", "Hi Ms. Ananya, my robot keeps calling green apples limes. Should I add more photos of apples or of limes?", "2026-11-24T17:10:00", true),
+          msg("u-ananya", "u-mira", "Re: Question about green apples", "Add more green apples, from different sides and in different light. Then test it again with 5 new pictures. You're close!", "2026-11-24T18:02:00", false),
+          msg("u-ananya", "u-priya", "Mira's progress this month", "Mira is doing really well in the AI track. She asks great questions and helps her classmates. Her fruit-sorting robot is 72% done.", "2026-11-25T10:30:00", false),
+          ...["u-priya", "u-david"].map((p) => msg("u-founder", p, "Show and tell this Sunday",
+            "Families are welcome at Sunday's show and tell at 5:00 PM. Students will present their projects from this term.",
+            "2026-11-25T12:00:00", false, "seed-b2")),
+        ],
       };
     }
 
     // ----- data layer (swap for your API) -----
+    const byNewest = (a, b) => (a.at < b.at ? 1 : -1);
     const Accounts = {
       db: null,
       load() {
         const d = store.get(DB_KEY, null);
         this.db = d && Array.isArray(d.users) ? d : seed();
+        if (!Array.isArray(this.db.messages)) this.db.messages = [];
         this.save();
       },
       save() { store.set(DB_KEY, this.db); },
@@ -1112,60 +1136,133 @@ button {
           if (u.role === "parent") u.childIds = (u.childIds || []).filter((c) => c !== id);
           if (u.role === "student" && u.teacherId === id) u.teacherId = "";
         });
+        this.db.messages = this.db.messages.filter((m) => m.to !== id);
         this.save();
       },
       parentsOf(studentId) { return this.all("parent").filter((p) => (p.childIds || []).includes(studentId)); },
       studentsOf(teacherId) { return this.all("student").filter((s) => s.teacherId === teacherId); },
+      // messages
+      send(fromId, toIds, subject, body) {
+        const batch = toIds.length > 1 ? "b" + Date.now().toString(36) : null;
+        const at = nowISO();
+        toIds.forEach((to, i) => this.db.messages.push({
+          id: "m" + Date.now().toString(36) + i + Math.random().toString(36).slice(2, 6),
+          from: fromId, to, subject, body, at, read: false, batch,
+        }));
+        this.save();
+      },
+      inbox(id) { return this.db.messages.filter((m) => m.to === id).sort(byNewest); },
+      sent(id) {
+        const out = [], groups = {};
+        this.db.messages.filter((m) => m.from === id).forEach((m) => {
+          if (m.batch && groups[m.batch]) { groups[m.batch].to.push(m.to); return; }
+          const copy = Object.assign({}, m, { to: [m.to] });
+          if (m.batch) groups[m.batch] = copy;
+          out.push(copy);
+        });
+        return out.sort(byNewest);
+      },
+      unread(id) { return this.db.messages.filter((m) => m.to === id && !m.read).length; },
+      markRead(msgId) { const m = this.db.messages.find((x) => x.id === msgId); if (m && !m.read) { m.read = true; this.save(); } },
     };
 
-    async function hashPassword(pw, salt) {
-      const text = salt + ":" + pw;
+    // ----- secrets: passwords, PINs, security keys, founder code -----
+    async function sha256(text) {
       if (window.crypto && window.crypto.subtle && window.TextEncoder) {
         const buf = await window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
         return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
       }
-      let h = 2166136261; // fallback for very old browsers
-      for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 16777619); }
-      return "f" + (h >>> 0).toString(16);
+      return null;
     }
-    async function checkPassword(user, pw) {
-      if (user.pwHash) return (await hashPassword(pw, user.salt)) === user.pwHash;
-      return user.demo && pw === CONFIG.demoPassword;
+    async function hashSecret(secret, salt) {
+      const h = await sha256(salt + ":" + secret);
+      if (h) return h;
+      let x = 2166136261; // fallback for very old browsers
+      const t = salt + ":" + secret;
+      for (let i = 0; i < t.length; i++) { x ^= t.charCodeAt(i); x = Math.imul(x, 16777619); }
+      return "f" + (x >>> 0).toString(16);
+    }
+    const KEY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O or 1/I mix-ups
+    function randomCode(groups, size) {
+      const n = groups * size;
+      const vals = new Uint32Array(n);
+      if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(vals);
+      else for (let i = 0; i < n; i++) vals[i] = Math.floor(Math.random() * 4294967296);
+      let out = "";
+      for (let i = 0; i < n; i++) {
+        if (i && i % size === 0) out += "-";
+        out += KEY_ALPHABET[vals[i] % KEY_ALPHABET.length];
+      }
+      return out;
+    }
+    const newSalt = () => randomCode(4, 4);
+    const normKey = (s) => String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const normCode = (s) => String(s || "").trim().toUpperCase();
+    function saltOf(u) {
+      if (!u.salt) Accounts.update(u.id, { salt: newSalt() });
+      return Accounts.get(u.id).salt;
+    }
+    async function checkPassword(u, pw) {
+      if (u.pwHash) return (await hashSecret(pw, u.salt)) === u.pwHash;
+      return !!u.demo && pw === CONFIG.demoPassword;
+    }
+    const hasPin = (u) => !!(u && (u.pinHash || u.demoPin));
+    async function checkPin(u, pin) {
+      if (u.pinHash) return (await hashSecret(pin, "pin:" + u.salt)) === u.pinHash;
+      return !!u.demoPin && pin === u.demoPin;
+    }
+    async function checkKey(u, key) {
+      if (!u.keyHash) return false;
+      return (await hashSecret(normKey(key), "key:" + u.salt)) === u.keyHash;
+    }
+    async function checkFounderCode(code) {
+      const h = await sha256("bdai-founder:" + normCode(code));
+      return h !== null && h === CONFIG.founderCodeHash;
+    }
+    async function copyText(text, el) {
+      try {
+        await navigator.clipboard.writeText(text);
+        toast("Copied.");
+      } catch (e) {
+        if (el) { const r = document.createRange(); r.selectNodeContents(el); const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r); }
+        toast("Selected. Press Ctrl + C (or ⌘ + C) to copy.");
+      }
     }
 
     Accounts.load();
 
     // ----- UI state -----
-    const ui = {
-      sessionId: null,
-      viewAsId: null,
-      tab: null,
-      authMode: "signin",
-      signupRole: "student",
-      kidId: null,
-      studentId: null,
-      founderQuery: "",
-      confirmRemove: null,
-    };
+    const freshUI = () => ({
+      viewAsId: null, tab: null, kidId: null, studentId: null, founderQuery: "", confirmRemove: null,
+      box: "in", msgId: null, composing: false,
+      locked: false, accountUnlocked: false, pinTries: 0, pinRecovery: false,
+      newKey: null, notice: null,
+    });
+    const ui = Object.assign(freshUI(), { sessionId: null, authMode: "signin", signupRole: "student" });
     const savedSession = store.get(SESSION_KEY, null);
     ui.sessionId = savedSession === null ? "u-mira" : savedSession || null;
     if (ui.sessionId && !Accounts.get(ui.sessionId)) ui.sessionId = null;
+    if (savedSession && ui.sessionId) {
+      const u = Accounts.get(ui.sessionId);
+      ui.locked = !!(u.pinOnOpen && hasPin(u)); // returning visitor with "PIN on open" turned on
+    }
 
     const TABS = {
-      student: [["home", "Dashboard"], ["projects", "My projects"], ["badges", "Badges"], ["schedule", "Schedule"]],
-      parent: [["kids", "My children"], ["schedule", "Class schedule"], ["link", "Link a child"]],
-      teacher: [["roster", "My students"], ["waiting", "Unassigned students"], ["schedule", "Schedule"]],
-      founder: [["overview", "Overview"], ["students", "Students"], ["teachers", "Teachers"], ["parents", "Parents"]],
+      student: [["home", "Dashboard"], ["inbox", "Inbox"], ["projects", "My projects"], ["badges", "Badges"], ["schedule", "Schedule"], ["account", "Account"]],
+      parent: [["kids", "My children"], ["inbox", "Inbox"], ["schedule", "Class schedule"], ["link", "Link a child"], ["account", "Account"]],
+      teacher: [["roster", "My students"], ["inbox", "Inbox"], ["waiting", "Unassigned students"], ["schedule", "Schedule"], ["account", "Account"]],
+      founder: [["overview", "Overview"], ["inbox", "Inbox"], ["students", "Students"], ["teachers", "Teachers"], ["parents", "Parents"], ["account", "Account"]],
     };
     const ROLE_LABEL = { student: "Student", parent: "Parent", teacher: "Teacher", founder: "Founder" };
+    const GROUPS = { "@teachers": ["All teachers", "teacher"], "@parents": ["All parents", "parent"], "@students": ["All students", "student"], "@everyone": ["Everyone", null] };
 
     function signIn(id) {
-      ui.sessionId = id; ui.viewAsId = null; ui.tab = null; ui.kidId = null; ui.studentId = null; ui.confirmRemove = null;
+      Object.assign(ui, freshUI(), { sessionId: id });
       store.set(SESSION_KEY, id);
       render();
     }
     function signOut() {
-      ui.sessionId = null; ui.viewAsId = null; ui.tab = null; ui.authMode = "signin";
+      Object.assign(ui, freshUI(), { sessionId: null, authMode: "signin" });
       store.set(SESSION_KEY, "");
       render();
     }
@@ -1174,6 +1271,9 @@ button {
     const initials = (name) => esc(String(name).replace(/^(Ms|Mr|Mrs|Dr)\.?\s+/i, "").trim().charAt(0).toUpperCase() || "?");
     const roleBadge = (role) => '<span class="role-badge role-badge--' + role + '">' + ROLE_LABEL[role] + "</span>";
     const trackName = (t) => (TRACK_INFO[t] ? TRACK_INFO[t].name : "—");
+    const firstName = (u) => esc(String(u.name).replace(/^(Ms|Mr|Mrs|Dr)\.?\s+/i, "").split(" ")[0]);
+    const nameOf = (id) => { const u = Accounts.get(id); return u ? u.name : "Removed account"; };
+    const secChips = (u) => '<span class="sec"><span class="' + (hasPin(u) ? "" : "off") + '">PIN</span><span class="' + (u.keyHash ? "" : "off") + '">Key</span></span>';
 
     function projectHTML(p) {
       const info = TRACK_INFO[p.track] || TRACK_INFO.tech;
@@ -1228,6 +1328,148 @@ button {
       return '<button class="tool tool--small tool--danger" data-action="remove" data-id="' + u.id + '">' + (confirming ? "Confirm remove" : "Remove") + "</button>";
     }
 
+    // ----- inbox -----
+    function contactsFor(u) {
+      const founders = Accounts.all("founder").filter((f) => f.id !== u.id);
+      let list = [];
+      if (u.role === "student") list = [Accounts.get(u.teacherId)].concat(founders);
+      if (u.role === "parent") {
+        const kids = (u.childIds || []).map((id) => Accounts.get(id)).filter(Boolean);
+        list = kids.map((k) => Accounts.get(k.teacherId)).concat(founders);
+      }
+      if (u.role === "teacher") {
+        const kids = Accounts.studentsOf(u.id);
+        list = kids.concat(...kids.map((k) => Accounts.parentsOf(k.id))).concat(founders);
+      }
+      if (u.role === "founder") list = Accounts.all().filter((x) => x.id !== u.id);
+      const seen = new Set();
+      return list.filter((x) => x && !seen.has(x.id) && seen.add(x.id));
+    }
+    function messageItem(m, box) {
+      let name;
+      if (box === "sent") name = "To " + (m.to.length > 1 ? m.to.length + " people" : nameOf(m.to[0]));
+      else name = nameOf(m.from);
+      const unread = box === "in" && !m.read;
+      return '<li><button class="mitem' + (unread ? " is-unread" : "") + (ui.msgId === m.id ? " is-open" : "") + '" data-action="open-msg" data-id="' + m.id + '" id="msg-' + m.id + '">' +
+        '<span class="avatar avatar--sm" aria-hidden="true">' + initials(box === "sent" && m.to.length > 1 ? "#" : name.replace(/^To /, "")) + "</span>" +
+        '<span class="mitem__body"><span class="mitem__top"><strong>' + esc(name) + "</strong><time>" + fmtWhen(m.at) + "</time></span>" +
+        '<span class="mitem__subj">' + (unread ? '<span class="sr">Unread: </span>' : "") + esc(m.subject) + '</span><span class="mitem__prev">' + esc(m.body.slice(0, 90)) + "</span></span></button></li>";
+    }
+    function composeHTML(u) {
+      const contacts = contactsFor(u);
+      const groups = u.role === "founder" ? '<optgroup label="Groups">' + Object.keys(GROUPS).map((k) => '<option value="' + k + '">' + GROUPS[k][0] + "</option>").join("") + "</optgroup>" : "";
+      const people = ["teacher", "parent", "student", "founder"].map((r) => {
+        const list = contacts.filter((c) => c.role === r);
+        return list.length ? '<optgroup label="' + ROLE_LABEL[r] + 's">' + list.map((c) => '<option value="' + c.id + '">' + esc(c.name) + "</option>").join("") + "</optgroup>" : "";
+      }).join("");
+      if (!groups && !people) return '<p class="empty">There is no one to message yet. Once you are in a class, your teacher appears here.</p>';
+      return '<div class="msg"><h4>New message</h4><form class="form" id="composeForm" autocomplete="off">' +
+        '<div class="field field--full"><label for="mTo">To</label><select id="mTo">' + groups + people + "</select></div>" +
+        '<div class="field field--full"><label for="mSubject">Subject</label><input id="mSubject" type="text" maxlength="80" required></div>' +
+        '<div class="field field--full"><label for="mBody">Message</label><textarea id="mBody" rows="6" required></textarea></div>' +
+        '<p class="form__error field--full" id="mError"></p>' +
+        '<div class="feedback__row field--full"><button class="btn btn--primary btn--sm" type="submit">Send</button><button class="tool" type="button" data-action="cancel-compose">Cancel</button></div></form>' +
+        (u.role === "student" ? '<p class="hint">Students can message their teacher and the BDAI team.</p>' : "") + "</div>";
+    }
+    function readerHTML(u, items, readOnly) {
+      if (ui.composing && !readOnly) return composeHTML(u);
+      const m = items.find((x) => x.id === ui.msgId);
+      if (!m) return '<p class="empty">Pick a message to read it.</p>';
+      const from = Accounts.get(m.from);
+      const toIds = Array.isArray(m.to) ? m.to : [m.to];
+      const reSubject = /^re:/i.test(m.subject) ? m.subject : "Re: " + m.subject;
+      return '<article class="msg"><h4>' + esc(m.subject) + "</h4>" +
+        '<p class="msg__meta">From <strong>' + esc(nameOf(m.from)) + "</strong>" + (from ? " " + roleBadge(from.role) : "") +
+        " · To " + esc(toIds.map(nameOf).join(", ")) + " · " + fmtWhen(m.at) + "</p>" +
+        '<div class="msg__body">' + esc(m.body) + "</div>" +
+        (!readOnly && ui.box === "in" && from
+          ? '<form class="feedback" id="replyForm" data-to="' + from.id + '" data-subject="' + esc(reSubject) + '"><label class="sr" for="replyText">Reply</label>' +
+            '<textarea id="replyText" placeholder="Write a reply to ' + firstName(from) + '…" required></textarea>' +
+            '<div class="feedback__row"><button class="btn btn--primary btn--sm" type="submit">Send reply</button></div></form>'
+          : "") + "</article>";
+    }
+    function inboxPane(u, readOnly) {
+      const box = ui.box;
+      const items = box === "sent" ? Accounts.sent(u.id) : Accounts.inbox(u.id);
+      const unread = Accounts.unread(u.id);
+      return '<div class="pane"><div class="pane__row"><h3 class="pane__title">Inbox</h3><div class="pane__row inbox__tools">' +
+        '<div class="seg seg--small" role="tablist" aria-label="Folder">' +
+        '<button role="tab" data-action="box" data-box="in" aria-selected="' + (box === "in") + '" id="box-in">Received' + (unread ? ' <span class="count">' + unread + "</span>" : "") + "</button>" +
+        '<button role="tab" data-action="box" data-box="sent" aria-selected="' + (box === "sent") + '" id="box-sent">Sent</button></div>' +
+        (readOnly ? "" : '<button class="btn btn--primary btn--sm" data-action="compose">New message</button>') + "</div></div>" +
+        (readOnly ? '<p class="hint">Founder view is read-only: opening messages here does not mark them as read.</p>' : "") +
+        '<div class="inbox"><ul class="mlist">' +
+        (items.length ? items.map((m) => messageItem(m, box)).join("") : '<li class="empty">' + (box === "sent" ? "You haven't sent any messages yet." : "No messages yet.") + "</li>") +
+        '</ul><div class="mread">' + readerHTML(u, items, readOnly) + "</div></div></div>";
+    }
+
+    // ----- account page: profile, password, PIN, security key -----
+    function keyRecoveryForm(formId, label) {
+      return '<form class="form form--narrow" id="' + formId + '" autocomplete="off">' +
+        '<div class="field field--full"><label for="' + formId + 'Key">Security key</label><input id="' + formId + 'Key" type="text" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" required></div>' +
+        '<p class="form__error field--full" id="' + formId + 'Error"></p>' +
+        '<button class="btn btn--primary field--full" type="submit">' + label + "</button></form>";
+    }
+    function pinGateHTML(u) {
+      return '<div class="pane"><div class="lockcard"><div class="avatar" aria-hidden="true">' + initials(u.name) + "</div>" +
+        "<h3>Enter your PIN</h3><p class=\"empty\">Your account page is protected with a PIN.</p>" +
+        (ui.pinRecovery
+          ? keyRecoveryForm("keyPinForm", "Remove my PIN") + '<button class="linkbtn" data-action="pin-recovery" data-on="0">Back to PIN</button>'
+          : '<form class="form form--narrow" id="pinGateForm" autocomplete="off"><div class="field field--full"><label for="gatePin">PIN</label>' +
+            '<input id="gatePin" class="pin-input" type="password" inputmode="numeric" maxlength="6" required></div>' +
+            '<p class="form__error field--full" id="gateError"></p><button class="btn btn--primary field--full" type="submit">Open account page</button></form>' +
+            '<button class="linkbtn" data-action="pin-recovery" data-on="1">Forgot your PIN? Use your security key</button>') +
+        "</div></div>";
+    }
+    function founderSecurityPane(u) {
+      return '<div class="pane"><h3 class="pane__title">Account and security</h3><div class="acct">' +
+        '<div class="card"><p class="card__title">Profile</p><p><strong>' + esc(u.name) + "</strong> " + roleBadge(u.role) + "</p>" +
+        '<p class="empty">@' + esc(u.username) + " · Joined " + fmtDate(u.createdAt) + "</p></div>" +
+        '<div class="card"><p class="card__title">Security</p><ul class="seclist">' +
+        '<li><span class="status is-on">Password: ' + (u.pwHash ? "set by the user" : "example password") + "</span></li>" +
+        '<li><span class="status' + (hasPin(u) ? " is-on" : "") + '">PIN: ' + (hasPin(u) ? (u.pinOnOpen ? "on, also when the portal opens" : "on for the account page") : "off") + "</span></li>" +
+        '<li><span class="status' + (u.keyHash ? " is-on" : "") + '">Security key: ' + (u.keyHash ? "set up " + fmtDate(u.keyAt) : "not set up") + "</span></li></ul>" +
+        '<div class="feedback__row"><button class="tool tool--small" data-action="reset-pw" data-id="' + u.id + '">Reset password</button>' +
+        (hasPin(u) ? '<button class="tool tool--small tool--danger" data-action="clear-pin" data-id="' + u.id + '">Remove PIN</button>' : "") + "</div></div></div></div>";
+    }
+    function accountPane(u) {
+      if (hasPin(u) && !ui.accountUnlocked) return pinGateHTML(u);
+      const keyCard = ui.newKey
+        ? '<p class="empty">This is your security key. It is shown only once, so write it down or copy it somewhere safe, like with a parent.</p>' +
+          '<div class="keybox" id="keyBox">' + esc(ui.newKey) + "</div>" +
+          '<div class="feedback__row"><button class="tool tool--small" data-action="copy-key">Copy key</button></div>' +
+          '<label class="check" for="keySaved"><input type="checkbox" id="keySaved"><span>I saved my security key somewhere safe.</span></label>' +
+          '<p class="form__error" id="keyError"></p><button class="btn btn--primary btn--sm" data-action="key-done" style="width:fit-content">Done</button>'
+        : '<p><span class="status' + (u.keyHash ? " is-on" : "") + '">' + (u.keyHash ? "Set up " + fmtDate(u.keyAt) : "Not set up yet") + "</span></p>" +
+          '<p class="empty">A security key lets you reset your password or PIN if you forget them.</p>' +
+          '<button class="tool" data-action="make-key" style="width:fit-content">' + (u.keyHash ? "Replace security key" : "Create security key") + "</button>";
+
+      return '<div class="pane"><div class="pane__row"><h3 class="pane__title">Account</h3>' +
+        (hasPin(u) ? '<button class="tool tool--small" data-action="lock">Lock portal now</button>' : "") + "</div>" +
+        '<div class="acct">' +
+        '<div class="card"><p class="card__title">Profile</p><form class="form" id="profileForm" autocomplete="off">' +
+          '<div class="field field--full"><label for="pfName">Full name</label><input id="pfName" type="text" maxlength="40" value="' + esc(u.name) + '" required></div>' +
+          '<p class="field--full empty">Username <code>@' + esc(u.username) + "</code> · " + roleBadge(u.role) + " · Joined " + fmtDate(u.createdAt) + "</p>" +
+          '<button class="tool field--full" type="submit" style="width:fit-content">Save name</button></form></div>' +
+        '<div class="card"><p class="card__title">Password</p><form class="form" id="passwordForm" autocomplete="off">' +
+          '<div class="field field--full"><label for="pwOld">Current password</label><input id="pwOld" type="password" required autocomplete="current-password"></div>' +
+          '<div class="field"><label for="pwNew">New password</label><input id="pwNew" type="password" minlength="6" required autocomplete="new-password"></div>' +
+          '<div class="field"><label for="pwNew2">Type it again</label><input id="pwNew2" type="password" minlength="6" required autocomplete="new-password"></div>' +
+          '<p class="form__error field--full" id="pwError"></p><button class="tool field--full" type="submit" style="width:fit-content">Change password</button></form></div>' +
+        '<div class="card"><p class="card__title">PIN</p>' +
+          '<p><span class="status' + (hasPin(u) ? " is-on" : "") + '">' + (hasPin(u) ? "PIN is on" : "No PIN yet") + "</span></p>" +
+          '<p class="empty">A 4 to 6 digit PIN protects this account page. You can also ask for it whenever the portal opens.</p>' +
+          '<form class="form" id="pinForm" autocomplete="off">' +
+          '<div class="field"><label for="pinNew">' + (hasPin(u) ? "New PIN" : "PIN") + '</label><input id="pinNew" class="pin-input" type="password" inputmode="numeric" maxlength="6" required></div>' +
+          '<div class="field"><label for="pinNew2">Type it again</label><input id="pinNew2" class="pin-input" type="password" inputmode="numeric" maxlength="6" required></div>' +
+          '<label class="check field--full" for="pinOnOpen"><input type="checkbox" id="pinOnOpen"' + (u.pinOnOpen ? " checked" : "") + "><span>Also ask for my PIN when the portal opens</span></label>" +
+          '<p class="form__error field--full" id="pinError"></p>' +
+          '<div class="feedback__row field--full"><button class="tool" type="submit">' + (hasPin(u) ? "Change PIN" : "Turn on PIN") + "</button>" +
+          (hasPin(u) ? '<button class="tool tool--danger" type="button" data-action="remove-own-pin">Turn off PIN</button>' : "") + "</div></form></div>" +
+        '<div class="card"><p class="card__title">Security key</p>' + keyCard + "</div>" +
+        "</div></div>";
+    }
+
     // ----- role views -----
     function studentPane(s, tab) {
       const teacher = Accounts.get(s.teacherId);
@@ -1235,9 +1477,11 @@ button {
       if (tab === "badges") return '<div class="pane"><h3 class="pane__title">Badges</h3>' + badgesHTML(s) + "</div>";
       if (tab === "schedule") return '<div class="pane"><h3 class="pane__title">This week</h3>' + scheduleHTML() + "</div>";
       const open = (s.projects || []).filter((p) => p.pct < 100).slice(0, 3);
-      return '<div class="pane"><div class="pane__hello"><h3>Good to see you, ' + esc(s.name.split(" ")[0]) + ".</h3>" +
+      const unread = Accounts.unread(s.id);
+      return '<div class="pane"><div class="pane__hello"><h3>Good to see you, ' + firstName(s) + ".</h3>" +
         "<p>" + (teacher ? "Your teacher is <strong>" + esc(teacher.name) + "</strong>. " : "You will be matched with a teacher soon. ") +
-        "Next live studio: <strong>Thursday at 4:30 PM</strong>.</p></div>" + statsHTML(s) +
+        "Next live studio: <strong>Thursday at 4:30 PM</strong>." +
+        (unread ? ' You have <button class="linkbtn" data-action="tab" data-tab="inbox">' + unread + " new message" + (unread === 1 ? "" : "s") + "</button>." : "") + "</p></div>" + statsHTML(s) +
         '<div class="pane__grid"><div class="card"><p class="card__title">Keep going</p>' +
         (open.length ? '<ul class="projects projects--mini">' + open.map(projectHTML).join("") + "</ul>" : '<p class="empty">All projects finished. Ask your teacher for the next one!</p>') +
         '</div><div class="card"><p class="card__title">Teacher notes</p>' + notesHTML(s.notes) + "</div></div></div>";
@@ -1254,17 +1498,17 @@ button {
       }
       const kids = (p.childIds || []).map((id) => Accounts.get(id)).filter(Boolean);
       if (!kids.length) {
-        return '<div class="pane"><div class="pane__hello"><h3>Welcome, ' + esc(p.name.split(" ")[0]) + ".</h3><p>No children linked yet. Open <strong>Link a child</strong> to add your child's account.</p></div></div>";
+        return '<div class="pane"><div class="pane__hello"><h3>Welcome, ' + firstName(p) + ".</h3><p>No children linked yet. Open <strong>Link a child</strong> to add your child's account.</p></div></div>";
       }
       if (!ui.kidId || !kids.some((k) => k.id === ui.kidId)) ui.kidId = kids[0].id;
       const kid = Accounts.get(ui.kidId);
       const teacher = Accounts.get(kid.teacherId);
-      return '<div class="pane"><div class="pane__hello"><h3>Welcome, ' + esc(p.name.split(" ")[0]) + ".</h3><p>Here is how your children are doing this week.</p></div>" +
+      return '<div class="pane"><div class="pane__hello"><h3>Welcome, ' + firstName(p) + ".</h3><p>Here is how your children are doing this week.</p></div>" +
         '<div class="kids">' + kids.map((k) =>
           '<button class="kid" data-action="kid" data-id="' + k.id + '" aria-pressed="' + (k.id === kid.id) + '" id="kid-' + k.id + '">' +
           '<span class="who"><span class="avatar avatar--sm">' + initials(k.name) + "</span><span><strong>" + esc(k.name) + '</strong><small>Age ' + esc(k.age) + " · " + trackName(k.track) + " track</small></span></span>" +
           '<span class="kid__meta">Level ' + levelOf(k.xp) + " · " + rankOf(k.xp) + " · " + (k.badges || []).length + " badges</span></button>").join("") + "</div>" +
-        '<h3 class="pane__title">' + esc(kid.name.split(" ")[0]) + "'s progress</h3>" + statsHTML(kid) +
+        '<h3 class="pane__title">' + firstName(kid) + "'s progress</h3>" + statsHTML(kid) +
         '<div class="pane__grid"><div class="card"><p class="card__title">Projects</p><ul class="projects projects--mini">' + (kid.projects || []).map(projectHTML).join("") + "</ul></div>" +
         '<div class="card"><p class="card__title">Notes from ' + (teacher ? esc(teacher.name) : "the teacher") + "</p>" + notesHTML(kid.notes) + "</div></div></div>";
     }
@@ -1291,14 +1535,15 @@ button {
         mine.map((s) => {
           const last = (s.notes || [])[(s.notes || []).length - 1];
           return '<tr class="' + (s.id === sel.id ? "is-picked" : "") + '"><td><span class="who"><span class="avatar avatar--sm">' + initials(s.name) + "</span><span>" + esc(s.name) + "<small>Age " + esc(s.age) + "</small></span></span></td>" +
-            '<td>' + levelOf(s.xp) + " · " + rankOf(s.xp) + '</td><td class="num">' + Number(s.xp).toLocaleString() + '</td><td class="num">' + avg(s) + "% avg</td>" +
+            "<td>" + levelOf(s.xp) + " · " + rankOf(s.xp) + '</td><td class="num">' + Number(s.xp).toLocaleString() + '</td><td class="num">' + avg(s) + "% avg</td>" +
             "<td>" + (last ? fmtDate(last.at) : "—") + '</td><td><button class="tool tool--small" data-action="pick-student" data-id="' + s.id + '">Give feedback</button></td></tr>';
         }).join("") + "</tbody></table></div>" +
         '<div class="pane__grid"><div class="card"><p class="card__title">Feedback for ' + esc(sel.name) + "</p>" +
-        '<form class="feedback" id="feedbackForm"><label class="sr" for="feedbackText">Note for ' + esc(sel.name) + '</label>' +
+        '<form class="feedback" id="feedbackForm"><label class="sr" for="feedbackText">Note for ' + esc(sel.name) + "</label>" +
         '<textarea id="feedbackText" placeholder="What went well, and what to try next…" required></textarea>' +
         '<div class="feedback__row"><button class="btn btn--primary btn--sm" type="submit">Send note</button>' +
-        '<button class="tool" type="button" data-action="xp" data-amount="25">+25 XP</button><button class="tool" type="button" data-action="xp" data-amount="50">+50 XP</button></div></form></div>' +
+        '<button class="tool" type="button" data-action="xp" data-amount="25">+25 XP</button><button class="tool" type="button" data-action="xp" data-amount="50">+50 XP</button></div>' +
+        '<p class="hint">Notes also go to the inbox of the student and their parents.</p></form></div>' +
         '<div class="card"><p class="card__title">Recent notes</p>' + notesHTML(sel.notes) + "</div></div></div>";
     }
 
@@ -1307,41 +1552,43 @@ button {
       const q = ui.founderQuery.trim().toLowerCase();
       const match = (u) => !q || u.name.toLowerCase().includes(q) || u.username.includes(q);
       const search = '<div class="filter-row"><label class="sr" for="founderSearch">Search people</label><input type="search" id="founderSearch" placeholder="Search by name or username" value="' + esc(ui.founderQuery) + '"></div>';
-      const openBtn = (u) => '<button class="tool tool--small" data-action="view-as" data-id="' + u.id + '">Open portal</button>';
+      const actions = (u) => '<span class="row-actions"><button class="tool tool--small" data-action="view-as" data-id="' + u.id + '">Open portal</button>' +
+        '<button class="tool tool--small" data-action="reset-pw" data-id="' + u.id + '">Reset password</button>' + removeBtn(u) + "</span>";
+      const who = (u) => '<span class="who"><span class="avatar avatar--sm">' + initials(u.name) + "</span><span>" + esc(u.name) + "<small>@" + esc(u.username) + "</small></span></span>";
 
       if (tab === "students") {
         return '<div class="pane"><div class="pane__row"><h3 class="pane__title">Students (' + students.length + ")</h3>" + search + "</div>" +
-          '<div class="table-wrap"><table class="ptable"><thead><tr><th>Student</th><th>Age · level</th><th>Track</th><th>Teacher</th><th>Parents</th><th>XP</th><th></th></tr></thead><tbody>' +
-          students.filter(match).map((s) => "<tr><td><span class=\"who\"><span class=\"avatar avatar--sm\">" + initials(s.name) + "</span><span>" + esc(s.name) + "<small>@" + esc(s.username) + "</small></span></span></td>" +
-            "<td>" + esc(s.age) + " · " + LEVEL_NAMES[bandForAge(s.age)] + "</td><td>" + trackName(s.track) + "</td><td>" + teacherSelect(s, "assign-" + s.id) + "</td>" +
+          '<div class="table-wrap"><table class="ptable"><thead><tr><th>Student</th><th>Age · level</th><th>Teacher</th><th>Parents</th><th>XP</th><th>Security</th><th></th></tr></thead><tbody>' +
+          students.filter(match).map((s) => "<tr><td>" + who(s) + "</td>" +
+            "<td>" + esc(s.age) + " · " + LEVEL_NAMES[bandForAge(s.age)] + "<small class=\"block\">" + trackName(s.track) + " track</small></td><td>" + teacherSelect(s, "assign-" + s.id) + "</td>" +
             "<td>" + (Accounts.parentsOf(s.id).map((p) => esc(p.name)).join(", ") || "—") + '</td><td class="num">' + Number(s.xp).toLocaleString() + "</td>" +
-            '<td><span class="row-actions">' + openBtn(s) + removeBtn(s) + "</span></td></tr>").join("") +
+            "<td>" + secChips(s) + "</td><td>" + actions(s) + "</td></tr>").join("") +
           "</tbody></table></div></div>";
       }
       if (tab === "teachers") {
         return '<div class="pane"><div class="pane__row"><h3 class="pane__title">Teachers (' + teachers.length + ")</h3>" + search + "</div>" +
-          '<div class="table-wrap"><table class="ptable"><thead><tr><th>Teacher</th><th>Track</th><th>Students</th><th>Notes written</th><th></th></tr></thead><tbody>' +
+          '<div class="table-wrap"><table class="ptable"><thead><tr><th>Teacher</th><th>Track</th><th>Students</th><th>Notes</th><th>Security</th><th></th></tr></thead><tbody>' +
           teachers.filter(match).map((t) => {
             const kids = Accounts.studentsOf(t.id);
             const notes = students.reduce((a, s) => a + (s.notes || []).filter((n) => n.from === t.name).length, 0);
-            return "<tr><td><span class=\"who\"><span class=\"avatar avatar--sm\">" + initials(t.name) + "</span><span>" + esc(t.name) + "<small>@" + esc(t.username) + "</small></span></span></td>" +
-              "<td>" + trackName(t.track) + "</td><td>" + (kids.map((k) => esc(k.name.split(" ")[0])).join(", ") || "—") + '</td><td class="num">' + notes + "</td>" +
-              '<td><span class="row-actions">' + openBtn(t) + removeBtn(t) + "</span></td></tr>";
+            return "<tr><td>" + who(t) + "</td><td>" + trackName(t.track) + "</td><td>" + (kids.map((k) => firstName(k)).join(", ") || "—") +
+              '</td><td class="num">' + notes + "</td><td>" + secChips(t) + "</td><td>" + actions(t) + "</td></tr>";
           }).join("") + "</tbody></table></div>" +
-          '<p class="hint">New teachers sign up with the teacher invite code: <code>' + esc(CONFIG.teacherInviteCode) + "</code></p></div>";
+          '<p class="hint">Teacher invite code (share it only with new teachers): <code>' + esc(CONFIG.teacherInviteCode) + "</code></p></div>";
       }
       if (tab === "parents") {
         return '<div class="pane"><div class="pane__row"><h3 class="pane__title">Parents (' + parents.length + ")</h3>" + search + "</div>" +
-          '<div class="table-wrap"><table class="ptable"><thead><tr><th>Parent</th><th>Children</th><th>Joined</th><th></th></tr></thead><tbody>' +
-          parents.filter(match).map((p) => "<tr><td><span class=\"who\"><span class=\"avatar avatar--sm\">" + initials(p.name) + "</span><span>" + esc(p.name) + "<small>@" + esc(p.username) + "</small></span></span></td>" +
+          '<div class="table-wrap"><table class="ptable"><thead><tr><th>Parent</th><th>Children</th><th>Joined</th><th>Security</th><th></th></tr></thead><tbody>' +
+          parents.filter(match).map((p) => "<tr><td>" + who(p) + "</td>" +
             "<td>" + ((p.childIds || []).map((id) => Accounts.get(id)).filter(Boolean).map((k) => esc(k.name)).join(", ") || "—") + "</td><td>" + fmtDate(p.createdAt) + "</td>" +
-            '<td><span class="row-actions">' + openBtn(p) + removeBtn(p) + "</span></td></tr>").join("") +
+            "<td>" + secChips(p) + "</td><td>" + actions(p) + "</td></tr>").join("") +
           "</tbody></table></div></div>";
       }
       // overview
       const totalXP = students.reduce((a, s) => a + (s.xp || 0), 0);
       const noTeacher = students.filter((s) => !s.teacherId);
       const noParent = students.filter((s) => !Accounts.parentsOf(s.id).length);
+      const noKey = Accounts.all().filter((u) => !u.keyHash).length;
       const newest = Accounts.all().filter((u) => u.role !== "founder").slice().sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 5);
       const confirmingReset = ui.confirmRemove === "__reset";
       return '<div class="pane"><div class="pane__hello"><h3>Founder overview</h3><p>You can see and manage every student, teacher and parent account.</p></div>' +
@@ -1349,19 +1596,21 @@ button {
         '<div class="stat"><p class="stat__label">Students</p><p class="stat__num">' + students.length + "</p></div>" +
         '<div class="stat"><p class="stat__label">Teachers</p><p class="stat__num">' + teachers.length + "</p></div>" +
         '<div class="stat"><p class="stat__label">Parents</p><p class="stat__num">' + parents.length + "</p></div>" +
+        '<div class="stat"><p class="stat__label">Messages</p><p class="stat__num">' + Accounts.db.messages.length + "</p></div>" +
         '<div class="stat"><p class="stat__label">XP earned</p><p class="stat__num">' + totalXP.toLocaleString() + "</p></div></div>" +
         '<div class="pane__grid"><div class="card"><p class="card__title">Needs attention</p>' +
         (noTeacher.length ? "<p>" + noTeacher.length + " student" + (noTeacher.length === 1 ? "" : "s") + " without a teacher: <strong>" + noTeacher.map((s) => esc(s.name)).join(", ") + "</strong></p>" : "<p>Every student has a teacher.</p>") +
         (noParent.length ? "<p>" + noParent.length + " student" + (noParent.length === 1 ? "" : "s") + " without a linked parent: <strong>" + noParent.map((s) => esc(s.name)).join(", ") + "</strong></p>" : "<p>Every student has a parent linked.</p>") +
+        "<p>" + noKey + " account" + (noKey === 1 ? "" : "s") + " without a security key.</p>" +
         '<button class="tool tool--small" data-action="tab" data-tab="students" style="width:fit-content">Manage students</button></div>' +
         '<div class="card"><p class="card__title">Newest accounts</p><ul class="notes">' +
         newest.map((u) => '<li class="note"><span class="who"><span class="avatar avatar--sm">' + initials(u.name) + "</span><span>" + esc(u.name) + " " + roleBadge(u.role) + "<small>Joined " + fmtDate(u.createdAt) + "</small></span></span></li>").join("") +
         "</ul></div></div>" +
-        '<div class="card"><p class="card__title">Preview data</p><p class="empty">Accounts in this preview are stored in this browser only.</p>' +
+        '<div class="card"><p class="card__title">Preview data</p><p class="empty">Accounts and messages in this preview are stored in this browser only.</p>' +
         '<button class="tool tool--small tool--danger" data-action="reset" style="width:fit-content">' + (confirmingReset ? "Confirm: reset all accounts" : "Reset example accounts") + "</button></div></div>";
     }
 
-    // ----- auth screen -----
+    // ----- auth + lock screens -----
     function authView() {
       const r = ui.signupRole;
       const tracks = Object.keys(TRACK_INFO).map((k) => '<option value="' + k + '">' + TRACK_INFO[k].full + "</option>").join("");
@@ -1369,16 +1618,29 @@ button {
         ["student", "Student", "Projects, badges and classes"],
         ["parent", "Parent", "Follow your child's progress"],
         ["teacher", "Teacher", "Needs an invite code"],
-        ["founder", "Founder", "Needs the founder setup code"],
+        ["founder", "Founder", "Needs the founder code"],
       ].map(([k, t, d]) => '<button type="button" role="radio" class="role-pick role-pick--' + k + '" data-action="signup-role" data-role="' + k + '" aria-checked="' + (r === k) + '" id="pick-' + k + '"><strong>' + t + "</strong><span>" + d + "</span></button>").join("");
-      return '<div class="auth">' +
-        '<div class="auth__panel"><h3>Sign in</h3><p>Welcome back. Use the username and password you chose.</p>' +
+
+      const left = ui.authMode === "recover"
+        ? '<div class="auth__panel"><h3>Reset your password</h3><p>Use the security key you saved when you set up your account.</p>' +
+          '<form class="form" id="recoverForm" autocomplete="off">' +
+          '<div class="field field--full"><label for="rcUser">Username</label><input id="rcUser" type="text" required></div>' +
+          '<div class="field field--full"><label for="rcKey">Security key</label><input id="rcKey" type="text" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" required></div>' +
+          '<div class="field field--full"><label for="rcPass">New password (6+ characters)</label><input id="rcPass" type="password" minlength="6" required autocomplete="new-password"></div>' +
+          '<p class="form__error field--full" id="rcError"></p>' +
+          '<button class="btn btn--primary field--full" type="submit">Reset password and sign in</button></form>' +
+          '<button class="linkbtn" data-action="auth-mode" data-mode="signin">Back to sign in</button>' +
+          '<p class="hint">No security key? Ask the founder to reset your password.</p></div>'
+        : '<div class="auth__panel"><h3>Sign in</h3><p>Welcome back. Use the username and password you chose.</p>' +
           '<form class="form" id="signinForm" autocomplete="off">' +
           '<div class="field field--full"><label for="siUser">Username</label><input id="siUser" type="text" required autocomplete="username"></div>' +
           '<div class="field field--full"><label for="siPass">Password</label><input id="siPass" type="password" required autocomplete="current-password"></div>' +
           '<p class="form__error field--full" id="siError"></p>' +
           '<button class="btn btn--primary field--full" type="submit">Sign in</button></form>' +
-          '<p class="hint">Example usernames: <code>mira</code>, <code>priya</code>, <code>ananya</code>, <code>founder</code>. Password: <code>' + CONFIG.demoPassword + "</code></p></div>" +
+          '<button class="linkbtn" data-action="auth-mode" data-mode="recover">Forgot your password?</button>' +
+          '<p class="hint">Example usernames: <code>mira</code>, <code>priya</code>, <code>ananya</code>, <code>founder</code>. Password: <code>' + CONFIG.demoPassword + "</code></p></div>";
+
+      return '<div class="auth">' + left +
         '<div class="auth__panel"><h3>Create an account</h3><p>Choose who you are. Each role gets its own portal.</p>' +
           '<div class="roles" role="radiogroup" aria-label="Account type">' + roleCards + "</div>" +
           '<form class="form" id="signupForm" autocomplete="off">' +
@@ -1389,26 +1651,45 @@ button {
           '<div class="field" data-for="student teacher"' + (r === "student" || r === "teacher" ? "" : " hidden") + '><label for="suTrack">' + (r === "teacher" ? "Track you teach" : "Favourite track") + '</label><select id="suTrack">' + tracks + "</select></div>" +
           '<div class="field field--full" data-for="parent"' + (r === "parent" ? "" : " hidden") + '><label for="suChild">Child\'s username (optional)</label><input id="suChild" type="text" placeholder="You can link later too"></div>' +
           '<div class="field field--full" data-for="teacher"' + (r === "teacher" ? "" : " hidden") + '><label for="suInvite">Teacher invite code</label><input id="suInvite" type="text" placeholder="From the founder"></div>' +
-          '<div class="field field--full" data-for="founder"' + (r === "founder" ? "" : " hidden") + '><label for="suFounder">Founder setup code</label><input id="suFounder" type="text"></div>' +
+          '<div class="field field--full" data-for="founder"' + (r === "founder" ? "" : " hidden") + '><label for="suFounder">Founder code</label><input id="suFounder" type="password" placeholder="XXXX-XXXX-XXXX" autocomplete="off"></div>' +
           '<p class="form__error field--full" id="suError"></p>' +
           '<button class="btn btn--primary field--full" type="submit">Create ' + ROLE_LABEL[r].toLowerCase() + " account</button></form>" +
-          '<p class="hint">Preview codes: teacher <code>' + CONFIG.teacherInviteCode + "</code>, founder <code>" + CONFIG.founderSetupCode + "</code>. Keep the real ones on your server.</p></div>" +
+          '<p class="hint">After you sign up, open <strong>Account</strong> to add a PIN and a security key.</p></div>' +
         "</div>";
+    }
+    function lockView(u) {
+      return '<div class="lockscreen"><div class="avatar" aria-hidden="true">' + initials(u.name) + "</div>" +
+        "<h3>Welcome back, " + firstName(u) + ".</h3>" +
+        (ui.pinRecovery
+          ? "<p>Enter your security key to remove your PIN and open the portal.</p>" + keyRecoveryForm("keyPinForm", "Remove PIN and open") +
+            '<button class="linkbtn" data-action="pin-recovery" data-on="0">Back to PIN</button>'
+          : "<p>Your portal is locked. Enter your PIN to open it.</p>" +
+            '<form class="form form--narrow" id="unlockForm" autocomplete="off"><div class="field field--full"><label for="unlockPin">PIN</label>' +
+            '<input id="unlockPin" class="pin-input" type="password" inputmode="numeric" maxlength="6" required></div>' +
+            '<p class="form__error field--full" id="unlockError"></p><button class="btn btn--primary field--full" type="submit">Unlock</button></form>' +
+            '<button class="linkbtn" data-action="pin-recovery" data-on="1">Forgot your PIN? Use your security key</button>') +
+        '<button class="linkbtn" data-action="signout">Sign in as someone else</button></div>';
     }
 
     // ----- render -----
     function render() {
       const me = ui.sessionId ? Accounts.get(ui.sessionId) : null;
-      $$("#demoBar [data-demo]").forEach((b) => b.classList.toggle("is-on", !!me && me.username === b.dataset.demo && !ui.viewAsId));
+      $$("#demoBar [data-demo]").forEach((b) => b.classList.toggle("is-on", !!me && me.username === b.dataset.demo && !ui.viewAsId && !ui.locked));
       if (!me) {
         portalApp.className = "portal portal--auth";
         portalApp.innerHTML = authView();
+        return;
+      }
+      if (ui.locked) {
+        portalApp.className = "portal portal--auth";
+        portalApp.innerHTML = lockView(me);
         return;
       }
       const viewing = ui.viewAsId && me.role === "founder" ? Accounts.get(ui.viewAsId) : null;
       const user = viewing || me;
       const tabs = TABS[user.role];
       if (!ui.tab || !tabs.some((t) => t[0] === ui.tab)) ui.tab = tabs[0][0];
+      const unread = Accounts.unread(user.id);
 
       let sub = "";
       if (user.role === "student") sub = "Level " + levelOf(user.xp) + " · " + rankOf(user.xp);
@@ -1419,16 +1700,23 @@ button {
       const side = '<aside class="portal__side"><div class="portal__me"><div class="avatar" aria-hidden="true">' + initials(user.name) + "</div>" +
         '<div><p class="portal__name">' + esc(user.name) + '</p><p class="portal__sub">' + roleBadge(user.role) + " " + esc(sub) + "</p></div></div>" +
         '<nav class="portal__tabs" role="tablist" aria-label="Portal sections">' +
-        tabs.map(([k, label]) => '<button role="tab" data-action="tab" data-tab="' + k + '" id="ptab-' + k + '" aria-selected="' + (ui.tab === k) + '">' + label + "</button>").join("") +
+        tabs.map(([k, label]) => '<button role="tab" data-action="tab" data-tab="' + k + '" id="ptab-' + k + '" aria-selected="' + (ui.tab === k) + '">' + label +
+          (k === "inbox" && unread ? ' <span class="count" aria-label="' + unread + ' unread">' + unread + "</span>" : "") + "</button>").join("") +
         '</nav><button class="tool tool--quiet portal__signout" data-action="signout">Sign out</button></aside>';
 
       let body = "";
+      if (ui.notice) {
+        body += '<div class="notice" role="status"><p>' + esc(ui.notice.text) + '</p><div class="notice__row"><code id="noticeValue">' + esc(ui.notice.value) + "</code>" +
+          '<button class="tool tool--small" data-action="copy-notice">Copy</button><button class="tool tool--small tool--quiet" data-action="dismiss-notice">Dismiss</button></div></div>';
+      }
       if (viewing) body += '<div class="impersonate"><span>Founder view: you are looking at <strong>' + esc(viewing.name) + "</strong>'s portal.</span>" +
         '<button class="tool tool--small" data-action="back-founder">Back to founder view</button></div>';
-      if (user.role === "student") body += studentPane(user, ui.tab);
-      if (user.role === "parent") body += parentPane(user, ui.tab);
-      if (user.role === "teacher") body += teacherPane(user, ui.tab);
-      if (user.role === "founder") body += founderPane(user, ui.tab);
+      if (ui.tab === "inbox") body += inboxPane(user, !!viewing);
+      else if (ui.tab === "account") body += viewing ? founderSecurityPane(user) : accountPane(user);
+      else if (user.role === "student") body += studentPane(user, ui.tab);
+      else if (user.role === "parent") body += parentPane(user, ui.tab);
+      else if (user.role === "teacher") body += teacherPane(user, ui.tab);
+      else if (user.role === "founder") body += founderPane(user, ui.tab);
 
       portalApp.className = "portal";
       portalApp.innerHTML = side + '<div class="portal__main">' + body + "</div>";
@@ -1439,29 +1727,31 @@ button {
       const me = Accounts.get(ui.sessionId);
       return me && me.role === "founder" && ui.viewAsId ? Accounts.get(ui.viewAsId) : me;
     };
+    const focusEl = (id) => { const el = document.getElementById(id); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } } };
 
     // ----- events -----
     $("#demoBar").addEventListener("click", (e) => {
       const b = e.target.closest("[data-demo]"); if (!b) return;
-      const u = Accounts.byUsername(b.dataset.demo);
-      if (!u) { Accounts.reset(); }
+      if (!Accounts.byUsername(b.dataset.demo)) Accounts.reset();
       const user = Accounts.byUsername(b.dataset.demo);
       if (user) { signIn(user.id); toast("Signed in as " + user.name + " (" + ROLE_LABEL[user.role] + ")."); }
     });
 
-    portalApp.addEventListener("click", (e) => {
+    portalApp.addEventListener("click", async (e) => {
       const el = e.target.closest("[data-action]");
       if (!el || el.tagName === "SELECT") return;
       const a = el.dataset.action;
       const me = Accounts.get(ui.sessionId);
+      const isFounder = me && me.role === "founder";
       if (a !== "remove" && a !== "reset") ui.confirmRemove = null;
 
-      if (a === "tab") { ui.tab = el.dataset.tab; render(); }
+      if (a === "tab") { ui.tab = el.dataset.tab; ui.msgId = null; ui.composing = false; ui.pinRecovery = false; render(); }
       else if (a === "signout") signOut();
+      else if (a === "auth-mode") { ui.authMode = el.dataset.mode; render(); }
       else if (a === "signup-role") { ui.signupRole = el.dataset.role; render(); }
       else if (a === "slot") toast(el.dataset.live === "1" ? "The studio room opens 10 minutes before class." : "Reminder set for “" + el.dataset.title + "”.");
       else if (a === "kid") { ui.kidId = el.dataset.id; render(); }
-      else if (a === "pick-student") { ui.studentId = el.dataset.id; render(); const t = $("#feedbackText"); if (t) t.focus({ preventScroll: true }); }
+      else if (a === "pick-student") { ui.studentId = el.dataset.id; render(); focusEl("feedbackText"); }
       else if (a === "xp") {
         const s = Accounts.get(ui.studentId); if (!s) return;
         const amt = Number(el.dataset.amount);
@@ -1472,17 +1762,64 @@ button {
         const t = activeUser(); const s = Accounts.get(el.dataset.id);
         if (t && s) { Accounts.update(s.id, { teacherId: t.id }); ui.studentId = s.id; render(); toast(s.name + " joined your class."); }
       }
-      else if (a === "view-as" && me && me.role === "founder") { ui.viewAsId = el.dataset.id; ui.tab = null; ui.kidId = null; ui.studentId = null; render(); }
-      else if (a === "back-founder") { ui.viewAsId = null; ui.tab = null; render(); }
-      else if (a === "remove" && me && me.role === "founder") {
+      // inbox
+      else if (a === "box") { ui.box = el.dataset.box; ui.msgId = null; ui.composing = false; render(); }
+      else if (a === "open-msg") {
+        ui.msgId = el.dataset.id; ui.composing = false;
+        if (!ui.viewAsId && ui.box === "in") Accounts.markRead(ui.msgId);
+        render();
+      }
+      else if (a === "compose") { ui.composing = true; ui.msgId = null; render(); focusEl("mTo"); }
+      else if (a === "cancel-compose") { ui.composing = false; render(); }
+      // founder tools
+      else if (a === "view-as" && isFounder) { ui.viewAsId = el.dataset.id; ui.tab = null; ui.kidId = null; ui.studentId = null; ui.msgId = null; ui.box = "in"; render(); }
+      else if (a === "back-founder") { ui.viewAsId = null; ui.tab = null; ui.msgId = null; render(); }
+      else if (a === "remove" && isFounder) {
         const id = el.dataset.id;
         if (ui.confirmRemove !== id) { ui.confirmRemove = id; render(); return; }
         const u = Accounts.get(id); ui.confirmRemove = null;
+        if (ui.viewAsId === id) ui.viewAsId = null;
         Accounts.remove(id); render(); if (u) toast(u.name + "'s account was removed.");
       }
-      else if (a === "reset" && me && me.role === "founder") {
+      else if (a === "reset" && isFounder) {
         if (ui.confirmRemove !== "__reset") { ui.confirmRemove = "__reset"; render(); return; }
         ui.confirmRemove = null; Accounts.reset(); signIn("u-founder"); toast("Example accounts restored.");
+      }
+      else if (a === "reset-pw" && isFounder) {
+        const u = Accounts.get(el.dataset.id); if (!u) return;
+        const temp = randomCode(3, 4).toLowerCase();
+        const salt = saltOf(u);
+        Accounts.update(u.id, { pwHash: await hashSecret(temp, salt), demo: false });
+        ui.notice = { text: "Temporary password for " + u.name + " (@" + u.username + "). Share it with them privately and ask them to change it on their Account page.", value: temp };
+        render();
+      }
+      else if (a === "clear-pin" && isFounder) {
+        const u = Accounts.get(el.dataset.id); if (!u) return;
+        Accounts.update(u.id, { pinHash: null, demoPin: null, pinOnOpen: false });
+        render(); toast(u.name + "'s PIN was removed.");
+      }
+      else if (a === "copy-notice" && ui.notice) copyText(ui.notice.value, $("#noticeValue"));
+      else if (a === "dismiss-notice") { ui.notice = null; render(); }
+      // account
+      else if (a === "pin-recovery") { ui.pinRecovery = el.dataset.on === "1"; render(); focusEl(ui.pinRecovery ? "keyPinFormKey" : (ui.locked ? "unlockPin" : "gatePin")); }
+      else if (a === "lock") { ui.locked = true; ui.accountUnlocked = false; ui.pinTries = 0; ui.pinRecovery = false; render(); focusEl("unlockPin"); }
+      else if (a === "remove-own-pin") {
+        const u = activeUser();
+        Accounts.update(u.id, { pinHash: null, demoPin: null, pinOnOpen: false });
+        ui.accountUnlocked = false; render(); toast("PIN turned off.");
+      }
+      else if (a === "make-key") {
+        const u = activeUser();
+        const key = randomCode(5, 4);
+        const salt = saltOf(u);
+        Accounts.update(u.id, { keyHash: await hashSecret(normKey(key), "key:" + salt), keyAt: today() });
+        ui.newKey = key; render();
+      }
+      else if (a === "copy-key" && ui.newKey) copyText(ui.newKey, $("#keyBox"));
+      else if (a === "key-done") {
+        const box = $("#keySaved");
+        if (box && !box.checked) { $("#keyError").textContent = "Tick the box once your key is saved. You won't see it again."; return; }
+        ui.newKey = null; render(); toast("Security key is set up.");
       }
     });
 
@@ -1509,65 +1846,76 @@ button {
     portalApp.addEventListener("submit", async (e) => {
       e.preventDefault();
       const f = e.target;
+      const val = (id) => { const el = document.getElementById(id); return el ? el.value : ""; };
+      const fail = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
 
       if (f.id === "signinForm") {
-        const err = $("#siError");
-        const u = Accounts.byUsername($("#siUser").value);
-        if (!u) { err.textContent = "We couldn't find that username. Check the spelling or create an account."; return; }
-        if (!(await checkPassword(u, $("#siPass").value))) { err.textContent = "That password doesn't match. Try again."; return; }
+        const u = Accounts.byUsername(val("siUser"));
+        if (!u) return fail("siError", "We couldn't find that username. Check the spelling or create an account.");
+        if (!(await checkPassword(u, val("siPass")))) return fail("siError", "That password doesn't match. Try again.");
         signIn(u.id); toast("Welcome back, " + u.name.split(" ")[0] + "!");
       }
 
-      if (f.id === "signupForm") {
-        const err = $("#suError");
-        const role = ui.signupRole;
-        const name = $("#suName").value.trim();
-        const username = $("#suUser").value.trim().toLowerCase();
-        const pw = $("#suPass").value;
-        if (name.length < 2) { err.textContent = "Please enter a full name."; return; }
-        if (!/^[a-z0-9_.-]{3,20}$/.test(username)) { err.textContent = "Usernames use 3 to 20 letters, numbers, dots, dashes or underscores."; return; }
-        if (Accounts.byUsername(username)) { err.textContent = "That username is taken. Try another one."; return; }
-        if (pw.length < 6) { err.textContent = "Passwords need at least 6 characters."; return; }
+      if (f.id === "recoverForm") {
+        const u = Accounts.byUsername(val("rcUser"));
+        if (!u) return fail("rcError", "We couldn't find that username.");
+        if (!u.keyHash) return fail("rcError", "This account has no security key yet. Ask the founder to reset your password.");
+        if (!(await checkKey(u, val("rcKey")))) return fail("rcError", "That security key doesn't match this account.");
+        if (val("rcPass").length < 6) return fail("rcError", "Passwords need at least 6 characters.");
+        Accounts.update(u.id, { pwHash: await hashSecret(val("rcPass"), saltOf(u)), demo: false });
+        signIn(u.id); toast("Password reset. Welcome back!");
+      }
 
-        const salt = Math.random().toString(36).slice(2) + Date.now().toString(36);
-        const user = { id: "u-" + username + "-" + Date.now().toString(36), role, name, username, salt, pwHash: await hashPassword(pw, salt), createdAt: today() };
+      if (f.id === "signupForm") {
+        const role = ui.signupRole;
+        const name = val("suName").trim();
+        const username = val("suUser").trim().toLowerCase();
+        const pw = val("suPass");
+        if (name.length < 2) return fail("suError", "Please enter a full name.");
+        if (!/^[a-z0-9_.-]{3,20}$/.test(username)) return fail("suError", "Usernames use 3 to 20 letters, numbers, dots, dashes or underscores.");
+        if (Accounts.byUsername(username)) return fail("suError", "That username is taken. Try another one.");
+        if (pw.length < 6) return fail("suError", "Passwords need at least 6 characters.");
+
+        const salt = newSalt();
+        const user = { id: "u-" + username + "-" + Date.now().toString(36), role, name, username, salt, pwHash: await hashSecret(pw, salt), createdAt: today() };
 
         if (role === "student") {
-          const age = Number($("#suAge").value);
-          if (!(age >= 6 && age <= 16)) { err.textContent = "Students are 6 to 16 years old. Please enter an age in that range."; return; }
+          const age = Number(val("suAge"));
+          if (!(age >= 6 && age <= 16)) return fail("suError", "Students are 6 to 16 years old. Please enter an age in that range.");
           Object.assign(user, {
-            age, track: $("#suTrack").value, teacherId: "", xp: 0, streak: streakOf(1),
+            age, track: val("suTrack"), teacherId: "", xp: 0, streak: streakOf(1),
             projects: [{ name: "My first web page", track: "tech", pct: 0 }], badges: [],
             notes: [{ from: "BDAI", at: today(), text: "Welcome to BDAI! Open Code Studio and try your first program." }],
           });
         }
         if (role === "parent") {
           user.childIds = [];
-          const childName = $("#suChild").value.trim();
+          const childName = val("suChild").trim();
           if (childName) {
             const child = Accounts.byUsername(childName);
-            if (!child || child.role !== "student") { err.textContent = "No student has the username “" + childName + "”. Leave it blank to link later."; return; }
+            if (!child || child.role !== "student") return fail("suError", "No student has the username “" + childName + "”. Leave it blank to link later.");
             user.childIds.push(child.id);
           }
         }
         if (role === "teacher") {
-          if ($("#suInvite").value.trim() !== CONFIG.teacherInviteCode) { err.textContent = "That invite code isn't right. Ask the founder for the teacher invite code."; return; }
-          user.track = $("#suTrack").value;
+          if (normCode(val("suInvite")) !== CONFIG.teacherInviteCode) return fail("suError", "That invite code isn't right. Ask the founder for the teacher invite code.");
+          user.track = val("suTrack");
         }
         if (role === "founder") {
-          if ($("#suFounder").value.trim() !== CONFIG.founderSetupCode) { err.textContent = "That founder setup code isn't right."; return; }
+          if (!(await checkFounderCode(val("suFounder")))) return fail("suError", "That founder code isn't right.");
         }
         Accounts.add(user);
+        const founder = Accounts.all("founder").find((x) => x.id !== user.id);
+        if (founder) Accounts.send(founder.id, [user.id], "Welcome to BDAI", "Hi " + name.split(" ")[0] + ", welcome to the BDAI Student Portal! Open Account to add a PIN and a security key, so your account stays safe.");
         signIn(user.id);
         toast("Account created. Welcome, " + name.split(" ")[0] + "!");
       }
 
       if (f.id === "linkForm") {
         const p = activeUser();
-        const err = $("#linkError");
-        const child = Accounts.byUsername($("#linkUser").value);
-        if (!child || child.role !== "student") { err.textContent = "No student has that username. Check the spelling with your child."; return; }
-        if ((p.childIds || []).includes(child.id)) { err.textContent = child.name + " is already linked to your account."; return; }
+        const child = Accounts.byUsername(val("linkUser"));
+        if (!child || child.role !== "student") return fail("linkError", "No student has that username. Check the spelling with your child.");
+        if ((p.childIds || []).includes(child.id)) return fail("linkError", child.name + " is already linked to your account.");
         Accounts.update(p.id, { childIds: (p.childIds || []).concat(child.id) });
         ui.tab = "kids"; ui.kidId = child.id; render();
         toast(child.name + " is now linked to your account.");
@@ -1576,14 +1924,104 @@ button {
       if (f.id === "feedbackForm") {
         const t = activeUser();
         const s = Accounts.get(ui.studentId);
-        const text = $("#feedbackText").value.trim();
+        const text = val("feedbackText").trim();
         if (!s || !text) return;
         Accounts.update(s.id, { notes: (s.notes || []).concat({ from: t.name, at: today(), text }) });
+        Accounts.send(t.id, [s.id].concat(Accounts.parentsOf(s.id).map((p) => p.id)), "New note for " + s.name.split(" ")[0], text);
         render(); toast("Note sent to " + s.name + " and their parents.");
+      }
+
+      // inbox
+      if (f.id === "composeForm") {
+        const u = activeUser();
+        const to = val("mTo");
+        const subject = val("mSubject").trim();
+        const body = val("mBody").trim();
+        if (!subject || !body) return fail("mError", "Add a subject and a message.");
+        let ids;
+        if (GROUPS[to] && u.role === "founder") ids = Accounts.all(GROUPS[to][1]).filter((x) => x.id !== u.id).map((x) => x.id);
+        else if (contactsFor(u).some((c) => c.id === to)) ids = [to];
+        else return fail("mError", "You can't message that person.");
+        if (!ids.length) return fail("mError", "There is no one in that group yet.");
+        Accounts.send(u.id, ids, subject, body);
+        ui.composing = false; ui.box = "sent"; ui.msgId = null; render();
+        toast(ids.length > 1 ? "Message sent to " + ids.length + " people." : "Message sent to " + nameOf(ids[0]) + ".");
+      }
+      if (f.id === "replyForm") {
+        const u = activeUser();
+        const to = f.dataset.to;
+        const body = val("replyText").trim();
+        if (!body || !Accounts.get(to)) return;
+        Accounts.send(u.id, [to], f.dataset.subject, body);
+        render(); toast("Reply sent to " + nameOf(to) + ".");
+      }
+
+      // account
+      if (f.id === "profileForm") {
+        const name = val("pfName").trim();
+        if (name.length < 2) return;
+        Accounts.update(activeUser().id, { name }); render(); toast("Name saved.");
+      }
+      if (f.id === "passwordForm") {
+        const u = activeUser();
+        if (!(await checkPassword(u, val("pwOld")))) return fail("pwError", "Your current password doesn't match.");
+        if (val("pwNew").length < 6) return fail("pwError", "New passwords need at least 6 characters.");
+        if (val("pwNew") !== val("pwNew2")) return fail("pwError", "The two new passwords don't match.");
+        Accounts.update(u.id, { pwHash: await hashSecret(val("pwNew"), saltOf(u)), demo: false });
+        render(); toast("Password changed.");
+      }
+      if (f.id === "pinForm") {
+        const u = activeUser();
+        const pin = val("pinNew");
+        if (!/^\d{4,6}$/.test(pin)) return fail("pinError", "Use 4 to 6 numbers for your PIN.");
+        if (pin !== val("pinNew2")) return fail("pinError", "The two PINs don't match.");
+        const onOpen = !!($("#pinOnOpen") && $("#pinOnOpen").checked);
+        Accounts.update(u.id, { pinHash: await hashSecret(pin, "pin:" + saltOf(u)), demoPin: null, pinOnOpen: onOpen });
+        ui.accountUnlocked = true; render();
+        toast(onOpen ? "PIN saved. You'll need it to open the portal and this page." : "PIN saved. You'll need it to open this page.");
+      }
+      if (f.id === "pinGateForm") {
+        const u = activeUser();
+        if (await checkPin(u, val("gatePin"))) { ui.accountUnlocked = true; ui.pinTries = 0; render(); return; }
+        ui.pinTries++;
+        if (ui.pinTries >= CONFIG.maxPinTries) { signOut(); toast("Too many wrong PINs. Sign in with your password."); return; }
+        fail("gateError", "Wrong PIN. " + (CONFIG.maxPinTries - ui.pinTries) + " tries left.");
+        $("#gatePin").value = "";
+      }
+      if (f.id === "unlockForm") {
+        const u = Accounts.get(ui.sessionId);
+        if (await checkPin(u, val("unlockPin"))) { ui.locked = false; ui.pinTries = 0; render(); toast("Unlocked."); return; }
+        ui.pinTries++;
+        if (ui.pinTries >= CONFIG.maxPinTries) { signOut(); toast("Too many wrong PINs. Sign in with your password."); return; }
+        fail("unlockError", "Wrong PIN. " + (CONFIG.maxPinTries - ui.pinTries) + " tries left.");
+        $("#unlockPin").value = "";
+      }
+      if (f.id === "keyPinForm") {
+        const u = ui.locked ? Accounts.get(ui.sessionId) : activeUser();
+        if (!u.keyHash) return fail("keyPinFormError", "This account has no security key. Sign in with your password, or ask the founder to remove your PIN.");
+        if (!(await checkKey(u, val("keyPinFormKey")))) return fail("keyPinFormError", "That security key doesn't match this account.");
+        Accounts.update(u.id, { pinHash: null, demoPin: null, pinOnOpen: false });
+        Object.assign(ui, { locked: false, accountUnlocked: true, pinRecovery: false, pinTries: 0 });
+        render(); toast("PIN removed. You can set a new one on your Account page.");
       }
     });
 
+    // Founder link: index-10.html#founder-access opens founder sign-up
+    function handleHash() {
+      if (location.hash !== "#founder-access") return;
+      const me = ui.sessionId ? Accounts.get(ui.sessionId) : null;
+      const section = $("#portal");
+      if (section) section.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
+      if (!me) {
+        ui.authMode = "signin"; ui.signupRole = "founder"; render(); focusEl("suFounder");
+      } else if (me.role !== "founder") {
+        toast("You're signed in as " + me.name + ". Sign out to set up a founder account.");
+      }
+    }
+    window.addEventListener("hashchange", handleHash);
+
     render();
+    handleHash();
   }
 
   /* =======================================================
