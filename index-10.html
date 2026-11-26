@@ -8,7 +8,7 @@
   <link rel="icon" href="assets/bdai-bulb.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Lexend:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
   <link rel="stylesheet" href="style-10.css">
 </head>
 <body>
@@ -19,8 +19,10 @@
     <div class="nav__inner wrap">
       <a class="brand" href="#top" aria-label="BDAI home">
         <img src="assets/bdai-bulb.png" alt="" width="40" height="40">
-        <span class="brand__word">BDAI</span>
-        <span class="brand__tag">Innovating Tomorrow</span>
+        <span class="brand__text">
+          <span class="bdai-word">BDAI</span>
+          <span class="bdai-tag">Innovating Tomorrow</span>
+        </span>
       </a>
       <button class="nav__toggle" id="navToggle" aria-expanded="false" aria-controls="navLinks">
         <span></span><span></span><span></span>
@@ -28,8 +30,8 @@
       </button>
       <nav class="nav__links" id="navLinks" aria-label="Main">
         <a href="#tracks">Tracks</a>
-        <a href="#lab">Creativity Lab</a>
-        <a href="#playground">AI Playground</a>
+        <a href="#paint">Paint Studio</a>
+        <a href="#code">Code Studio</a>
         <a href="#studio">Databell Studio</a>
         <a class="nav__portal" href="#portal">Student Portal</a>
       </nav>
@@ -51,15 +53,15 @@
           </h1>
           <p class="hero__lede">
             BDAI runs hands-on courses in technology, digital art and artificial intelligence.
-            Every lesson is designed and animated by Databell Studio, so learning feels like playing a great game.
+            Every lesson is designed by Databell Studio, so learning feels like making something real.
           </p>
           <div class="hero__ctas">
-            <a class="btn btn--primary" href="#playground">Try the AI Playground</a>
-            <a class="btn btn--ghost" href="#portal">Open Student Portal</a>
+            <a class="btn btn--primary" href="#code">Open Code Studio</a>
+            <a class="btn btn--ghost" href="#portal">Student Portal</a>
           </div>
           <ul class="hero__facts" aria-label="Program at a glance">
             <li><strong>3</strong> learning tracks</li>
-            <li><strong>3</strong> levels by age</li>
+            <li><strong>5</strong> coding languages</li>
             <li><strong>Weekly</strong> live studios</li>
           </ul>
         </div>
@@ -104,7 +106,7 @@
               <svg viewBox="0 0 48 48"><path d="M8 40c6 0 8-4 8-8a6 6 0 1 1 6 6c0 2-2 2-14 2Z" fill="currentColor"/><path d="M22 28 40 8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="36" cy="34" r="3" fill="currentColor"/><circle cx="12" cy="14" r="3" fill="currentColor"/></svg>
             </div>
             <h3>Digital Creativity</h3>
-            <p class="track__blurb">Pixel art, animation, music and game design. Screens become a canvas instead of a place to scroll.</p>
+            <p class="track__blurb">Digital painting, animation, music and web design. Screens become a canvas instead of a place to scroll.</p>
             <p class="track__label">Projects at this level</p>
             <ul class="track__list" data-track="create"></ul>
           </article>
@@ -126,92 +128,123 @@
     <section class="section section--tight">
       <div class="wrap">
         <ol class="rhythm" aria-label="How a learning week works">
-          <li><span class="rhythm__step">1</span><div><h3>Learn</h3><p>A 10-minute animated lesson from Databell Studio introduces one big idea.</p></div></li>
+          <li><span class="rhythm__step">1</span><div><h3>Learn</h3><p>A 10-minute lesson from Databell Studio introduces one big idea.</p></div></li>
           <li><span class="rhythm__step">2</span><div><h3>Make</h3><p>Kids build it in a live studio with a mentor, in groups of eight or fewer.</p></div></li>
-          <li><span class="rhythm__step">3</span><div><h3>Share</h3><p>Projects go into the Student Portal gallery, where friends and family can cheer them on.</p></div></li>
+          <li><span class="rhythm__step">3</span><div><h3>Share</h3><p>Projects go into the Student Portal, where teachers leave feedback and parents follow along.</p></div></li>
         </ol>
       </div>
     </section>
 
-    <!-- ============ CREATIVITY LAB ============ -->
-    <section class="section section--panel" id="lab">
-      <div class="wrap lab">
-        <div class="lab__copy">
-          <p class="eyebrow eyebrow--pink">Creativity Lab</p>
-          <h2>Draw a 16 × 16 sprite.</h2>
-          <p>
-            Every video game character starts as a grid of pixels. Pick a colour, switch on mirror mode
-            for perfect symmetry, and watch your sprite come alive in the preview.
-          </p>
-          <div class="lab__preview">
-            <canvas id="spritePreview" width="64" height="64" aria-label="Your sprite, animated"></canvas>
-            <div>
-              <p class="lab__previewTitle">Game preview</p>
-              <p class="lab__meta"><span id="pixelCount">0</span> pixels painted · <span id="colorCount">0</span> colours</p>
+    <!-- ============ PAINT STUDIO ============ -->
+    <section class="section section--panel" id="paint">
+      <div class="wrap">
+        <div class="section__head section__head--split">
+          <div>
+            <p class="eyebrow eyebrow--pink">Paint Studio</p>
+            <h2>Paint anything. Then beat the clock.</h2>
+            <p class="section__sub">Brushes, shapes, a fill bucket and stamps, all in the browser. Pick a challenge and finish your painting before the timer runs out.</p>
+          </div>
+          <div class="challenge" id="challenge">
+            <p class="challenge__label">Today's challenge</p>
+            <p class="challenge__text" id="challengeText">Paint a robot that waters plants.</p>
+            <div class="challenge__row">
+              <span class="challenge__timer" id="challengeTimer" aria-live="polite">1:30</span>
+              <button class="btn btn--primary btn--sm" id="challengeStart">Start 90 seconds</button>
+              <button class="tool tool--quiet" id="challengeNew">New challenge</button>
             </div>
           </div>
         </div>
 
-        <div class="lab__tool">
-          <div class="lab__toolbar" role="toolbar" aria-label="Drawing tools">
-            <div class="tools">
-              <button class="tool is-on" data-tool="pen" aria-pressed="true" id="tool-pen">Pen</button>
-              <button class="tool" data-tool="fill" aria-pressed="false" id="tool-fill">Fill</button>
-              <button class="tool" data-tool="erase" aria-pressed="false" id="tool-erase">Eraser</button>
-              <button class="tool" data-toggle="mirror" aria-pressed="true" id="tool-mirror">Mirror</button>
-            </div>
-            <div class="tools">
-              <button class="tool tool--quiet" id="pixelExample">Example</button>
-              <button class="tool tool--quiet" id="pixelClear">Clear</button>
+        <div class="paint">
+          <div class="paint__tools" role="toolbar" aria-label="Paint tools" id="paintTools">
+            <button class="ptool is-on" data-ptool="brush" id="ptool-brush" aria-pressed="true"><svg viewBox="0 0 24 24"><path d="M4 20c3 0 4-2 4-4a2.5 2.5 0 1 1 3 2.4C11 20 9 20 4 20ZM11 13 20 4" /></svg><span>Brush</span></button>
+            <button class="ptool" data-ptool="spray" id="ptool-spray" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M8 10h6v10H8zM9 10V7h4v3M16 6h.01M19 4h.01M19 8h.01M17 9h.01M21 6h.01"/></svg><span>Spray</span></button>
+            <button class="ptool" data-ptool="fill" id="ptool-fill" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m5 11 7-7 7 7-7 7zM19 15s2 2.5 2 4a2 2 0 0 1-4 0c0-1.5 2-4 2-4Z"/></svg><span>Fill</span></button>
+            <button class="ptool" data-ptool="line" id="ptool-line" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M4 20 20 4"/></svg><span>Line</span></button>
+            <button class="ptool" data-ptool="rect" id="ptool-rect" aria-pressed="false"><svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/></svg><span>Box</span></button>
+            <button class="ptool" data-ptool="ellipse" id="ptool-ellipse" aria-pressed="false"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="12" rx="8" ry="6"/></svg><span>Circle</span></button>
+            <button class="ptool" data-ptool="star" id="ptool-star" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1-4.4-4.3 6.1-.9z"/></svg><span>Star</span></button>
+            <button class="ptool" data-ptool="eraser" id="ptool-eraser" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="m4 15 9-9 7 7-6 6H8zM10 19h10"/></svg><span>Eraser</span></button>
+          </div>
+
+          <div class="paint__stage">
+            <canvas id="paintCanvas" width="1200" height="750" aria-label="Painting canvas"></canvas>
+          </div>
+
+          <div class="paint__bar">
+            <div class="paint__colors" id="paintColors" role="radiogroup" aria-label="Paint colour"></div>
+            <label class="paint__custom" for="paintCustom" title="Pick any colour">
+              <input type="color" id="paintCustom" value="#3fd6ee">
+              <span>Any colour</span>
+            </label>
+            <label class="paint__size" for="paintSize">
+              <span>Size <strong id="paintSizeVal">14</strong></span>
+              <input type="range" id="paintSize" min="2" max="80" value="14">
+            </label>
+            <label class="paint__check" for="paintFilled">
+              <input type="checkbox" id="paintFilled">
+              <span>Filled shapes</span>
+            </label>
+            <div class="paint__actions">
+              <button class="tool tool--quiet" id="paintUndo" aria-label="Undo">Undo</button>
+              <button class="tool tool--quiet" id="paintRedo" aria-label="Redo">Redo</button>
+              <button class="tool tool--quiet" id="paintClear">New canvas</button>
             </div>
           </div>
-          <canvas id="pixelCanvas" class="pixel" width="512" height="512" aria-label="16 by 16 pixel drawing grid"></canvas>
-          <div class="swatches" id="swatches" role="radiogroup" aria-label="Colour"></div>
         </div>
       </div>
     </section>
 
-    <!-- ============ AI PLAYGROUND ============ -->
-    <section class="section" id="playground">
-      <div class="wrap play">
-        <div class="play__copy">
-          <p class="eyebrow eyebrow--cyan">AI Playground</p>
-          <h2>Teach the robot to sort fruit from vegetables.</h2>
-          <p>
-            The robot has never seen food before. Show it examples: how sweet is it, how crunchy is it?
-            It colours the whole map with its best guess by asking the <em>nearest neighbours</em>
-            you gave it. That is how a real machine-learning model called k-NN works.
-          </p>
-
-          <div class="play__controls">
-            <div class="seg seg--small" role="radiogroup" aria-label="Label for new examples">
-              <button role="radio" aria-checked="true" data-cls="0" id="cls-fruit" class="cls cls--fruit">Add fruit</button>
-              <button role="radio" aria-checked="false" data-cls="1" id="cls-veg" class="cls cls--veg">Add vegetable</button>
-            </div>
-            <label class="slider" for="kSlider">
-              <span>Neighbours to ask: <strong id="kVal">3</strong></span>
-              <input type="range" id="kSlider" min="1" max="9" step="2" value="3">
-            </label>
-            <div class="play__btns">
-              <button class="tool tool--quiet" id="knnReset">Start over</button>
-              <button class="tool tool--quiet" id="knnClear">Empty the map</button>
-            </div>
-          </div>
-
-          <div class="guess" id="guess" aria-live="polite">
-            <span class="guess__label">Robot's guess</span>
-            <span class="guess__text" id="guessText">Point at the map to ask the robot.</span>
-          </div>
+    <!-- ============ CODE STUDIO ============ -->
+    <section class="section" id="code">
+      <div class="wrap">
+        <div class="section__head">
+          <p class="eyebrow eyebrow--cyan">Code Studio</p>
+          <h2>Write real code and run it right here.</h2>
+          <p class="section__sub">Python, JavaScript, HTML, CSS, or one single file with all three. Press Run, or Ctrl + Enter.</p>
         </div>
 
-        <figure class="play__board">
-          <div class="board">
-            <canvas id="knnCanvas" aria-label="Map of examples. Click to add one."></canvas>
-            <span class="axis axis--x">sweeter →</span>
-            <span class="axis axis--y">crunchier →</span>
+        <div class="ide" id="ide">
+          <div class="ide__bar">
+            <div class="ide__langs" role="tablist" aria-label="Language" id="ideLangs">
+              <button role="tab" aria-selected="true" data-lang="python" id="lang-python">Python</button>
+              <button role="tab" aria-selected="false" data-lang="js" id="lang-js">JavaScript</button>
+              <button role="tab" aria-selected="false" data-lang="html" id="lang-html">HTML</button>
+              <button role="tab" aria-selected="false" data-lang="css" id="lang-css">CSS</button>
+              <button role="tab" aria-selected="false" data-lang="single" id="lang-single">Single file</button>
+            </div>
+            <div class="ide__actions">
+              <label class="sr" for="ideExample">Example program</label>
+              <select id="ideExample" class="ide__select"></select>
+              <button class="tool tool--quiet" id="ideReset">Reset</button>
+              <button class="btn btn--primary btn--sm" id="ideRun">Run ▶</button>
+              <button class="btn btn--stop btn--sm" id="ideStop" hidden>Stop</button>
+            </div>
           </div>
-          <figcaption><span id="exampleCount">0</span> examples · click or tap the map to add one</figcaption>
-        </figure>
+
+          <div class="ide__body">
+            <div class="editor">
+              <div class="editor__head">
+                <span class="editor__file" id="ideFile">main.py</span>
+                <span class="editor__hint">Tab indents · Esc then Tab leaves the editor</span>
+              </div>
+              <div class="editor__area">
+                <pre class="editor__gutter" id="ideGutter" aria-hidden="true">1</pre>
+                <textarea id="ideCode" class="editor__input" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Code editor"></textarea>
+              </div>
+            </div>
+
+            <div class="output">
+              <div class="output__head">
+                <span id="outputTitle">Output</span>
+                <span class="output__status" id="ideStatus">Ready</span>
+              </div>
+              <div class="output__preview" id="previewWrap" hidden></div>
+              <div class="output__turtle" id="turtleWrap" hidden><div id="turtleTarget"></div></div>
+              <div class="console" id="ideConsole" aria-live="polite"></div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -221,94 +254,22 @@
         <div class="section__head section__head--split">
           <div>
             <p class="eyebrow eyebrow--violet">Student Portal</p>
-            <h2>Everything a young maker needs, in one place.</h2>
-            <p class="section__sub">Projects, badges, live class times and progress that parents can see too. Here is a preview with an example student.</p>
+            <h2>One portal for students, parents, teachers and founders.</h2>
+            <p class="section__sub">Students track projects and badges. Parents follow their children. Teachers give feedback. The founder sees everyone.</p>
           </div>
-          <form class="signin" id="signin" autocomplete="off">
-            <label for="studentName">Preview as</label>
-            <div class="signin__row">
-              <input id="studentName" name="studentName" type="text" maxlength="20" placeholder="Your first name" required>
-              <button class="btn btn--primary btn--sm" type="submit">Enter</button>
-            </div>
-          </form>
-        </div>
-
-        <div class="portal" id="portalApp">
-          <aside class="portal__side">
-            <div class="portal__me">
-              <div class="avatar" id="avatar" aria-hidden="true">M</div>
-              <div>
-                <p class="portal__name" id="pName">Mira</p>
-                <p class="portal__rank" id="pRank">Level 7 · Pixel Pilot</p>
-              </div>
-            </div>
-            <nav class="portal__tabs" role="tablist" aria-label="Portal sections">
-              <button role="tab" aria-selected="true" data-tab="home" id="tab-home">Dashboard</button>
-              <button role="tab" aria-selected="false" data-tab="projects" id="tab-projects">My projects</button>
-              <button role="tab" aria-selected="false" data-tab="badges" id="tab-badges">Badges</button>
-              <button role="tab" aria-selected="false" data-tab="schedule" id="tab-schedule">Schedule</button>
-            </nav>
-            <span class="chip chip--muted">Example data</span>
-          </aside>
-
-          <div class="portal__main">
-            <!-- Dashboard -->
-            <div class="pane" data-pane="home" role="tabpanel" aria-labelledby="tab-home">
-              <div class="pane__hello">
-                <h3 id="greet">Good to see you, Mira.</h3>
-                <p>Your next live studio starts <strong>Thursday at 4:30 PM</strong>.</p>
-              </div>
-              <div class="stats">
-                <div class="stat">
-                  <p class="stat__label">XP to Level 8</p>
-                  <p class="stat__num"><span id="xpNow">1,240</span><small> / 1,500</small></p>
-                  <div class="bar"><span id="xpBar" style="width:82.7%"></span></div>
-                </div>
-                <div class="stat">
-                  <p class="stat__label">Learning streak</p>
-                  <p class="stat__num">9<small> days</small></p>
-                  <div class="streak" id="streak" aria-label="Last 14 days, 9 active"></div>
-                </div>
-                <div class="stat">
-                  <p class="stat__label">Badges earned</p>
-                  <p class="stat__num">6<small> of 12</small></p>
-                  <p class="stat__note">Next: <strong>Data Detective</strong></p>
-                </div>
-              </div>
-              <div class="pane__grid">
-                <div class="card">
-                  <p class="card__title">Keep going</p>
-                  <ul class="projects projects--mini" id="miniProjects"></ul>
-                </div>
-                <div class="card">
-                  <p class="card__title">Mentor note</p>
-                  <blockquote class="note">
-                    “Your robot sorted 18 of 20 pictures correctly. Try adding more examples of green apples. It keeps calling them limes!”
-                    <cite>Ms. Ananya, AI Track mentor</cite>
-                  </blockquote>
-                </div>
-              </div>
-            </div>
-
-            <!-- Projects -->
-            <div class="pane" data-pane="projects" role="tabpanel" aria-labelledby="tab-projects" hidden>
-              <h3 class="pane__title">My projects</h3>
-              <ul class="projects" id="allProjects"></ul>
-            </div>
-
-            <!-- Badges -->
-            <div class="pane" data-pane="badges" role="tabpanel" aria-labelledby="tab-badges" hidden>
-              <h3 class="pane__title">Badges</h3>
-              <ul class="badges" id="badges"></ul>
-            </div>
-
-            <!-- Schedule -->
-            <div class="pane" data-pane="schedule" role="tabpanel" aria-labelledby="tab-schedule" hidden>
-              <h3 class="pane__title">This week</h3>
-              <ul class="schedule" id="schedule"></ul>
+          <div class="demo-bar" aria-label="Demo accounts">
+            <p class="demo-bar__label">Try a demo account</p>
+            <div class="demo-bar__row" id="demoBar">
+              <button class="role-chip role-chip--student" data-demo="mira" id="demo-student">Student</button>
+              <button class="role-chip role-chip--parent" data-demo="priya" id="demo-parent">Parent</button>
+              <button class="role-chip role-chip--teacher" data-demo="ananya" id="demo-teacher">Teacher</button>
+              <button class="role-chip role-chip--founder" data-demo="founder" id="demo-founder">Founder</button>
             </div>
           </div>
         </div>
+
+        <div class="portal" id="portalApp" aria-live="polite"></div>
+        <p class="portal__foot">Preview mode: accounts are saved only in this browser. Demo password for every example account: <code>demo1234</code></p>
       </div>
     </section>
 
@@ -321,12 +282,12 @@
           <h2>The creative studio behind every BDAI lesson.</h2>
           <p>
             Databell is BDAI's in-house studio of designers, animators and engineers. They turn hard ideas
-            like neural networks or binary numbers into short stories, games and characters kids remember.
+            like neural networks or binary numbers into short stories, tools and characters kids remember.
           </p>
           <ul class="studio__list">
             <li><strong>Animated lessons</strong><span>Short episodes that explain one idea each.</span></li>
-            <li><strong>Learning games</strong><span>Browser games where the rules teach the concept.</span></li>
-            <li><strong>Maker kits</strong><span>Printable worksheets, circuit cards and sprite packs.</span></li>
+            <li><strong>Creative tools</strong><span>The Paint Studio and Code Studio on this page.</span></li>
+            <li><strong>Maker kits</strong><span>Printable worksheets, circuit cards and project guides.</span></li>
           </ul>
         </div>
       </div>
@@ -342,7 +303,7 @@
         <div class="promises">
           <div><h3>A mentor in every session</h3><p>Live studios are always run by a trained educator, never left to a chatbot.</p></div>
           <div><h3>Kid-safe tools</h3><p>Students use AI tools chosen and set up for their age, with content filters on.</p></div>
-          <div><h3>Progress you can see</h3><p>Parents get their own view of the Student Portal with projects and mentor notes.</p></div>
+          <div><h3>Progress you can see</h3><p>Parents get their own portal account with projects and teacher notes.</p></div>
           <div><h3>Privacy first</h3><p>We collect only what a class needs, and never sell children's data.</p></div>
         </div>
       </div>
@@ -369,7 +330,7 @@
             <label for="interest">Most excited about</label>
             <select id="interest" name="interest">
               <option value="tech">Coding and robots</option>
-              <option value="create">Art, animation and games</option>
+              <option value="create">Painting, animation and design</option>
               <option value="ai">Artificial intelligence</option>
             </select>
           </div>
@@ -387,7 +348,7 @@
         <img src="assets/bdai-mark.png" alt="BDAI, Innovating Tomorrow" width="96" height="96">
         <img src="assets/databell-mark.png" alt="Databell Studio" width="96" height="96">
       </div>
-      <p class="footer__text">BDAI · Innovating Tomorrow<br>Lessons designed by Databell Studio</p>
+      <p class="footer__text"><span class="bdai-word bdai-word--sm">BDAI</span> · <span class="bdai-tag">Innovating Tomorrow</span><br>Lessons designed by Databell Studio</p>
       <a class="footer__top" href="#top">Back to top ↑</a>
     </div>
   </footer>
