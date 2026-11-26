@@ -920,6 +920,60 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--c
 .ptable small.block { display: block; color: var(--muted); font-size: var(--fs-xs); }
 @media (max-width: 900px) { .acct { grid-template-columns: minmax(0, 1fr); } }
 
+/* courses + events */
+.courses { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.course {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 14px; align-items: center;
+  padding: 14px 16px; border-radius: 14px;
+  background: var(--surface-2); border: 1px solid var(--line);
+}
+.courses--mini .course { padding: 12px 0; background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
+.courses--mini .course:last-child { border-bottom: 0; }
+.course__dot { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+.course__name { font-weight: 600; font-size: var(--fs-sm); }
+.course__pct { font-size: var(--fs-xs); color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.course--done .course__pct { color: var(--mint); font-weight: 600; }
+.course__meta { grid-column: 2 / 4; font-size: var(--fs-xs); color: var(--muted); }
+.course .bar { grid-column: 2 / 4; height: 6px; }
+.course__cta { grid-column: 2 / 4; justify-self: start; margin-top: 4px; }
+.catalog { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.catalog__item {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 12px; align-items: start;
+  padding: 14px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--line);
+  font-size: var(--fs-sm); color: var(--muted);
+}
+.catalog__item .course__dot { margin-top: 6px; }
+.catalog__item strong { display: block; color: var(--text); }
+.catalog__item small { display: block; font-size: var(--fs-xs); margin-bottom: 4px; }
+.catalog__item .tool { grid-column: 2; justify-self: start; }
+.tool.is-going { background: color-mix(in srgb, var(--mint) 18%, transparent); border-color: color-mix(in srgb, var(--mint) 55%, transparent); color: var(--mint); }
+.form--event { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 760px) { .form--event { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* portal window (portal-10.html) */
+.portal-shell { padding-block: clamp(24px, 4vw, 48px) clamp(40px, 6vw, 72px); }
+.portal-page .portal { min-height: min(720px, calc(100vh - 160px)); }
+.portal-page .nav__inner .btn { flex: none; }
+.auth__brand { display: flex; align-items: center; gap: 12px; }
+.auth__brand img { width: 48px; height: 48px; border-radius: 12px; }
+.auth__brand .bdai-word { font-size: 1.6rem; }
+.auth__brand .bdai-tag { font-size: 0.85rem; }
+.auth .demo-bar { margin-top: 8px; padding-top: 16px; border-top: 1px solid var(--line); }
+
+/* portal intro on the website */
+.portal-cta { justify-self: start; }
+.roles-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.role-card {
+  display: grid; gap: 12px; align-content: start;
+  padding: 22px; border-radius: var(--radius);
+  background: var(--surface); border: 1px solid var(--line);
+}
+.role-card .role-badge { width: fit-content; }
+.role-card h3 { font-size: 1.05rem; }
+.role-card ul { margin: 0; padding-left: 1.1em; display: grid; gap: 6px; color: var(--muted); font-size: var(--fs-sm); }
+@media (max-width: 1000px) { .roles-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .roles-grid { grid-template-columns: minmax(0, 1fr); } }
+
 /* ---------- Databell Studio ---------- */
 .studio { background: #2c2955; } /* matches the Databell logo ground exactly */
 .studio__inner {

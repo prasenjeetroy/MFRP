@@ -995,8 +995,9 @@ button {
   }
 
   /* =======================================================
-     7. Student Portal: accounts for students, parents,
-        teachers and founders, with inbox, PIN and security key
+     7. Student Portal (portal-10.html)
+        Accounts for students, parents, teachers and founders:
+        courses, badges, events, inbox, PIN and security key.
      -------------------------------------------------------
      PREVIEW MODE. Accounts and messages live in this browser's
      storage so the whole flow can be tried without a server.
@@ -1012,8 +1013,28 @@ button {
       demoPassword: "demo1234",
       maxPinTries: 5,
     };
-    const DB_KEY = "bdai.portal.v3";
+    const DB_KEY = "bdai.portal.v4";
     const SESSION_KEY = "bdai.portal.session";
+
+    // Sign-ins last only while this window is open (sessionStorage).
+    const sessionStore = {
+      get() { try { return sessionStorage.getItem(SESSION_KEY); } catch (e) { return null; } },
+      set(v) { try { if (v) sessionStorage.setItem(SESSION_KEY, v); else sessionStorage.removeItem(SESSION_KEY); } catch (e) { /* ignore */ } },
+    };
+
+    const COURSES = [
+      { id: "c-robots", title: "Robots and Sensors", track: "tech", band: "explorer", lessons: 8, blurb: "Build and code a floor robot that finds its own way." },
+      { id: "c-python", title: "Python Basics", track: "tech", band: "builder", lessons: 12, blurb: "Variables, loops and your first games in Python." },
+      { id: "c-web", title: "Build Your First Website", track: "tech", band: "builder", lessons: 10, blurb: "HTML, CSS and JavaScript, one page at a time." },
+      { id: "c-iot", title: "Smart Home Gadgets", track: "tech", band: "innovator", lessons: 10, blurb: "Microcontrollers, sensors and Python working together." },
+      { id: "c-paint", title: "Digital Painting", track: "create", band: "explorer", lessons: 8, blurb: "Brushes, colour and shape in the Paint Studio." },
+      { id: "c-anim", title: "Animation Studio", track: "create", band: "builder", lessons: 10, blurb: "Flip-books, stop-motion and the secrets of timing." },
+      { id: "c-genart", title: "Generative Art with JavaScript", track: "create", band: "innovator", lessons: 12, blurb: "Write code that paints by itself." },
+      { id: "c-patterns", title: "Robots Spot Patterns", track: "ai", band: "explorer", lessons: 6, blurb: "Sorting games that show how machines learn." },
+      { id: "c-ml", title: "How Machines Learn", track: "ai", band: "builder", lessons: 10, blurb: "Train models with your own examples and test them." },
+      { id: "c-ethics", title: "AI Ethics and Safety", track: "ai", band: "innovator", lessons: 8, blurb: "Bias, privacy and using AI kindly." },
+    ];
+    const courseById = (id) => COURSES.find((c) => c.id === id);
 
     const BADGES = [
       { id: "first-program", name: "First Program", how: "Ran your first line of code" },
@@ -1021,90 +1042,84 @@ button {
       { id: "circuit-starter", name: "Circuit Starter", how: "Lit up your first LED" },
       { id: "pattern-spotter", name: "Pattern Spotter", how: "Solved 10 pattern puzzles" },
       { id: "team-player", name: "Team Player", how: "Helped a classmate debug" },
-      { id: "streak-7", name: "7-Day Streak", how: "Learned 7 days in a row" },
+      { id: "event-explorer", name: "Event Explorer", how: "Went to 3 BDAI events" },
       { id: "web-builder", name: "Web Builder", how: "Published a web page" },
       { id: "python-pro", name: "Python Pro", how: "Wrote a 50-line Python program" },
+      { id: "course-finisher", name: "Course Finisher", how: "Finished every lesson in a course" },
       { id: "data-detective", name: "Data Detective", how: "Cleaned a dataset of 50 rows" },
       { id: "robot-wrangler", name: "Robot Wrangler", how: "Finished a robot maze run" },
       { id: "kind-coder", name: "Kind Coder", how: "Left 5 helpful comments" },
-      { id: "streak-30", name: "30-Day Streak", how: "Learned 30 days in a row" },
     ];
-    const SCHEDULE = [
-      { day: "Thu", time: "4:30 PM", title: "Live studio: teach a model to tell cats from dogs", sub: "AI track · Ms. Ananya Rao", live: true },
-      { day: "Sat", time: "10:00 AM", title: "Paint Studio jam: a city that runs on sunshine", sub: "Creativity track · Mr. Rohan Mehta" },
-      { day: "Sun", time: "5:00 PM", title: "Show and tell: share your project", sub: "All tracks · family welcome" },
-      { day: "Tue", time: "4:30 PM", title: "Circuits: build a doorbell", sub: "Technology track · Ms. Leela Iyer" },
-    ];
-    const RANKS = ["Spark", "Spark", "Code Cadet", "Code Cadet", "Bright Builder", "Bright Builder", "Idea Engineer", "Idea Engineer", "Innovation Star"];
-    const levelOf = (xp) => 1 + Math.floor((xp || 0) / 200);
-    const rankOf = (xp) => RANKS[Math.min(levelOf(xp) - 1, RANKS.length - 1)];
-    const today = () => new Date().toISOString().slice(0, 10);
+    const EVENT_KINDS = ["Live studio", "Workshop", "Show and tell", "Hackathon", "Parent meeting"];
+
+    const todayISO = () => new Date().toISOString().slice(0, 10);
     const nowISO = () => new Date().toISOString();
     const fmtDate = (iso) => {
       const d = new Date(String(iso).length <= 10 ? iso + "T12:00:00" : iso);
       return isNaN(d) ? "" : d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
     };
+    const fmtDay = (iso) => {
+      const d = new Date(iso + "T12:00:00");
+      return isNaN(d) ? { wd: "", md: "" } : { wd: d.toLocaleDateString(undefined, { weekday: "short" }), md: d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) };
+    };
     const fmtWhen = (iso) => {
       const d = new Date(iso);
       return isNaN(d) ? "" : d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
     };
-    const streakOf = (days) => Array.from({ length: 14 }, (_, i) => i >= 14 - days);
+    const fmtTime = (hhmm) => {
+      const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm || "");
+      if (!m) return hhmm || "";
+      const h = Number(m[1]);
+      return ((h + 11) % 12 + 1) + ":" + m[2] + (h < 12 ? " AM" : " PM");
+    };
+    const addDays = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
 
     function seed() {
       const s = (o) => Object.assign({ demo: true, createdAt: "2026-09-01" }, o);
       let n = 0;
       const msg = (from, to, subject, body, at, read, batch) => ({ id: "m" + (++n), from, to, subject, body, at, read: !!read, batch: batch || null });
       return {
+        events: [
+          { id: "e1", date: addDays(1), time: "16:30", title: "Live studio: teach a model to tell cats from dogs", kind: "Live studio", audience: "ai", host: "u-ananya" },
+          { id: "e2", date: addDays(3), time: "10:00", title: "Paint Studio jam: a city that runs on sunshine", kind: "Workshop", audience: "create", host: "u-rohan" },
+          { id: "e3", date: addDays(4), time: "17:00", title: "Show and tell: share your project", kind: "Show and tell", audience: "all", host: "u-founder" },
+          { id: "e4", date: addDays(6), time: "16:30", title: "Circuits: build a doorbell", kind: "Live studio", audience: "tech", host: "u-leela" },
+          { id: "e5", date: addDays(17), time: "09:30", title: "BDAI Winter Hackathon", kind: "Hackathon", audience: "all", host: "u-founder" },
+        ],
         users: [
           s({ id: "u-founder", role: "founder", name: "BDAI Founder", username: "founder" }),
           s({ id: "u-ananya", role: "teacher", name: "Ms. Ananya Rao", username: "ananya", track: "ai" }),
           s({ id: "u-rohan", role: "teacher", name: "Mr. Rohan Mehta", username: "rohan", track: "create" }),
           s({ id: "u-leela", role: "teacher", name: "Ms. Leela Iyer", username: "leela", track: "tech" }),
           s({ id: "u-mira", role: "student", name: "Mira Sharma", username: "mira", age: 11, track: "ai", teacherId: "u-ananya", demoPin: "1234",
-            xp: 1240, streak: [false, true, false, false, false].concat(streakOf(9).slice(5)),
-            projects: [
-              { name: "Fruit-sorting robot", track: "ai", pct: 72 },
-              { name: "Animated greeting card", track: "create", pct: 45 },
-              { name: "Traffic light circuit", track: "tech", pct: 100 },
-              { name: "My first web page", track: "tech", pct: 30 },
-            ],
-            badges: ["first-program", "digital-painter", "circuit-starter", "pattern-spotter", "team-player", "streak-7"],
+            courses: [{ id: "c-ml", done: 7 }, { id: "c-web", done: 3 }, { id: "c-anim", done: 4 }],
+            badges: ["first-program", "digital-painter", "circuit-starter", "pattern-spotter", "team-player", "event-explorer"],
+            events: ["e1", "e3"],
             notes: [{ from: "Ms. Ananya Rao", at: "2026-11-24", text: "Your robot sorted 18 of 20 pictures correctly. Try adding more examples of green apples. It keeps calling them limes!" }] }),
           s({ id: "u-arjun", role: "student", name: "Arjun Sharma", username: "arjun", age: 8, track: "tech", teacherId: "u-leela",
-            xp: 380, streak: streakOf(3),
-            projects: [
-              { name: "Paper circuit night-light", track: "tech", pct: 100 },
-              { name: "Floor robot maze", track: "tech", pct: 60 },
-            ],
-            badges: ["first-program", "circuit-starter"],
+            courses: [{ id: "c-robots", done: 5 }, { id: "c-paint", done: 2 }],
+            badges: ["first-program", "circuit-starter"], events: ["e4"],
             notes: [{ from: "Ms. Leela Iyer", at: "2026-11-22", text: "Great job finding the bug in your maze code. Next week we add a sensor." }] }),
           s({ id: "u-zoe", role: "student", name: "Zoe Chen", username: "zoe", age: 14, track: "create", teacherId: "u-rohan",
-            xp: 2100, streak: streakOf(12),
-            projects: [
-              { name: "Generative art in JavaScript", track: "create", pct: 80 },
-              { name: "School club brand", track: "create", pct: 55 },
-              { name: "Animated poster", track: "create", pct: 100 },
-            ],
-            badges: ["first-program", "digital-painter", "web-builder", "python-pro", "team-player", "streak-7", "kind-coder"],
+            courses: [{ id: "c-genart", done: 9 }, { id: "c-anim", done: 10 }],
+            badges: ["first-program", "digital-painter", "web-builder", "python-pro", "team-player", "course-finisher", "kind-coder"], events: ["e2", "e5"],
             notes: [{ from: "Mr. Rohan Mehta", at: "2026-11-20", text: "Your colour palette for the club brand is bold and clear. Try a second version in black and white." }] }),
           s({ id: "u-kabir", role: "student", name: "Kabir Das", username: "kabir", age: 10, track: "tech", teacherId: "",
-            xp: 150, streak: streakOf(1),
-            projects: [{ name: "Block code story", track: "tech", pct: 40 }],
-            badges: ["first-program"], notes: [] }),
-          s({ id: "u-priya", role: "parent", name: "Priya Sharma", username: "priya", childIds: ["u-mira", "u-arjun"] }),
-          s({ id: "u-david", role: "parent", name: "David Chen", username: "david", childIds: ["u-zoe"] }),
+            courses: [{ id: "c-python", done: 1 }], badges: ["first-program"], events: [], notes: [] }),
+          s({ id: "u-priya", role: "parent", name: "Priya Sharma", username: "priya", childIds: ["u-mira", "u-arjun"], events: ["e3"] }),
+          s({ id: "u-david", role: "parent", name: "David Chen", username: "david", childIds: ["u-zoe"], events: [] }),
         ],
         messages: [
           ...["u-ananya", "u-rohan", "u-leela"].map((t) => msg("u-founder", t, "Welcome to the new term",
-            "Thank you for teaching at BDAI this term. Please add a note for every student after each live studio, so parents can follow along.",
+            "Thank you for teaching at BDAI this term. Please record lessons as students finish them, and add a note after each live studio so parents can follow along.",
             "2026-11-18T09:00:00", t !== "u-rohan", "seed-b1")),
-          msg("u-leela", "u-priya", "Arjun's maze robot", "Arjun fixed a tricky bug in his maze code by himself this week. Next class we add a light sensor.", "2026-11-22T16:45:00", true),
-          msg("u-david", "u-rohan", "Zoe's club brand", "Zoe has been talking about her club brand all week. Is there a way she can show it to the whole school?", "2026-11-23T20:15:00", false),
+          msg("u-leela", "u-priya", "Arjun's robot course", "Arjun fixed a tricky bug in his maze code by himself this week. He has finished 5 of 8 lessons in Robots and Sensors.", "2026-11-22T16:45:00", true),
+          msg("u-david", "u-rohan", "Zoe's animation course", "Zoe loved finishing Animation Studio. Is there a way she can show her film to the whole school?", "2026-11-23T20:15:00", false),
           msg("u-mira", "u-ananya", "Question about green apples", "Hi Ms. Ananya, my robot keeps calling green apples limes. Should I add more photos of apples or of limes?", "2026-11-24T17:10:00", true),
           msg("u-ananya", "u-mira", "Re: Question about green apples", "Add more green apples, from different sides and in different light. Then test it again with 5 new pictures. You're close!", "2026-11-24T18:02:00", false),
-          msg("u-ananya", "u-priya", "Mira's progress this month", "Mira is doing really well in the AI track. She asks great questions and helps her classmates. Her fruit-sorting robot is 72% done.", "2026-11-25T10:30:00", false),
-          ...["u-priya", "u-david"].map((p) => msg("u-founder", p, "Show and tell this Sunday",
-            "Families are welcome at Sunday's show and tell at 5:00 PM. Students will present their projects from this term.",
+          msg("u-ananya", "u-priya", "Mira's progress this month", "Mira is doing really well in How Machines Learn. She has finished 7 of 10 lessons and helps her classmates when they get stuck.", "2026-11-25T10:30:00", false),
+          ...["u-priya", "u-david"].map((p) => msg("u-founder", p, "Show and tell this week",
+            "Families are welcome at this week's show and tell. Students will present what they built in their courses. You can register in the Events tab.",
             "2026-11-25T12:00:00", false, "seed-b2")),
         ],
       };
@@ -1118,6 +1133,7 @@ button {
         const d = store.get(DB_KEY, null);
         this.db = d && Array.isArray(d.users) ? d : seed();
         if (!Array.isArray(this.db.messages)) this.db.messages = [];
+        if (!Array.isArray(this.db.events)) this.db.events = [];
         this.save();
       },
       save() { store.set(DB_KEY, this.db); },
@@ -1141,6 +1157,25 @@ button {
       },
       parentsOf(studentId) { return this.all("parent").filter((p) => (p.childIds || []).includes(studentId)); },
       studentsOf(teacherId) { return this.all("student").filter((s) => s.teacherId === teacherId); },
+      // events
+      events() { return this.db.events.slice().sort((a, b) => (a.date + a.time < b.date + b.time ? -1 : 1)); },
+      upcoming() { const t = todayISO(); return this.events().filter((e) => e.date >= t); },
+      event(id) { return this.db.events.find((e) => e.id === id) || null; },
+      addEvent(ev) { this.db.events.push(ev); this.save(); },
+      removeEvent(id) {
+        this.db.events = this.db.events.filter((e) => e.id !== id);
+        this.db.users.forEach((u) => { if (u.events) u.events = u.events.filter((x) => x !== id); });
+        this.save();
+      },
+      attendees(id) { return this.db.users.filter((u) => (u.events || []).includes(id)); },
+      toggleEvent(userId, eventId) {
+        const u = this.get(userId); if (!u) return false;
+        const list = u.events || [];
+        const going = !list.includes(eventId);
+        u.events = going ? list.concat(eventId) : list.filter((x) => x !== eventId);
+        this.save();
+        return going;
+      },
       // messages
       send(fromId, toIds, subject, body) {
         const batch = toIds.length > 1 ? "b" + Date.now().toString(36) : null;
@@ -1239,31 +1274,31 @@ button {
       newKey: null, notice: null,
     });
     const ui = Object.assign(freshUI(), { sessionId: null, authMode: "signin", signupRole: "student" });
-    const savedSession = store.get(SESSION_KEY, null);
-    ui.sessionId = savedSession === null ? "u-mira" : savedSession || null;
-    if (ui.sessionId && !Accounts.get(ui.sessionId)) ui.sessionId = null;
-    if (savedSession && ui.sessionId) {
-      const u = Accounts.get(ui.sessionId);
-      ui.locked = !!(u.pinOnOpen && hasPin(u)); // returning visitor with "PIN on open" turned on
+    const restored = sessionStore.get();
+    if (restored && Accounts.get(restored)) {
+      ui.sessionId = restored;
+      const u = Accounts.get(restored);
+      ui.locked = !!(u.pinOnOpen && hasPin(u)); // "ask for PIN when the portal opens"
     }
 
     const TABS = {
-      student: [["home", "Dashboard"], ["inbox", "Inbox"], ["projects", "My projects"], ["badges", "Badges"], ["schedule", "Schedule"], ["account", "Account"]],
-      parent: [["kids", "My children"], ["inbox", "Inbox"], ["schedule", "Class schedule"], ["link", "Link a child"], ["account", "Account"]],
-      teacher: [["roster", "My students"], ["inbox", "Inbox"], ["waiting", "Unassigned students"], ["schedule", "Schedule"], ["account", "Account"]],
-      founder: [["overview", "Overview"], ["inbox", "Inbox"], ["students", "Students"], ["teachers", "Teachers"], ["parents", "Parents"], ["account", "Account"]],
+      student: [["home", "Learning"], ["courses", "Courses"], ["badges", "Badges"], ["events", "Events"], ["inbox", "Inbox"], ["account", "Account"]],
+      parent: [["kids", "My children"], ["events", "Events"], ["inbox", "Inbox"], ["link", "Link a child"], ["account", "Account"]],
+      teacher: [["roster", "My class"], ["events", "Events"], ["inbox", "Inbox"], ["waiting", "Unassigned students"], ["account", "Account"]],
+      founder: [["overview", "Overview"], ["students", "Students"], ["teachers", "Teachers"], ["parents", "Parents"], ["events", "Events"], ["inbox", "Inbox"], ["account", "Account"]],
     };
     const ROLE_LABEL = { student: "Student", parent: "Parent", teacher: "Teacher", founder: "Founder" };
     const GROUPS = { "@teachers": ["All teachers", "teacher"], "@parents": ["All parents", "parent"], "@students": ["All students", "student"], "@everyone": ["Everyone", null] };
 
     function signIn(id) {
       Object.assign(ui, freshUI(), { sessionId: id });
-      store.set(SESSION_KEY, id);
+      sessionStore.set(id);
       render();
+      window.scrollTo(0, 0);
     }
     function signOut() {
       Object.assign(ui, freshUI(), { sessionId: null, authMode: "signin" });
-      store.set(SESSION_KEY, "");
+      sessionStore.set(null);
       render();
     }
 
@@ -1274,40 +1309,45 @@ button {
     const firstName = (u) => esc(String(u.name).replace(/^(Ms|Mr|Mrs|Dr)\.?\s+/i, "").split(" ")[0]);
     const nameOf = (id) => { const u = Accounts.get(id); return u ? u.name : "Removed account"; };
     const secChips = (u) => '<span class="sec"><span class="' + (hasPin(u) ? "" : "off") + '">PIN</span><span class="' + (u.keyHash ? "" : "off") + '">Key</span></span>';
+    const enrolled = (s) => (s.courses || []).map((e) => ({ e, c: courseById(e.id) })).filter((x) => x.c);
+    const lessonsDone = (s) => enrolled(s).reduce((a, x) => a + Math.min(x.e.done, x.c.lessons), 0);
+    const finished = (x) => x.e.done >= x.c.lessons;
+    const eventsFor = (u) => {
+      const up = Accounts.upcoming();
+      if (u.role === "student") return up.filter((e) => e.audience === "all" || e.audience === u.track);
+      return up;
+    };
 
-    function projectHTML(p) {
-      const info = TRACK_INFO[p.track] || TRACK_INFO.tech;
-      const done = p.pct >= 100;
-      return '<li class="project' + (done ? " project--done" : "") + '">' +
-        '<span class="project__dot" style="background:' + info.tone + '"></span>' +
-        '<span class="project__name">' + esc(p.name) + "</span>" +
-        '<span class="project__pct">' + (done ? "Done" : p.pct + "%") + "</span>" +
-        '<span class="project__track">' + info.name + " track</span>" +
-        '<span class="bar"><span style="width:' + Math.min(100, p.pct) + "%;" + (done ? "background:" + COLORS.mint : "") + '"></span></span></li>';
+    function courseHTML(x, opts) {
+      const info = TRACK_INFO[x.c.track] || TRACK_INFO.tech;
+      const done = Math.min(x.e.done, x.c.lessons);
+      const pct = Math.round((done / x.c.lessons) * 100);
+      const complete = done >= x.c.lessons;
+      return '<li class="course' + (complete ? " course--done" : "") + '">' +
+        '<span class="course__dot" style="background:' + info.tone + '"></span>' +
+        '<span class="course__name">' + esc(x.c.title) + "</span>" +
+        '<span class="course__pct">' + (complete ? "Finished" : done + " of " + x.c.lessons + " lessons") + "</span>" +
+        '<span class="course__meta">' + info.name + " · " + LEVEL_NAMES[x.c.band] + (complete ? "" : " · Next: lesson " + (done + 1)) + "</span>" +
+        '<span class="bar"><span style="width:' + pct + "%;" + (complete ? "background:" + COLORS.mint : "") + '"></span></span>' +
+        (opts && opts.cta && !complete ? '<button class="tool tool--small course__cta" data-action="continue" data-course="' + x.c.id + '">Continue</button>' : "") +
+        "</li>";
     }
     function notesHTML(notes) {
       if (!notes || !notes.length) return '<p class="empty">No teacher notes yet.</p>';
       return '<ul class="notes">' + notes.slice().reverse().slice(0, 4).map((n) =>
         '<li class="note">“' + esc(n.text) + '”<cite>' + esc(n.from) + " · " + fmtDate(n.at) + "</cite></li>").join("") + "</ul>";
     }
-    function statsHTML(s) {
-      const lvl = levelOf(s.xp), next = lvl * 200, pct = Math.round(((s.xp - (lvl - 1) * 200) / 200) * 100);
-      const days = (() => { let n = 0; for (let i = (s.streak || []).length - 1; i >= 0 && s.streak[i]; i--) n++; return n; })();
+    function learningTiles(s) {
+      const list = enrolled(s);
+      const active = list.filter((x) => !finished(x)).length;
+      const myEvents = Accounts.upcoming().filter((e) => (s.events || []).includes(e.id));
       const nextBadge = BADGES.find((b) => !(s.badges || []).includes(b.id));
       return '<div class="stats">' +
-        '<div class="stat"><p class="stat__label">XP to level ' + (lvl + 1) + '</p><p class="stat__num">' + Number(s.xp).toLocaleString() + "<small> / " + next.toLocaleString() + "</small></p>" +
-          '<span class="bar"><span style="width:' + pct + '%"></span></span></div>' +
-        '<div class="stat"><p class="stat__label">Learning streak</p><p class="stat__num">' + days + "<small> day" + (days === 1 ? "" : "s") + "</small></p>" +
-          '<div class="streak" aria-label="Last 14 days">' + (s.streak || []).map((on) => '<i class="' + (on ? "on" : "") + '"></i>').join("") + "</div></div>" +
-        '<div class="stat"><p class="stat__label">Badges earned</p><p class="stat__num">' + (s.badges || []).length + "<small> of " + BADGES.length + "</small></p>" +
-          '<p class="stat__note">' + (nextBadge ? "Next: <strong>" + esc(nextBadge.name) + "</strong>" : "<strong>All badges earned!</strong>") + "</p></div>" +
+        '<div class="stat"><p class="stat__label">Courses</p><p class="stat__num">' + list.length + '<small> enrolled</small></p><p class="stat__note">' + active + " in progress · " + (list.length - active) + " finished</p></div>" +
+        '<div class="stat"><p class="stat__label">Lessons finished</p><p class="stat__num">' + lessonsDone(s) + '</p><p class="stat__note">across all courses</p></div>' +
+        '<div class="stat"><p class="stat__label">Badges</p><p class="stat__num">' + (s.badges || []).length + "<small> of " + BADGES.length + '</small></p><p class="stat__note">' + (nextBadge ? "Next: <strong>" + esc(nextBadge.name) + "</strong>" : "<strong>All badges earned!</strong>") + "</p></div>" +
+        '<div class="stat"><p class="stat__label">Events</p><p class="stat__num">' + myEvents.length + '<small> coming up</small></p><p class="stat__note">' + (myEvents[0] ? esc(fmtDay(myEvents[0].date).wd + " " + fmtDay(myEvents[0].date).md) + ": " + esc(myEvents[0].title) : "None yet. Pick one in Events.") + "</p></div>" +
         "</div>";
-    }
-    function scheduleHTML() {
-      return '<ul class="schedule">' + SCHEDULE.map((s, n) =>
-        '<li class="slot"><span class="slot__when"><b>' + s.day + "</b><span>" + s.time + "</span></span>" +
-        '<span><span class="slot__title">' + esc(s.title) + '</span><br><span class="slot__sub">' + esc(s.sub) + "</span></span>" +
-        '<button class="tool slot__btn" data-action="slot" data-live="' + (s.live ? 1 : 0) + '" data-title="' + esc(s.title) + '" id="slot-' + n + '">' + (s.live ? "Join" : "Remind me") + "</button></li>").join("") + "</ul>";
     }
     function badgesHTML(s) {
       const tones = [COLORS.cyan, COLORS.violet, COLORS.pink, COLORS.mint, COLORS.sun, "#ff8a4c"];
@@ -1315,17 +1355,32 @@ button {
         const got = (s.badges || []).includes(b.id);
         const ini = b.name.replace(/[^A-Za-z0-9 ]/g, "").split(" ").map((w) => w[0]).join("").slice(0, 2);
         return '<li class="badge' + (got ? "" : " badge--locked") + '"><span class="badge__medal" style="' + (got ? "background:" + tones[n % tones.length] : "") + '">' + ini + "</span>" +
-          '<span class="badge__name">' + esc(b.name) + '</span><span class="badge__how">' + (got ? "" : "Locked · ") + esc(b.how) + "</span></li>";
+          '<span class="badge__name">' + esc(b.name) + '</span><span class="badge__how">' + (got ? "Earned · " : "Locked · ") + esc(b.how) + "</span></li>";
       }).join("") + "</ul>";
     }
+    // one event row; `controls` is the HTML for the right-hand buttons
+    function eventRow(e, controls, extra) {
+      const d = fmtDay(e.date);
+      const aud = e.audience === "all" ? "Everyone" : trackName(e.audience) + " track";
+      return '<li class="slot"><span class="slot__when"><b>' + esc(d.wd) + "</b><span>" + esc(d.md) + "</span></span>" +
+        '<span><span class="slot__title">' + esc(e.title) + '</span><br><span class="slot__sub">' + esc(e.kind) + " · " + fmtTime(e.time) + " · " + esc(aud) + " · Host: " + esc(nameOf(e.host)) + "</span>" +
+        (extra ? '<br><span class="slot__sub">' + extra + "</span>" : "") + "</span>" +
+        '<span class="row-actions">' + (controls || "") + "</span></li>";
+    }
+    const goingBtn = (userId, e, label) => {
+      const u = Accounts.get(userId);
+      const going = !!u && (u.events || []).includes(e.id);
+      return '<button class="tool tool--small' + (going ? " is-going" : "") + '" data-action="rsvp" data-user="' + userId + '" data-event="' + e.id + '" aria-pressed="' + going + '">' +
+        (going ? (label ? esc(label) + ": going ✓" : "Going ✓") : (label ? "Register " + esc(label) : "Register")) + "</button>";
+    };
     function teacherSelect(student, id) {
       const opts = ['<option value="">No teacher yet</option>'].concat(Accounts.all("teacher").map((t) =>
         '<option value="' + t.id + '"' + (t.id === student.teacherId ? " selected" : "") + ">" + esc(t.name) + " (" + trackName(t.track) + ")</option>"));
       return '<select data-action="assign" data-id="' + student.id + '" id="' + id + '" aria-label="Teacher for ' + esc(student.name) + '">' + opts.join("") + "</select>";
     }
-    function removeBtn(u) {
-      const confirming = ui.confirmRemove === u.id;
-      return '<button class="tool tool--small tool--danger" data-action="remove" data-id="' + u.id + '">' + (confirming ? "Confirm remove" : "Remove") + "</button>";
+    function removeBtn(id, label) {
+      const confirming = ui.confirmRemove === id;
+      return '<button class="tool tool--small tool--danger" data-action="remove" data-id="' + id + '">' + (confirming ? "Confirm " + (label || "remove").toLowerCase() : (label || "Remove")) + "</button>";
     }
 
     // ----- inbox -----
@@ -1473,48 +1528,79 @@ button {
     // ----- role views -----
     function studentPane(s, tab) {
       const teacher = Accounts.get(s.teacherId);
-      if (tab === "projects") return '<div class="pane"><h3 class="pane__title">My projects</h3><ul class="projects">' + (s.projects || []).map(projectHTML).join("") + "</ul></div>";
-      if (tab === "badges") return '<div class="pane"><h3 class="pane__title">Badges</h3>' + badgesHTML(s) + "</div>";
-      if (tab === "schedule") return '<div class="pane"><h3 class="pane__title">This week</h3>' + scheduleHTML() + "</div>";
-      const open = (s.projects || []).filter((p) => p.pct < 100).slice(0, 3);
+      const list = enrolled(s);
+      if (tab === "courses") {
+        const mine = new Set(list.map((x) => x.c.id));
+        const more = COURSES.filter((c) => !mine.has(c.id)).sort((a, b) => (a.band === bandForAge(s.age) ? -1 : 0) - (b.band === bandForAge(s.age) ? -1 : 0));
+        return '<div class="pane"><h3 class="pane__title">My courses</h3>' +
+          (list.length ? '<ul class="courses">' + list.map((x) => courseHTML(x, { cta: true })).join("") + "</ul>" : '<p class="empty">You have not joined a course yet. Pick one below.</p>') +
+          '<h3 class="pane__title">More courses for you</h3><ul class="catalog">' + more.map((c) =>
+            '<li class="catalog__item"><span class="course__dot" style="background:' + TRACK_INFO[c.track].tone + '"></span><span><strong>' + esc(c.title) + "</strong>" +
+            '<small>' + TRACK_INFO[c.track].name + " · " + LEVEL_NAMES[c.band] + " · " + c.lessons + " lessons</small>" + esc(c.blurb) + "</span>" +
+            '<button class="tool tool--small" data-action="enroll" data-course="' + c.id + '">Join course</button></li>').join("") + "</ul></div>";
+      }
+      if (tab === "badges") return '<div class="pane"><h3 class="pane__title">Badges</h3><p class="empty">Teachers award badges when you show a new skill.</p>' + badgesHTML(s) + "</div>";
+      if (tab === "events") {
+        const evs = eventsFor(s);
+        return '<div class="pane"><h3 class="pane__title">Upcoming events</h3>' +
+          (evs.length ? '<ul class="schedule">' + evs.map((e) => eventRow(e, goingBtn(s.id, e))).join("") + "</ul>" : '<p class="empty">No events planned yet.</p>') + "</div>";
+      }
+      const open = list.filter((x) => !finished(x));
       const unread = Accounts.unread(s.id);
       return '<div class="pane"><div class="pane__hello"><h3>Good to see you, ' + firstName(s) + ".</h3>" +
         "<p>" + (teacher ? "Your teacher is <strong>" + esc(teacher.name) + "</strong>. " : "You will be matched with a teacher soon. ") +
-        "Next live studio: <strong>Thursday at 4:30 PM</strong>." +
-        (unread ? ' You have <button class="linkbtn" data-action="tab" data-tab="inbox">' + unread + " new message" + (unread === 1 ? "" : "s") + "</button>." : "") + "</p></div>" + statsHTML(s) +
-        '<div class="pane__grid"><div class="card"><p class="card__title">Keep going</p>' +
-        (open.length ? '<ul class="projects projects--mini">' + open.map(projectHTML).join("") + "</ul>" : '<p class="empty">All projects finished. Ask your teacher for the next one!</p>') +
+        (unread ? 'You have <button class="linkbtn" data-action="tab" data-tab="inbox">' + unread + " new message" + (unread === 1 ? "" : "s") + "</button>." : "") + "</p></div>" +
+        learningTiles(s) +
+        '<div class="pane__grid"><div class="card"><p class="card__title">Continue learning</p>' +
+        (open.length ? '<ul class="courses courses--mini">' + open.map((x) => courseHTML(x, { cta: true })).join("") + "</ul>" : '<p class="empty">You finished all your courses! Open <strong>Courses</strong> to join a new one.</p>') +
         '</div><div class="card"><p class="card__title">Teacher notes</p>' + notesHTML(s.notes) + "</div></div></div>";
     }
 
     function parentPane(p, tab) {
-      if (tab === "schedule") return '<div class="pane"><h3 class="pane__title">Class schedule</h3>' + scheduleHTML() + "</div>";
+      const kids = (p.childIds || []).map((id) => Accounts.get(id)).filter(Boolean);
+      if (tab === "events") {
+        const evs = Accounts.upcoming();
+        return '<div class="pane"><h3 class="pane__title">Upcoming events</h3><p class="empty">Register yourself or your children.</p>' +
+          (evs.length ? '<ul class="schedule">' + evs.map((e) => {
+            const kidBtns = kids.filter((k) => e.audience === "all" || e.audience === k.track).map((k) => goingBtn(k.id, e, k.name.split(" ")[0])).join("");
+            return eventRow(e, goingBtn(p.id, e, "Me") + kidBtns);
+          }).join("") + "</ul>" : '<p class="empty">No events planned yet.</p>') + "</div>";
+      }
       if (tab === "link") {
         return '<div class="pane"><h3 class="pane__title">Link a child</h3><p class="empty">Ask your child for their Student Portal username, then add it here.</p>' +
           '<form class="form" id="linkForm" autocomplete="off"><div class="field"><label for="linkUser">Child\'s username</label><input id="linkUser" type="text" required></div>' +
           '<div class="field" style="align-content:end"><button class="btn btn--primary btn--sm" type="submit">Link child</button></div>' +
-          '<p class="form__error field--full" id="linkError"></p></form>' +
-          '<p class="hint">Try linking the example student <code>kabir</code>.</p></div>';
+          '<p class="form__error field--full" id="linkError"></p></form></div>';
       }
-      const kids = (p.childIds || []).map((id) => Accounts.get(id)).filter(Boolean);
       if (!kids.length) {
         return '<div class="pane"><div class="pane__hello"><h3>Welcome, ' + firstName(p) + ".</h3><p>No children linked yet. Open <strong>Link a child</strong> to add your child's account.</p></div></div>";
       }
       if (!ui.kidId || !kids.some((k) => k.id === ui.kidId)) ui.kidId = kids[0].id;
       const kid = Accounts.get(ui.kidId);
       const teacher = Accounts.get(kid.teacherId);
-      return '<div class="pane"><div class="pane__hello"><h3>Welcome, ' + firstName(p) + ".</h3><p>Here is how your children are doing this week.</p></div>" +
+      const kidEvents = Accounts.upcoming().filter((e) => (kid.events || []).includes(e.id));
+      return '<div class="pane"><div class="pane__hello"><h3>Welcome, ' + firstName(p) + ".</h3><p>Here is what your children are learning.</p></div>" +
         '<div class="kids">' + kids.map((k) =>
           '<button class="kid" data-action="kid" data-id="' + k.id + '" aria-pressed="' + (k.id === kid.id) + '" id="kid-' + k.id + '">' +
           '<span class="who"><span class="avatar avatar--sm">' + initials(k.name) + "</span><span><strong>" + esc(k.name) + '</strong><small>Age ' + esc(k.age) + " · " + trackName(k.track) + " track</small></span></span>" +
-          '<span class="kid__meta">Level ' + levelOf(k.xp) + " · " + rankOf(k.xp) + " · " + (k.badges || []).length + " badges</span></button>").join("") + "</div>" +
-        '<h3 class="pane__title">' + firstName(kid) + "'s progress</h3>" + statsHTML(kid) +
-        '<div class="pane__grid"><div class="card"><p class="card__title">Projects</p><ul class="projects projects--mini">' + (kid.projects || []).map(projectHTML).join("") + "</ul></div>" +
-        '<div class="card"><p class="card__title">Notes from ' + (teacher ? esc(teacher.name) : "the teacher") + "</p>" + notesHTML(kid.notes) + "</div></div></div>";
+          '<span class="kid__meta">' + enrolled(k).length + " courses · " + lessonsDone(k) + " lessons · " + (k.badges || []).length + " badges</span></button>").join("") + "</div>" +
+        '<h3 class="pane__title">' + firstName(kid) + "'s learning</h3>" + learningTiles(kid) +
+        '<div class="pane__grid"><div class="card"><p class="card__title">Courses</p><ul class="courses courses--mini">' + enrolled(kid).map((x) => courseHTML(x)).join("") + "</ul></div>" +
+        '<div class="card"><p class="card__title">Notes from ' + (teacher ? esc(teacher.name) : "the teacher") + "</p>" + notesHTML(kid.notes) +
+        '<p class="card__title">Events</p>' + (kidEvents.length ? '<ul class="notes">' + kidEvents.map((e) => '<li class="note"><strong>' + esc(e.title) + "</strong><cite>" + esc(fmtDay(e.date).wd + " " + fmtDay(e.date).md) + " · " + fmtTime(e.time) + "</cite></li>").join("") + "</ul>" : '<p class="empty">Not registered for any events yet.</p>') +
+        "</div></div></div>";
     }
 
     function teacherPane(t, tab) {
-      if (tab === "schedule") return '<div class="pane"><h3 class="pane__title">Schedule</h3>' + scheduleHTML() + "</div>";
+      if (tab === "events") {
+        const evs = Accounts.upcoming();
+        const mine = new Set(Accounts.studentsOf(t.id).map((s) => s.id));
+        return '<div class="pane"><h3 class="pane__title">Upcoming events</h3>' +
+          (evs.length ? '<ul class="schedule">' + evs.map((e) => {
+            const fromClass = Accounts.attendees(e.id).filter((u) => mine.has(u.id));
+            return eventRow(e, "", fromClass.length ? "From your class: " + fromClass.map((u) => esc(u.name.split(" ")[0])).join(", ") : "No one from your class yet");
+          }).join("") + "</ul>" : '<p class="empty">No events planned yet.</p>') + "</div>";
+      }
       if (tab === "waiting") {
         const waiting = Accounts.all("student").filter((s) => !s.teacherId);
         return '<div class="pane"><h3 class="pane__title">Students waiting for a teacher</h3>' +
@@ -1529,22 +1615,34 @@ button {
       }
       if (!ui.studentId || !mine.some((s) => s.id === ui.studentId)) ui.studentId = mine[0].id;
       const sel = Accounts.get(ui.studentId);
-      const avg = (s) => (s.projects && s.projects.length ? Math.round(s.projects.reduce((a, p) => a + p.pct, 0) / s.projects.length) : 0);
+      const selCourses = enrolled(sel);
+      const missing = BADGES.filter((b) => !(sel.badges || []).includes(b.id));
       return '<div class="pane"><div class="pane__hello"><h3>Welcome, ' + esc(t.name) + ".</h3><p>You teach <strong>" + mine.length + " student" + (mine.length === 1 ? "" : "s") + "</strong> in the " + trackName(t.track) + " track.</p></div>" +
-        '<div class="table-wrap"><table class="ptable"><thead><tr><th>Student</th><th>Level</th><th>XP</th><th>Projects</th><th>Last note</th><th></th></tr></thead><tbody>' +
+        '<div class="table-wrap"><table class="ptable"><thead><tr><th>Student</th><th>Courses</th><th>Lessons</th><th>Badges</th><th>Last note</th><th></th></tr></thead><tbody>' +
         mine.map((s) => {
           const last = (s.notes || [])[(s.notes || []).length - 1];
           return '<tr class="' + (s.id === sel.id ? "is-picked" : "") + '"><td><span class="who"><span class="avatar avatar--sm">' + initials(s.name) + "</span><span>" + esc(s.name) + "<small>Age " + esc(s.age) + "</small></span></span></td>" +
-            "<td>" + levelOf(s.xp) + " · " + rankOf(s.xp) + '</td><td class="num">' + Number(s.xp).toLocaleString() + '</td><td class="num">' + avg(s) + "% avg</td>" +
-            "<td>" + (last ? fmtDate(last.at) : "—") + '</td><td><button class="tool tool--small" data-action="pick-student" data-id="' + s.id + '">Give feedback</button></td></tr>';
+            "<td>" + (enrolled(s).map((x) => esc(x.c.title)).join(", ") || "—") + '</td><td class="num">' + lessonsDone(s) + '</td><td class="num">' + (s.badges || []).length + "</td>" +
+            "<td>" + (last ? fmtDate(last.at) : "—") + '</td><td><button class="tool tool--small" data-action="pick-student" data-id="' + s.id + '">Open</button></td></tr>';
         }).join("") + "</tbody></table></div>" +
-        '<div class="pane__grid"><div class="card"><p class="card__title">Feedback for ' + esc(sel.name) + "</p>" +
+        '<h3 class="pane__title">' + esc(sel.name) + "</h3>" +
+        '<div class="pane__grid"><div class="card"><p class="card__title">Course progress</p>' +
+          (selCourses.length ? '<ul class="courses courses--mini">' + selCourses.map((x) => courseHTML(x)).join("") + "</ul>" +
+            '<form class="feedback__row" id="lessonForm"><label class="sr" for="lessonCourse">Course</label><select id="lessonCourse" class="ide__select">' +
+            selCourses.filter((x) => !finished(x)).map((x) => '<option value="' + x.c.id + '">' + esc(x.c.title) + "</option>").join("") + "</select>" +
+            '<button class="tool" type="submit"' + (selCourses.some((x) => !finished(x)) ? "" : " disabled") + ">Record a finished lesson</button></form>"
+            : '<p class="empty">Not enrolled in any course yet.</p>') +
+          '<p class="card__title">Award a badge</p>' +
+          (missing.length ? '<form class="feedback__row" id="badgeForm"><label class="sr" for="badgePick">Badge</label><select id="badgePick" class="ide__select">' +
+            missing.map((b) => '<option value="' + b.id + '">' + esc(b.name) + "</option>").join("") + '</select><button class="tool" type="submit">Award badge</button></form>'
+            : '<p class="empty">' + firstName(sel) + " has every badge!</p>") +
+        "</div>" +
+        '<div class="card"><p class="card__title">Feedback for ' + firstName(sel) + "</p>" +
         '<form class="feedback" id="feedbackForm"><label class="sr" for="feedbackText">Note for ' + esc(sel.name) + "</label>" +
         '<textarea id="feedbackText" placeholder="What went well, and what to try next…" required></textarea>' +
-        '<div class="feedback__row"><button class="btn btn--primary btn--sm" type="submit">Send note</button>' +
-        '<button class="tool" type="button" data-action="xp" data-amount="25">+25 XP</button><button class="tool" type="button" data-action="xp" data-amount="50">+50 XP</button></div>' +
-        '<p class="hint">Notes also go to the inbox of the student and their parents.</p></form></div>' +
-        '<div class="card"><p class="card__title">Recent notes</p>' + notesHTML(sel.notes) + "</div></div></div>";
+        '<div class="feedback__row"><button class="btn btn--primary btn--sm" type="submit">Send note</button></div>' +
+        '<p class="hint">Notes also go to the inbox of the student and their parents.</p></form>' +
+        '<p class="card__title">Recent notes</p>' + notesHTML(sel.notes) + "</div></div></div>";
     }
 
     function founderPane(f, tab) {
@@ -1553,21 +1651,22 @@ button {
       const match = (u) => !q || u.name.toLowerCase().includes(q) || u.username.includes(q);
       const search = '<div class="filter-row"><label class="sr" for="founderSearch">Search people</label><input type="search" id="founderSearch" placeholder="Search by name or username" value="' + esc(ui.founderQuery) + '"></div>';
       const actions = (u) => '<span class="row-actions"><button class="tool tool--small" data-action="view-as" data-id="' + u.id + '">Open portal</button>' +
-        '<button class="tool tool--small" data-action="reset-pw" data-id="' + u.id + '">Reset password</button>' + removeBtn(u) + "</span>";
+        '<button class="tool tool--small" data-action="reset-pw" data-id="' + u.id + '">Reset password</button>' + removeBtn(u.id) + "</span>";
       const who = (u) => '<span class="who"><span class="avatar avatar--sm">' + initials(u.name) + "</span><span>" + esc(u.name) + "<small>@" + esc(u.username) + "</small></span></span>";
 
       if (tab === "students") {
         return '<div class="pane"><div class="pane__row"><h3 class="pane__title">Students (' + students.length + ")</h3>" + search + "</div>" +
-          '<div class="table-wrap"><table class="ptable"><thead><tr><th>Student</th><th>Age · level</th><th>Teacher</th><th>Parents</th><th>XP</th><th>Security</th><th></th></tr></thead><tbody>' +
+          '<div class="table-wrap"><table class="ptable"><thead><tr><th>Student</th><th>Age · level</th><th>Teacher</th><th>Parents</th><th>Learning</th><th>Security</th><th></th></tr></thead><tbody>' +
           students.filter(match).map((s) => "<tr><td>" + who(s) + "</td>" +
-            "<td>" + esc(s.age) + " · " + LEVEL_NAMES[bandForAge(s.age)] + "<small class=\"block\">" + trackName(s.track) + " track</small></td><td>" + teacherSelect(s, "assign-" + s.id) + "</td>" +
-            "<td>" + (Accounts.parentsOf(s.id).map((p) => esc(p.name)).join(", ") || "—") + '</td><td class="num">' + Number(s.xp).toLocaleString() + "</td>" +
+            "<td>" + esc(s.age) + " · " + LEVEL_NAMES[bandForAge(s.age)] + '<small class="block">' + trackName(s.track) + " track</small></td><td>" + teacherSelect(s, "assign-" + s.id) + "</td>" +
+            "<td>" + (Accounts.parentsOf(s.id).map((p) => esc(p.name)).join(", ") || "—") + "</td>" +
+            "<td>" + enrolled(s).length + " courses<small class=\"block\">" + lessonsDone(s) + " lessons · " + (s.badges || []).length + " badges</small></td>" +
             "<td>" + secChips(s) + "</td><td>" + actions(s) + "</td></tr>").join("") +
           "</tbody></table></div></div>";
       }
       if (tab === "teachers") {
         return '<div class="pane"><div class="pane__row"><h3 class="pane__title">Teachers (' + teachers.length + ")</h3>" + search + "</div>" +
-          '<div class="table-wrap"><table class="ptable"><thead><tr><th>Teacher</th><th>Track</th><th>Students</th><th>Notes</th><th>Security</th><th></th></tr></thead><tbody>' +
+          '<div class="table-wrap"><table class="ptable"><thead><tr><th>Teacher</th><th>Track</th><th>Class</th><th>Notes</th><th>Security</th><th></th></tr></thead><tbody>' +
           teachers.filter(match).map((t) => {
             const kids = Accounts.studentsOf(t.id);
             const notes = students.reduce((a, s) => a + (s.notes || []).filter((n) => n.from === t.name).length, 0);
@@ -1584,8 +1683,28 @@ button {
             "<td>" + secChips(p) + "</td><td>" + actions(p) + "</td></tr>").join("") +
           "</tbody></table></div></div>";
       }
+      if (tab === "events") {
+        const evs = Accounts.events();
+        const kinds = EVENT_KINDS.map((k) => '<option value="' + k + '">' + k + "</option>").join("");
+        const auds = '<option value="all">Everyone</option>' + Object.keys(TRACK_INFO).map((k) => '<option value="' + k + '">' + TRACK_INFO[k].full + " track</option>").join("");
+        return '<div class="pane"><h3 class="pane__title">Events</h3>' +
+          '<div class="card"><p class="card__title">Plan an event</p><form class="form form--event" id="eventForm" autocomplete="off">' +
+          '<div class="field field--full"><label for="evTitle">Title</label><input id="evTitle" type="text" maxlength="80" required placeholder="Robot races in the studio"></div>' +
+          '<div class="field"><label for="evDate">Date</label><input id="evDate" type="date" required min="' + todayISO() + '" value="' + addDays(7) + '"></div>' +
+          '<div class="field"><label for="evTime">Time</label><input id="evTime" type="time" required value="16:30"></div>' +
+          '<div class="field"><label for="evKind">Type</label><select id="evKind">' + kinds + "</select></div>" +
+          '<div class="field"><label for="evAud">Who is it for</label><select id="evAud">' + auds + "</select></div>" +
+          '<p class="form__error field--full" id="evError"></p>' +
+          '<button class="btn btn--primary btn--sm" type="submit" style="width:fit-content">Add event</button></form></div>' +
+          (evs.length ? '<ul class="schedule">' + evs.map((e) => {
+            const going = Accounts.attendees(e.id);
+            return eventRow(e, removeBtn(e.id, "Cancel event"), going.length + " registered" + (going.length ? ": " + going.map((u) => esc(u.name.split(" ")[0])).join(", ") : ""));
+          }).join("") + "</ul>" : '<p class="empty">No events yet.</p>') + "</div>";
+      }
       // overview
-      const totalXP = students.reduce((a, s) => a + (s.xp || 0), 0);
+      const enrolments = students.reduce((a, s) => a + enrolled(s).length, 0);
+      const lessons = students.reduce((a, s) => a + lessonsDone(s), 0);
+      const upcoming = Accounts.upcoming();
       const noTeacher = students.filter((s) => !s.teacherId);
       const noParent = students.filter((s) => !Accounts.parentsOf(s.id).length);
       const noKey = Accounts.all().filter((u) => !u.keyHash).length;
@@ -1596,18 +1715,21 @@ button {
         '<div class="stat"><p class="stat__label">Students</p><p class="stat__num">' + students.length + "</p></div>" +
         '<div class="stat"><p class="stat__label">Teachers</p><p class="stat__num">' + teachers.length + "</p></div>" +
         '<div class="stat"><p class="stat__label">Parents</p><p class="stat__num">' + parents.length + "</p></div>" +
-        '<div class="stat"><p class="stat__label">Messages</p><p class="stat__num">' + Accounts.db.messages.length + "</p></div>" +
-        '<div class="stat"><p class="stat__label">XP earned</p><p class="stat__num">' + totalXP.toLocaleString() + "</p></div></div>" +
+        '<div class="stat"><p class="stat__label">Course enrolments</p><p class="stat__num">' + enrolments + '</p><p class="stat__note">' + lessons + " lessons finished</p></div>" +
+        '<div class="stat"><p class="stat__label">Upcoming events</p><p class="stat__num">' + upcoming.length + "</p></div></div>" +
         '<div class="pane__grid"><div class="card"><p class="card__title">Needs attention</p>' +
         (noTeacher.length ? "<p>" + noTeacher.length + " student" + (noTeacher.length === 1 ? "" : "s") + " without a teacher: <strong>" + noTeacher.map((s) => esc(s.name)).join(", ") + "</strong></p>" : "<p>Every student has a teacher.</p>") +
         (noParent.length ? "<p>" + noParent.length + " student" + (noParent.length === 1 ? "" : "s") + " without a linked parent: <strong>" + noParent.map((s) => esc(s.name)).join(", ") + "</strong></p>" : "<p>Every student has a parent linked.</p>") +
         "<p>" + noKey + " account" + (noKey === 1 ? "" : "s") + " without a security key.</p>" +
         '<button class="tool tool--small" data-action="tab" data-tab="students" style="width:fit-content">Manage students</button></div>' +
-        '<div class="card"><p class="card__title">Newest accounts</p><ul class="notes">' +
+        '<div class="card"><p class="card__title">Next events</p>' +
+        (upcoming.length ? '<ul class="notes">' + upcoming.slice(0, 4).map((e) => '<li class="note"><strong>' + esc(e.title) + "</strong><cite>" + esc(fmtDay(e.date).wd + " " + fmtDay(e.date).md) + " · " + fmtTime(e.time) + " · " + Accounts.attendees(e.id).length + " registered</cite></li>").join("") + "</ul>" : '<p class="empty">No events planned.</p>') +
+        '<button class="tool tool--small" data-action="tab" data-tab="events" style="width:fit-content">Plan events</button></div></div>' +
+        '<div class="pane__grid"><div class="card"><p class="card__title">Newest accounts</p><ul class="notes">' +
         newest.map((u) => '<li class="note"><span class="who"><span class="avatar avatar--sm">' + initials(u.name) + "</span><span>" + esc(u.name) + " " + roleBadge(u.role) + "<small>Joined " + fmtDate(u.createdAt) + "</small></span></span></li>").join("") +
-        "</ul></div></div>" +
-        '<div class="card"><p class="card__title">Preview data</p><p class="empty">Accounts and messages in this preview are stored in this browser only.</p>' +
-        '<button class="tool tool--small tool--danger" data-action="reset" style="width:fit-content">' + (confirmingReset ? "Confirm: reset all accounts" : "Reset example accounts") + "</button></div></div>";
+        "</ul></div>" +
+        '<div class="card"><p class="card__title">Preview data</p><p class="empty">Accounts, messages and events in this preview are stored in this browser only.</p>' +
+        '<button class="tool tool--small tool--danger" data-action="reset" style="width:fit-content">' + (confirmingReset ? "Confirm: reset all accounts" : "Reset example accounts") + "</button></div></div></div>";
     }
 
     // ----- auth + lock screens -----
@@ -1615,14 +1737,14 @@ button {
       const r = ui.signupRole;
       const tracks = Object.keys(TRACK_INFO).map((k) => '<option value="' + k + '">' + TRACK_INFO[k].full + "</option>").join("");
       const roleCards = [
-        ["student", "Student", "Projects, badges and classes"],
-        ["parent", "Parent", "Follow your child's progress"],
+        ["student", "Student", "Courses, badges and events"],
+        ["parent", "Parent", "Follow your child's learning"],
         ["teacher", "Teacher", "Needs an invite code"],
         ["founder", "Founder", "Needs the founder code"],
       ].map(([k, t, d]) => '<button type="button" role="radio" class="role-pick role-pick--' + k + '" data-action="signup-role" data-role="' + k + '" aria-checked="' + (r === k) + '" id="pick-' + k + '"><strong>' + t + "</strong><span>" + d + "</span></button>").join("");
 
       const left = ui.authMode === "recover"
-        ? '<div class="auth__panel"><h3>Reset your password</h3><p>Use the security key you saved when you set up your account.</p>' +
+        ? '<div class="auth__panel"><h3>Reset your password</h3><p>Use the security key you saved on your Account page.</p>' +
           '<form class="form" id="recoverForm" autocomplete="off">' +
           '<div class="field field--full"><label for="rcUser">Username</label><input id="rcUser" type="text" required></div>' +
           '<div class="field field--full"><label for="rcKey">Security key</label><input id="rcKey" type="text" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" required></div>' +
@@ -1631,14 +1753,20 @@ button {
           '<button class="btn btn--primary field--full" type="submit">Reset password and sign in</button></form>' +
           '<button class="linkbtn" data-action="auth-mode" data-mode="signin">Back to sign in</button>' +
           '<p class="hint">No security key? Ask the founder to reset your password.</p></div>'
-        : '<div class="auth__panel"><h3>Sign in</h3><p>Welcome back. Use the username and password you chose.</p>' +
+        : '<div class="auth__panel"><div class="auth__brand"><img src="assets/bdai-bulb.png" alt="" width="56" height="56"><span><span class="bdai-word">BDAI</span> <span class="bdai-tag">Student Portal</span></span></div>' +
+          '<h3>Sign in</h3><p>Use the username and password you chose.</p>' +
           '<form class="form" id="signinForm" autocomplete="off">' +
           '<div class="field field--full"><label for="siUser">Username</label><input id="siUser" type="text" required autocomplete="username"></div>' +
           '<div class="field field--full"><label for="siPass">Password</label><input id="siPass" type="password" required autocomplete="current-password"></div>' +
           '<p class="form__error field--full" id="siError"></p>' +
           '<button class="btn btn--primary field--full" type="submit">Sign in</button></form>' +
           '<button class="linkbtn" data-action="auth-mode" data-mode="recover">Forgot your password?</button>' +
-          '<p class="hint">Example usernames: <code>mira</code>, <code>priya</code>, <code>ananya</code>, <code>founder</code>. Password: <code>' + CONFIG.demoPassword + "</code></p></div>";
+          '<div class="demo-bar"><p class="demo-bar__label">Preview with an example account</p><div class="demo-bar__row">' +
+          '<button class="role-chip role-chip--student" data-action="demo" data-user="mira">Student</button>' +
+          '<button class="role-chip role-chip--parent" data-action="demo" data-user="priya">Parent</button>' +
+          '<button class="role-chip role-chip--teacher" data-action="demo" data-user="ananya">Teacher</button>' +
+          '<button class="role-chip role-chip--founder" data-action="demo" data-user="founder">Founder</button></div>' +
+          '<p class="hint">Example password: <code>' + CONFIG.demoPassword + "</code>. The example student's Account page PIN is <code>1234</code>.</p></div></div>";
 
       return '<div class="auth">' + left +
         '<div class="auth__panel"><h3>Create an account</h3><p>Choose who you are. Each role gets its own portal.</p>' +
@@ -1654,7 +1782,7 @@ button {
           '<div class="field field--full" data-for="founder"' + (r === "founder" ? "" : " hidden") + '><label for="suFounder">Founder code</label><input id="suFounder" type="password" placeholder="XXXX-XXXX-XXXX" autocomplete="off"></div>' +
           '<p class="form__error field--full" id="suError"></p>' +
           '<button class="btn btn--primary field--full" type="submit">Create ' + ROLE_LABEL[r].toLowerCase() + " account</button></form>" +
-          '<p class="hint">After you sign up, open <strong>Account</strong> to add a PIN and a security key.</p></div>' +
+          '<p class="hint">New students start with a course that fits their age and favourite track. After you sign up, open <strong>Account</strong> to add a PIN and a security key.</p></div>' +
         "</div>";
     }
     function lockView(u) {
@@ -1674,7 +1802,6 @@ button {
     // ----- render -----
     function render() {
       const me = ui.sessionId ? Accounts.get(ui.sessionId) : null;
-      $$("#demoBar [data-demo]").forEach((b) => b.classList.toggle("is-on", !!me && me.username === b.dataset.demo && !ui.viewAsId && !ui.locked));
       if (!me) {
         portalApp.className = "portal portal--auth";
         portalApp.innerHTML = authView();
@@ -1692,7 +1819,7 @@ button {
       const unread = Accounts.unread(user.id);
 
       let sub = "";
-      if (user.role === "student") sub = "Level " + levelOf(user.xp) + " · " + rankOf(user.xp);
+      if (user.role === "student") sub = "Age " + user.age + " · " + trackName(user.track) + " track";
       if (user.role === "parent") { const n = (user.childIds || []).length; sub = n + " child" + (n === 1 ? "" : "ren") + " linked"; }
       if (user.role === "teacher") sub = trackName(user.track) + " track";
       if (user.role === "founder") sub = "Full access";
@@ -1728,15 +1855,15 @@ button {
       return me && me.role === "founder" && ui.viewAsId ? Accounts.get(ui.viewAsId) : me;
     };
     const focusEl = (id) => { const el = document.getElementById(id); if (el) { try { el.focus({ preventScroll: true }); } catch (e) { el.focus(); } } };
+    // who may change an event registration for `userId`
+    function canRsvp(userId) {
+      const me = activeUser(); if (!me) return false;
+      if (me.id === userId) return true;
+      if (me.role === "parent") return (me.childIds || []).includes(userId);
+      return false;
+    }
 
     // ----- events -----
-    $("#demoBar").addEventListener("click", (e) => {
-      const b = e.target.closest("[data-demo]"); if (!b) return;
-      if (!Accounts.byUsername(b.dataset.demo)) Accounts.reset();
-      const user = Accounts.byUsername(b.dataset.demo);
-      if (user) { signIn(user.id); toast("Signed in as " + user.name + " (" + ROLE_LABEL[user.role] + ")."); }
-    });
-
     portalApp.addEventListener("click", async (e) => {
       const el = e.target.closest("[data-action]");
       if (!el || el.tagName === "SELECT") return;
@@ -1747,20 +1874,35 @@ button {
 
       if (a === "tab") { ui.tab = el.dataset.tab; ui.msgId = null; ui.composing = false; ui.pinRecovery = false; render(); }
       else if (a === "signout") signOut();
+      else if (a === "demo") {
+        if (!Accounts.byUsername(el.dataset.user)) Accounts.reset();
+        const u = Accounts.byUsername(el.dataset.user);
+        if (u) { signIn(u.id); toast("Signed in to the example " + ROLE_LABEL[u.role].toLowerCase() + " account."); }
+      }
       else if (a === "auth-mode") { ui.authMode = el.dataset.mode; render(); }
       else if (a === "signup-role") { ui.signupRole = el.dataset.role; render(); }
-      else if (a === "slot") toast(el.dataset.live === "1" ? "The studio room opens 10 minutes before class." : "Reminder set for “" + el.dataset.title + "”.");
       else if (a === "kid") { ui.kidId = el.dataset.id; render(); }
-      else if (a === "pick-student") { ui.studentId = el.dataset.id; render(); focusEl("feedbackText"); }
-      else if (a === "xp") {
-        const s = Accounts.get(ui.studentId); if (!s) return;
-        const amt = Number(el.dataset.amount);
-        Accounts.update(s.id, { xp: (s.xp || 0) + amt });
-        render(); toast("+" + amt + " XP for " + s.name + ".");
-      }
+      else if (a === "pick-student") { ui.studentId = el.dataset.id; render(); }
       else if (a === "claim") {
         const t = activeUser(); const s = Accounts.get(el.dataset.id);
         if (t && s) { Accounts.update(s.id, { teacherId: t.id }); ui.studentId = s.id; render(); toast(s.name + " joined your class."); }
+      }
+      // learning
+      else if (a === "continue") {
+        const c = courseById(el.dataset.course);
+        if (c) toast("Your next “" + c.title + "” lesson is in your next live studio. Your teacher marks it done when you finish.");
+      }
+      else if (a === "enroll") {
+        const s = activeUser(); const c = courseById(el.dataset.course);
+        if (!s || !c || ui.viewAsId) return;
+        Accounts.update(s.id, { courses: (s.courses || []).concat({ id: c.id, done: 0 }) });
+        render(); toast("You joined “" + c.title + "”.");
+      }
+      else if (a === "rsvp") {
+        if (ui.viewAsId || !canRsvp(el.dataset.user)) return;
+        const going = Accounts.toggleEvent(el.dataset.user, el.dataset.event);
+        const ev = Accounts.event(el.dataset.event);
+        render(); toast((going ? "Registered for " : "Registration cancelled: ") + (ev ? ev.title : "event") + ".");
       }
       // inbox
       else if (a === "box") { ui.box = el.dataset.box; ui.msgId = null; ui.composing = false; render(); }
@@ -1777,7 +1919,10 @@ button {
       else if (a === "remove" && isFounder) {
         const id = el.dataset.id;
         if (ui.confirmRemove !== id) { ui.confirmRemove = id; render(); return; }
-        const u = Accounts.get(id); ui.confirmRemove = null;
+        ui.confirmRemove = null;
+        const ev = Accounts.event(id);
+        if (ev) { Accounts.removeEvent(id); render(); toast("Event cancelled: " + ev.title + "."); return; }
+        const u = Accounts.get(id);
         if (ui.viewAsId === id) ui.viewAsId = null;
         Accounts.remove(id); render(); if (u) toast(u.name + "'s account was removed.");
       }
@@ -1788,8 +1933,7 @@ button {
       else if (a === "reset-pw" && isFounder) {
         const u = Accounts.get(el.dataset.id); if (!u) return;
         const temp = randomCode(3, 4).toLowerCase();
-        const salt = saltOf(u);
-        Accounts.update(u.id, { pwHash: await hashSecret(temp, salt), demo: false });
+        Accounts.update(u.id, { pwHash: await hashSecret(temp, saltOf(u)), demo: false });
         ui.notice = { text: "Temporary password for " + u.name + " (@" + u.username + "). Share it with them privately and ask them to change it on their Account page.", value: temp };
         render();
       }
@@ -1811,8 +1955,7 @@ button {
       else if (a === "make-key") {
         const u = activeUser();
         const key = randomCode(5, 4);
-        const salt = saltOf(u);
-        Accounts.update(u.id, { keyHash: await hashSecret(normKey(key), "key:" + salt), keyAt: today() });
+        Accounts.update(u.id, { keyHash: await hashSecret(normKey(key), "key:" + saltOf(u)), keyAt: todayISO() });
         ui.newKey = key; render();
       }
       else if (a === "copy-key" && ui.newKey) copyText(ui.newKey, $("#keyBox"));
@@ -1877,15 +2020,17 @@ button {
         if (pw.length < 6) return fail("suError", "Passwords need at least 6 characters.");
 
         const salt = newSalt();
-        const user = { id: "u-" + username + "-" + Date.now().toString(36), role, name, username, salt, pwHash: await hashSecret(pw, salt), createdAt: today() };
+        const user = { id: "u-" + username + "-" + Date.now().toString(36), role, name, username, salt, pwHash: await hashSecret(pw, salt), createdAt: todayISO(), events: [] };
 
         if (role === "student") {
           const age = Number(val("suAge"));
           if (!(age >= 6 && age <= 16)) return fail("suError", "Students are 6 to 16 years old. Please enter an age in that range.");
+          const track = val("suTrack");
+          const band = bandForAge(age);
+          const starter = COURSES.find((c) => c.track === track && c.band === band) || COURSES.find((c) => c.track === track);
           Object.assign(user, {
-            age, track: val("suTrack"), teacherId: "", xp: 0, streak: streakOf(1),
-            projects: [{ name: "My first web page", track: "tech", pct: 0 }], badges: [],
-            notes: [{ from: "BDAI", at: today(), text: "Welcome to BDAI! Open Code Studio and try your first program." }],
+            age, track, teacherId: "", courses: starter ? [{ id: starter.id, done: 0 }] : [], badges: [],
+            notes: [{ from: "BDAI", at: todayISO(), text: "Welcome to BDAI! Your first course" + (starter ? ", " + starter.title + "," : "") + " is ready in Courses." }],
           });
         }
         if (role === "parent") {
@@ -1921,14 +2066,45 @@ button {
         toast(child.name + " is now linked to your account.");
       }
 
+      // teacher tools
       if (f.id === "feedbackForm") {
         const t = activeUser();
         const s = Accounts.get(ui.studentId);
         const text = val("feedbackText").trim();
         if (!s || !text) return;
-        Accounts.update(s.id, { notes: (s.notes || []).concat({ from: t.name, at: today(), text }) });
+        Accounts.update(s.id, { notes: (s.notes || []).concat({ from: t.name, at: todayISO(), text }) });
         Accounts.send(t.id, [s.id].concat(Accounts.parentsOf(s.id).map((p) => p.id)), "New note for " + s.name.split(" ")[0], text);
         render(); toast("Note sent to " + s.name + " and their parents.");
+      }
+      if (f.id === "lessonForm") {
+        const s = Accounts.get(ui.studentId);
+        const cid = val("lessonCourse");
+        const c = courseById(cid);
+        if (!s || !c) return;
+        let doneNow = 0;
+        const courses = (s.courses || []).map((x) => (x.id === cid ? (doneNow = Math.min(c.lessons, x.done + 1), { id: x.id, done: doneNow }) : x));
+        const patch = { courses };
+        if (doneNow >= c.lessons && !(s.badges || []).includes("course-finisher")) patch.badges = (s.badges || []).concat("course-finisher");
+        Accounts.update(s.id, patch);
+        render();
+        toast(doneNow >= c.lessons ? s.name.split(" ")[0] + " finished “" + c.title + "”!" : "Lesson " + doneNow + " of " + c.lessons + " recorded for " + s.name.split(" ")[0] + ".");
+      }
+      if (f.id === "badgeForm") {
+        const s = Accounts.get(ui.studentId);
+        const b = BADGES.find((x) => x.id === val("badgePick"));
+        if (!s || !b) return;
+        Accounts.update(s.id, { badges: (s.badges || []).concat(b.id) });
+        render(); toast(s.name.split(" ")[0] + " earned the " + b.name + " badge.");
+      }
+
+      // founder events
+      if (f.id === "eventForm") {
+        const title = val("evTitle").trim();
+        const date = val("evDate");
+        if (!title) return fail("evError", "Give the event a title.");
+        if (!date || date < todayISO()) return fail("evError", "Pick a date from today onwards.");
+        Accounts.addEvent({ id: "e" + Date.now().toString(36), date, time: val("evTime") || "16:30", title, kind: val("evKind"), audience: val("evAud"), host: ui.sessionId });
+        render(); toast("Event added: " + title + ".");
       }
 
       // inbox
@@ -2006,12 +2182,10 @@ button {
       }
     });
 
-    // Founder link: index-10.html#founder-access opens founder sign-up
+    // Founder link: portal-10.html#founder-access opens founder sign-up
     function handleHash() {
       if (location.hash !== "#founder-access") return;
       const me = ui.sessionId ? Accounts.get(ui.sessionId) : null;
-      const section = $("#portal");
-      if (section) section.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth" });
       if (!me) {
         ui.authMode = "signin"; ui.signupRole = "founder"; render(); focusEl("suFounder");
       } else if (me.role !== "founder") {

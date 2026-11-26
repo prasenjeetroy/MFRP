@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>BDAI Student Portal</title>
+  <meta name="description" content="Sign in to the BDAI Student Portal: courses, badges, events and messages for students, parents, teachers and founders.">
+  <link rel="icon" href="assets/bdai-bulb.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+  <link rel="stylesheet" href="style-10.css">
+</head>
+<body class="portal-page">
+  <a class="skip" href="#portalApp">Skip to the portal</a>
+
+  <header class="nav">
+    <div class="nav__inner wrap">
+      <a class="brand" href="index-10.html" aria-label="BDAI website">
+        <img src="assets/bdai-bulb.png" alt="" width="40" height="40">
+        <span class="brand__text">
+          <span class="bdai-word">BDAI</span>
+          <span class="bdai-tag">Student Portal</span>
+        </span>
+      </a>
+      <a class="btn btn--ghost btn--sm" href="index-10.html">Back to website</a>
+    </div>
+  </header>
+
+  <main class="portal-shell">
+    <div class="wrap">
+      <div class="portal" id="portalApp" aria-live="polite"></div>
+      <p class="portal__foot">Preview mode: accounts, messages and sign-ins are saved only in this browser. Closing this window signs you out.</p>
+    </div>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="script-10.js"></script>
+</body>
+</html>
