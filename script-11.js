@@ -45,10 +45,10 @@
   /* =======================================================
      0. Page views: website or Student Portal window
      -------------------------------------------------------
-     #student-portal (and #founder-access) show the portal;
+     #student-portal, #inbox and #founder-access show the portal window;
      #home or any other address shows the website.
      ======================================================= */
-  const PORTAL_HASHES = ["#student-portal", "#founder-access"];
+  const PORTAL_HASHES = ["#student-portal", "#founder-access", "#inbox"];
   const siteView = $("#site");
   const portalView = $("#portalView");
   function showView() {
@@ -56,7 +56,9 @@
     const inPortal = PORTAL_HASHES.includes(location.hash);
     siteView.hidden = inPortal;
     portalView.hidden = !inPortal;
-    document.title = inPortal ? "BDAI Student Portal" : "BDAI Young Innovators";
+    const inInbox = location.hash === "#inbox";
+    document.title = inPortal ? (inInbox ? "BDAI Inbox" : "BDAI Student Portal") : "BDAI Young Innovators";
+    const tag = $("#portalTag"); if (tag) tag.textContent = inInbox ? "Inbox" : "Student Portal";
     if (inPortal || location.hash === "#home" || !location.hash) { window.scrollTo(0, 0); return; }
     const target = document.getElementById(location.hash.slice(1));
     if (target) target.scrollIntoView();
@@ -1014,7 +1016,9 @@ button {
   /* =======================================================
      7. Student Portal (index-11.html#student-portal)
         Accounts for students, parents, teachers and founders:
-        courses, badges, events, inbox, PIN and security key.
+        courses, badges, events, PIN and security key, plus the
+        inbox page (index-11.html#inbox) with firstname.lastname@
+        st-portal.tech.databell.inbox.bdai addresses.
      -------------------------------------------------------
      PREVIEW MODE. Accounts and messages live in this browser's
      storage so the whole flow can be tried without a server.
@@ -1027,11 +1031,24 @@ button {
     const CONFIG = {
       teacherInviteCode: "BDAI-TEACH-2026", // the founder shares this with new teachers
       // Only a SHA-256 fingerprint of the founder code is kept here, never the code itself.
-      founderCodeHash: "a79965daddd35937316429c6b0874297c4eb18bd675b3ccb266a55f8059d458d",
+      // The full code is matched exactly (capitals and symbols count); spaces around it are ignored.
+      founderCodeHash: "33f5d20345aaaa9f1c887235fd6469caa4485b3ab1f2f800716f6263bb50f0a0",
       demoPassword: "demo1234",
       maxPinTries: 5,
     };
     const DB_KEY = "bdai.portal.v4";
+
+    // Every account gets an inbox address: firstname.lastname@st-portal.tech.databell.inbox.bdai
+    const INBOX_DOMAIN = "st-portal.tech.databell.inbox.bdai";
+    const GROUP_NAMES = ["teachers", "parents", "students", "everyone"]; // group addresses only the founder can use
+    const addrSlug = (s) => String(s).normalize("NFKD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+    function makeInboxAddress(name, taken) {
+      const parts = String(name).replace(/^(Ms|Mr|Mrs|Dr)\.?\s+/i, "").trim().split(/\s+/).map(addrSlug).filter(Boolean);
+      const base = parts.length > 1 ? parts[0] + "." + parts[parts.length - 1] : (parts[0] || "student");
+      let addr = base + "@" + INBOX_DOMAIN, n = 2;
+      while (taken.has(addr)) addr = base + n++ + "@" + INBOX_DOMAIN; // a second Mira Sharma becomes mira.sharma2@…
+      return addr;
+    }
     const SESSION_KEY = "bdai.portal.session";
 
     // Sign-ins last only while this window is open (sessionStorage).
@@ -1152,17 +1169,27 @@ button {
         this.db = d && Array.isArray(d.users) ? d : seed();
         if (!Array.isArray(this.db.messages)) this.db.messages = [];
         if (!Array.isArray(this.db.events)) this.db.events = [];
+        this.giveAddresses();
         this.save();
       },
       save() { store.set(DB_KEY, this.db); },
-      reset() { this.db = seed(); this.save(); },
+      reset() { this.db = seed(); this.giveAddresses(); this.save(); },
+      giveAddresses() {
+        const taken = new Set(GROUP_NAMES.map((g) => g + "@" + INBOX_DOMAIN));
+        this.db.users.forEach((u) => { if (u.inboxAddress) taken.add(u.inboxAddress); });
+        this.db.users.forEach((u) => { if (!u.inboxAddress) { u.inboxAddress = makeInboxAddress(u.name, taken); taken.add(u.inboxAddress); } });
+      },
+      byAddress(addr) {
+        const a = String(addr || "").trim().toLowerCase();
+        return this.db.users.find((u) => u.inboxAddress === a) || null;
+      },
       all(role) { return this.db.users.filter((u) => !role || u.role === role); },
       get(id) { return this.db.users.find((u) => u.id === id) || null; },
       byUsername(name) {
         const n = String(name || "").trim().toLowerCase();
         return this.db.users.find((u) => u.username === n) || null;
       },
-      add(user) { this.db.users.push(user); this.save(); return user; },
+      add(user) { this.db.users.push(user); this.giveAddresses(); this.save(); return user; },
       update(id, patch) { const u = this.get(id); if (u) { Object.assign(u, patch); this.save(); } return u; },
       remove(id) {
         this.db.users = this.db.users.filter((u) => u.id !== id);
@@ -1269,7 +1296,7 @@ button {
       return (await hashSecret(normKey(key), "key:" + u.salt)) === u.keyHash;
     }
     async function checkFounderCode(code) {
-      const h = await sha256("bdai-founder:" + normCode(code));
+      const h = await sha256("bdai-founder:" + String(code || "").trim());
       return h !== null && h === CONFIG.founderCodeHash;
     }
     async function copyText(text, el) {
@@ -1287,7 +1314,7 @@ button {
     // ----- UI state -----
     const freshUI = () => ({
       viewAsId: null, tab: null, kidId: null, studentId: null, founderQuery: "", confirmRemove: null,
-      box: "in", msgId: null, composing: false,
+      box: "in", msgId: null, composing: false, mailQuery: "",
       locked: false, accountUnlocked: false, pinTries: 0, pinRecovery: false,
       newKey: null, notice: null,
     });
@@ -1401,7 +1428,7 @@ button {
       return '<button class="tool tool--small tool--danger" data-action="remove" data-id="' + id + '">' + (confirming ? "Confirm " + (label || "remove").toLowerCase() : (label || "Remove")) + "</button>";
     }
 
-    // ----- inbox -----
+    // ----- inbox page (index-11.html#inbox) -----
     function contactsFor(u) {
       const founders = Accounts.all("founder").filter((f) => f.id !== u.id);
       let list = [];
@@ -1418,6 +1445,37 @@ button {
       const seen = new Set();
       return list.filter((x) => x && !seen.has(x.id) && seen.add(x.id));
     }
+    const addrOf = (id) => { const u = Accounts.get(id); return u ? u.inboxAddress : ""; };
+    const nameAddr = (id) => { const u = Accounts.get(id); return u ? u.name + " <" + u.inboxAddress + ">" : "Removed account"; };
+
+    // Turns "a@…, Name <b@…>" into account ids the sender may write to.
+    function resolveRecipients(u, raw) {
+      const parts = String(raw || "").split(/[,;]+/).map((p) => {
+        const m = /<([^>]+)>/.exec(p);
+        return (m ? m[1] : p).trim().toLowerCase();
+      }).filter(Boolean);
+      if (!parts.length) return { error: "Add at least one inbox address." };
+      const allowed = new Set(contactsFor(u).map((c) => c.id));
+      const ids = [];
+      for (const a of parts) {
+        if (!a.endsWith("@" + INBOX_DOMAIN)) return { error: "“" + a + "” isn't a BDAI inbox address. Addresses end in @" + INBOX_DOMAIN + "." };
+        const group = GROUP_NAMES.find((g) => g + "@" + INBOX_DOMAIN === a);
+        if (group) {
+          if (u.role !== "founder") return { error: "Only the founder can write to a whole group." };
+          const role = group === "everyone" ? null : group.slice(0, -1);
+          Accounts.all(role).forEach((x) => { if (x.id !== u.id) ids.push(x.id); });
+          continue;
+        }
+        const target = Accounts.byAddress(a);
+        if (!target) return { error: "No one has the address “" + a + "”. Check the spelling." };
+        if (!allowed.has(target.id)) return { error: "You can't write to " + target.name + " from your account." };
+        ids.push(target.id);
+      }
+      const unique = Array.from(new Set(ids));
+      if (!unique.length) return { error: "There is no one in that group yet." };
+      return { ids: unique };
+    }
+
     function messageItem(m, box) {
       let name;
       if (box === "sent") name = "To " + (m.to.length > 1 ? m.to.length + " people" : nameOf(m.to[0]));
@@ -1430,50 +1488,70 @@ button {
     }
     function composeHTML(u) {
       const contacts = contactsFor(u);
-      const groups = u.role === "founder" ? '<optgroup label="Groups">' + Object.keys(GROUPS).map((k) => '<option value="' + k + '">' + GROUPS[k][0] + "</option>").join("") + "</optgroup>" : "";
-      const people = ["teacher", "parent", "student", "founder"].map((r) => {
-        const list = contacts.filter((c) => c.role === r);
-        return list.length ? '<optgroup label="' + ROLE_LABEL[r] + 's">' + list.map((c) => '<option value="' + c.id + '">' + esc(c.name) + "</option>").join("") + "</optgroup>" : "";
-      }).join("");
-      if (!groups && !people) return '<p class="empty">There is no one to message yet. Once you are in a class, your teacher appears here.</p>';
+      const groupOpts = u.role === "founder"
+        ? GROUP_NAMES.map((g) => ({ addr: g + "@" + INBOX_DOMAIN, label: g === "everyone" ? "Everyone" : "All " + g })) : [];
+      const people = contacts.map((c) => ({ addr: c.inboxAddress, label: c.name + " (" + ROLE_LABEL[c.role] + ")" }));
+      const all = groupOpts.concat(people);
+      if (!all.length) return '<div class="msg"><h4>New message</h4><p class="empty">There is no one to write to yet. Once you are in a class, your teacher appears here.</p></div>';
       return '<div class="msg"><h4>New message</h4><form class="form" id="composeForm" autocomplete="off">' +
-        '<div class="field field--full"><label for="mTo">To</label><select id="mTo">' + groups + people + "</select></div>" +
+        '<div class="field field--full"><label for="mFrom">From</label><input id="mFrom" type="text" value="' + esc(u.inboxAddress) + '" readonly></div>' +
+        '<div class="field field--full"><label for="mTo">To</label><input id="mTo" type="text" list="mToList" spellcheck="false" placeholder="firstname.lastname@' + INBOX_DOMAIN + '" required>' +
+        '<datalist id="mToList">' + all.map((o) => '<option value="' + esc(o.addr) + '">' + esc(o.label) + "</option>").join("") + "</datalist>" +
+        '<span class="hint">Separate several addresses with commas.</span></div>' +
+        '<div class="field field--full"><span class="mail__bookLabel">Address book</span><div class="mail__book">' +
+        all.map((o) => '<button type="button" class="chip mail__contact" data-action="add-to" data-addr="' + esc(o.addr) + '" title="' + esc(o.addr) + '">' + esc(o.label) + "</button>").join("") + "</div></div>" +
         '<div class="field field--full"><label for="mSubject">Subject</label><input id="mSubject" type="text" maxlength="80" required></div>' +
-        '<div class="field field--full"><label for="mBody">Message</label><textarea id="mBody" rows="6" required></textarea></div>' +
+        '<div class="field field--full"><label for="mBody">Message</label><textarea id="mBody" rows="7" required></textarea></div>' +
         '<p class="form__error field--full" id="mError"></p>' +
-        '<div class="feedback__row field--full"><button class="btn btn--primary btn--sm" type="submit">Send</button><button class="tool" type="button" data-action="cancel-compose">Cancel</button></div></form>' +
-        (u.role === "student" ? '<p class="hint">Students can message their teacher and the BDAI team.</p>' : "") + "</div>";
+        '<div class="feedback__row field--full"><button class="btn btn--primary btn--sm" type="submit">Send</button><button class="tool" type="button" data-action="cancel-compose">Discard</button></div></form>' +
+        (u.role === "student" ? '<p class="hint">Students can write to their teacher and the BDAI team.</p>' : "") + "</div>";
     }
     function readerHTML(u, items, readOnly) {
       if (ui.composing && !readOnly) return composeHTML(u);
       const m = items.find((x) => x.id === ui.msgId);
-      if (!m) return '<p class="empty">Pick a message to read it.</p>';
+      if (!m) return '<div class="mail__empty"><p class="empty">Pick a message to read it' + (readOnly ? "." : ", or write a new one.") + "</p></div>";
       const from = Accounts.get(m.from);
       const toIds = Array.isArray(m.to) ? m.to : [m.to];
       const reSubject = /^re:/i.test(m.subject) ? m.subject : "Re: " + m.subject;
       return '<article class="msg"><h4>' + esc(m.subject) + "</h4>" +
-        '<p class="msg__meta">From <strong>' + esc(nameOf(m.from)) + "</strong>" + (from ? " " + roleBadge(from.role) : "") +
-        " · To " + esc(toIds.map(nameOf).join(", ")) + " · " + fmtWhen(m.at) + "</p>" +
+        '<dl class="msg__head"><dt>From</dt><dd><strong>' + esc(nameOf(m.from)) + "</strong> " + (from ? roleBadge(from.role) + ' <span class="msg__addr">' + esc(from.inboxAddress) + "</span>" : "") + "</dd>" +
+        "<dt>To</dt><dd>" + toIds.map((id) => esc(nameOf(id)) + ' <span class="msg__addr">' + esc(addrOf(id)) + "</span>").join(", ") + "</dd>" +
+        "<dt>Sent</dt><dd>" + fmtWhen(m.at) + "</dd></dl>" +
         '<div class="msg__body">' + esc(m.body) + "</div>" +
         (!readOnly && ui.box === "in" && from
           ? '<form class="feedback" id="replyForm" data-to="' + from.id + '" data-subject="' + esc(reSubject) + '"><label class="sr" for="replyText">Reply</label>' +
+            '<p class="hint">Reply to ' + esc(from.inboxAddress) + "</p>" +
             '<textarea id="replyText" placeholder="Write a reply to ' + firstName(from) + '…" required></textarea>' +
             '<div class="feedback__row"><button class="btn btn--primary btn--sm" type="submit">Send reply</button></div></form>'
           : "") + "</article>";
     }
-    function inboxPane(u, readOnly) {
+    function inboxPage(u, readOnly) {
       const box = ui.box;
-      const items = box === "sent" ? Accounts.sent(u.id) : Accounts.inbox(u.id);
+      let items = box === "sent" ? Accounts.sent(u.id) : Accounts.inbox(u.id);
+      const q = ui.mailQuery.trim().toLowerCase();
+      if (q) {
+        items = items.filter((m) => {
+          const to = Array.isArray(m.to) ? m.to : [m.to];
+          return (m.subject + " " + m.body + " " + nameOf(m.from) + " " + addrOf(m.from) + " " + to.map((id) => nameOf(id) + " " + addrOf(id)).join(" ")).toLowerCase().includes(q);
+        });
+      }
       const unread = Accounts.unread(u.id);
-      return '<div class="pane"><div class="pane__row"><h3 class="pane__title">Inbox</h3><div class="pane__row inbox__tools">' +
-        '<div class="seg seg--small" role="tablist" aria-label="Folder">' +
-        '<button role="tab" data-action="box" data-box="in" aria-selected="' + (box === "in") + '" id="box-in">Received' + (unread ? ' <span class="count">' + unread + "</span>" : "") + "</button>" +
-        '<button role="tab" data-action="box" data-box="sent" aria-selected="' + (box === "sent") + '" id="box-sent">Sent</button></div>' +
-        (readOnly ? "" : '<button class="btn btn--primary btn--sm" data-action="compose">New message</button>') + "</div></div>" +
-        (readOnly ? '<p class="hint">Founder view is read-only: opening messages here does not mark them as read.</p>' : "") +
-        '<div class="inbox"><ul class="mlist">' +
-        (items.length ? items.map((m) => messageItem(m, box)).join("") : '<li class="empty">' + (box === "sent" ? "You haven't sent any messages yet." : "No messages yet.") + "</li>") +
-        '</ul><div class="mread">' + readerHTML(u, items, readOnly) + "</div></div></div>";
+      const side = '<aside class="mail__side">' +
+        '<div class="portal__me"><div class="avatar" aria-hidden="true">' + initials(u.name) + '</div><div><p class="portal__name">' + esc(u.name) + '</p><p class="portal__sub">' + roleBadge(u.role) + "</p></div></div>" +
+        '<div class="mail__addr"><span class="mail__addrLabel">Inbox address</span><code id="myAddr">' + esc(u.inboxAddress) + "</code>" +
+        '<button class="tool tool--small" data-action="copy-addr">Copy address</button></div>' +
+        (readOnly ? "" : '<button class="btn btn--primary btn--block" data-action="compose">New message</button>') +
+        '<nav class="mail__folders" aria-label="Folders">' +
+        '<button data-action="box" data-box="in" id="box-in" aria-current="' + (box === "in" ? "page" : "false") + '">Inbox' + (unread ? ' <span class="count" aria-label="' + unread + ' unread">' + unread + "</span>" : "") + "</button>" +
+        '<button data-action="box" data-box="sent" id="box-sent" aria-current="' + (box === "sent" ? "page" : "false") + '">Sent</button></nav>' +
+        '<a class="tool tool--quiet mail__back" href="#student-portal">← Back to portal</a></aside>';
+      const list = '<section class="mail__list" aria-label="' + (box === "sent" ? "Sent messages" : "Inbox messages") + '">' +
+        '<div class="mail__listHead"><h3>' + (box === "sent" ? "Sent" : "Inbox") + '</h3><label class="sr" for="mailSearch">Search messages</label>' +
+        '<input type="search" id="mailSearch" placeholder="Search names, addresses or words" value="' + esc(ui.mailQuery) + '"></div>' +
+        '<ul class="mlist">' + (items.length ? items.map((m) => messageItem(m, box)).join("")
+          : '<li class="empty">' + (q ? "No messages match your search." : box === "sent" ? "You haven't sent any messages yet." : "Your inbox is empty.") + "</li>") + "</ul></section>";
+      const banner = readOnly ? '<div class="impersonate"><span>Founder view: <strong>' + esc(u.name) + "</strong>'s inbox, read-only. Opening messages here doesn't mark them as read.</span></div>" : "";
+      return '<div class="mail">' + side + list + '<section class="mail__read" aria-label="Message">' + banner + readerHTML(u, items, readOnly) + "</section></div>";
     }
 
     // ----- account page: profile, password, PIN, security key -----
@@ -1497,6 +1575,7 @@ button {
     function founderSecurityPane(u) {
       return '<div class="pane"><h3 class="pane__title">Account and security</h3><div class="acct">' +
         '<div class="card"><p class="card__title">Profile</p><p><strong>' + esc(u.name) + "</strong> " + roleBadge(u.role) + "</p>" +
+        '<p class="empty"><code>' + esc(u.inboxAddress) + "</code></p>" +
         '<p class="empty">@' + esc(u.username) + " · Joined " + fmtDate(u.createdAt) + "</p></div>" +
         '<div class="card"><p class="card__title">Security</p><ul class="seclist">' +
         '<li><span class="status is-on">Password: ' + (u.pwHash ? "set by the user" : "example password") + "</span></li>" +
@@ -1522,6 +1601,7 @@ button {
         '<div class="acct">' +
         '<div class="card"><p class="card__title">Profile</p><form class="form" id="profileForm" autocomplete="off">' +
           '<div class="field field--full"><label for="pfName">Full name</label><input id="pfName" type="text" maxlength="40" value="' + esc(u.name) + '" required></div>' +
+          '<p class="field--full empty">Inbox address <code>' + esc(u.inboxAddress) + "</code></p>" +
           '<p class="field--full empty">Username <code>@' + esc(u.username) + "</code> · " + roleBadge(u.role) + " · Joined " + fmtDate(u.createdAt) + "</p>" +
           '<button class="tool field--full" type="submit" style="width:fit-content">Save name</button></form></div>' +
         '<div class="card"><p class="card__title">Password</p><form class="form" id="passwordForm" autocomplete="off">' +
@@ -1567,7 +1647,7 @@ button {
       const unread = Accounts.unread(s.id);
       return '<div class="pane"><div class="pane__hello"><h3>Good to see you, ' + firstName(s) + ".</h3>" +
         "<p>" + (teacher ? "Your teacher is <strong>" + esc(teacher.name) + "</strong>. " : "You will be matched with a teacher soon. ") +
-        (unread ? 'You have <button class="linkbtn" data-action="tab" data-tab="inbox">' + unread + " new message" + (unread === 1 ? "" : "s") + "</button>." : "") + "</p></div>" +
+        (unread ? 'You have <button class="linkbtn" data-action="open-inbox">' + unread + " new message" + (unread === 1 ? "" : "s") + "</button>." : "") + "</p></div>" +
         learningTiles(s) +
         '<div class="pane__grid"><div class="card"><p class="card__title">Continue learning</p>' +
         (open.length ? '<ul class="courses courses--mini">' + open.map((x) => courseHTML(x, { cta: true })).join("") + "</ul>" : '<p class="empty">You finished all your courses! Open <strong>Courses</strong> to join a new one.</p>') +
@@ -1797,7 +1877,7 @@ button {
           '<div class="field" data-for="student teacher"' + (r === "student" || r === "teacher" ? "" : " hidden") + '><label for="suTrack">' + (r === "teacher" ? "Track you teach" : "Favourite track") + '</label><select id="suTrack">' + tracks + "</select></div>" +
           '<div class="field field--full" data-for="parent"' + (r === "parent" ? "" : " hidden") + '><label for="suChild">Child\'s username (optional)</label><input id="suChild" type="text" placeholder="You can link later too"></div>' +
           '<div class="field field--full" data-for="teacher"' + (r === "teacher" ? "" : " hidden") + '><label for="suInvite">Teacher invite code</label><input id="suInvite" type="text" placeholder="From the founder"></div>' +
-          '<div class="field field--full" data-for="founder"' + (r === "founder" ? "" : " hidden") + '><label for="suFounder">Founder code</label><input id="suFounder" type="password" placeholder="XXXX-XXXX-XXXX" autocomplete="off"></div>' +
+          '<div class="field field--full" data-for="founder"' + (r === "founder" ? "" : " hidden") + '><label for="suFounder">Founder code</label><input id="suFounder" type="password" placeholder="Paste the full founder code" autocomplete="off"></div>' +
           '<p class="form__error field--full" id="suError"></p>' +
           '<button class="btn btn--primary field--full" type="submit">Create ' + ROLE_LABEL[r].toLowerCase() + " account</button></form>" +
           '<p class="hint">New students start with a course that fits their age and favourite track. After you sign up, open <strong>Account</strong> to add a PIN and a security key.</p></div>' +
@@ -1832,6 +1912,11 @@ button {
       }
       const viewing = ui.viewAsId && me.role === "founder" ? Accounts.get(ui.viewAsId) : null;
       const user = viewing || me;
+      if (location.hash === "#inbox") {
+        portalApp.className = "portal portal--mail";
+        portalApp.innerHTML = inboxPage(user, !!viewing);
+        return;
+      }
       const tabs = TABS[user.role];
       if (!ui.tab || !tabs.some((t) => t[0] === ui.tab)) ui.tab = tabs[0][0];
       const unread = Accounts.unread(user.id);
@@ -1845,7 +1930,7 @@ button {
       const side = '<aside class="portal__side"><div class="portal__me"><div class="avatar" aria-hidden="true">' + initials(user.name) + "</div>" +
         '<div><p class="portal__name">' + esc(user.name) + '</p><p class="portal__sub">' + roleBadge(user.role) + " " + esc(sub) + "</p></div></div>" +
         '<nav class="portal__tabs" role="tablist" aria-label="Portal sections">' +
-        tabs.map(([k, label]) => '<button role="tab" data-action="tab" data-tab="' + k + '" id="ptab-' + k + '" aria-selected="' + (ui.tab === k) + '">' + label +
+        tabs.map(([k, label]) => '<button role="tab" data-action="' + (k === "inbox" ? "open-inbox" : "tab") + '" data-tab="' + k + '" id="ptab-' + k + '" aria-selected="' + (ui.tab === k) + '">' + label +
           (k === "inbox" && unread ? ' <span class="count" aria-label="' + unread + ' unread">' + unread + "</span>" : "") + "</button>").join("") +
         '</nav><button class="tool tool--quiet portal__signout" data-action="signout">Sign out</button></aside>';
 
@@ -1856,8 +1941,7 @@ button {
       }
       if (viewing) body += '<div class="impersonate"><span>Founder view: you are looking at <strong>' + esc(viewing.name) + "</strong>'s portal.</span>" +
         '<button class="tool tool--small" data-action="back-founder">Back to founder view</button></div>';
-      if (ui.tab === "inbox") body += inboxPane(user, !!viewing);
-      else if (ui.tab === "account") body += viewing ? founderSecurityPane(user) : accountPane(user);
+      if (ui.tab === "account") body += viewing ? founderSecurityPane(user) : accountPane(user);
       else if (user.role === "student") body += studentPane(user, ui.tab);
       else if (user.role === "parent") body += parentPane(user, ui.tab);
       else if (user.role === "teacher") body += teacherPane(user, ui.tab);
@@ -1930,6 +2014,18 @@ button {
         render();
       }
       else if (a === "compose") { ui.composing = true; ui.msgId = null; render(); focusEl("mTo"); }
+      else if (a === "open-inbox") {
+        Object.assign(ui, { box: "in", msgId: null, composing: false, mailQuery: "" });
+        if (location.hash === "#inbox") render(); else location.hash = "#inbox";
+      }
+      else if (a === "copy-addr") { const u = activeUser(); if (u) copyText(u.inboxAddress, $("#myAddr")); }
+      else if (a === "add-to") {
+        const input = $("#mTo"); if (!input) return;
+        const list = input.value.split(/[,;]+/).map((s) => s.trim()).filter(Boolean);
+        if (!list.map((s) => s.toLowerCase()).includes(el.dataset.addr)) list.push(el.dataset.addr);
+        input.value = list.join(", ");
+        input.focus();
+      }
       else if (a === "cancel-compose") { ui.composing = false; render(); }
       // founder tools
       else if (a === "view-as" && isFounder) { ui.viewAsId = el.dataset.id; ui.tab = null; ui.kidId = null; ui.studentId = null; ui.msgId = null; ui.box = "in"; render(); }
@@ -1996,6 +2092,13 @@ button {
       }
     });
     portalApp.addEventListener("input", (e) => {
+      if (e.target.id === "mailSearch") {
+        ui.mailQuery = e.target.value;
+        const pos = e.target.selectionStart;
+        render();
+        const s = $("#mailSearch"); if (s) { s.focus(); s.setSelectionRange(pos, pos); }
+        return;
+      }
       if (e.target.id === "founderSearch") {
         ui.founderQuery = e.target.value;
         const pos = e.target.selectionStart;
@@ -2069,9 +2172,9 @@ button {
         }
         Accounts.add(user);
         const founder = Accounts.all("founder").find((x) => x.id !== user.id);
-        if (founder) Accounts.send(founder.id, [user.id], "Welcome to BDAI", "Hi " + name.split(" ")[0] + ", welcome to the BDAI Student Portal! Open Account to add a PIN and a security key, so your account stays safe.");
+        if (founder) Accounts.send(founder.id, [user.id], "Welcome to BDAI", "Hi " + name.split(" ")[0] + ", welcome to the BDAI Student Portal! Your inbox address is " + user.inboxAddress + ". Open Account to add a PIN and a security key, so your account stays safe.");
         signIn(user.id);
-        toast("Account created. Welcome, " + name.split(" ")[0] + "!");
+        toast("Account created. Your inbox address is " + user.inboxAddress + ".");
       }
 
       if (f.id === "linkForm") {
@@ -2128,18 +2231,14 @@ button {
       // inbox
       if (f.id === "composeForm") {
         const u = activeUser();
-        const to = val("mTo");
+        const r = resolveRecipients(u, val("mTo"));
+        if (r.error) return fail("mError", r.error);
         const subject = val("mSubject").trim();
         const body = val("mBody").trim();
         if (!subject || !body) return fail("mError", "Add a subject and a message.");
-        let ids;
-        if (GROUPS[to] && u.role === "founder") ids = Accounts.all(GROUPS[to][1]).filter((x) => x.id !== u.id).map((x) => x.id);
-        else if (contactsFor(u).some((c) => c.id === to)) ids = [to];
-        else return fail("mError", "You can't message that person.");
-        if (!ids.length) return fail("mError", "There is no one in that group yet.");
-        Accounts.send(u.id, ids, subject, body);
+        Accounts.send(u.id, r.ids, subject, body);
         ui.composing = false; ui.box = "sent"; ui.msgId = null; render();
-        toast(ids.length > 1 ? "Message sent to " + ids.length + " people." : "Message sent to " + nameOf(ids[0]) + ".");
+        toast(r.ids.length > 1 ? "Message sent to " + r.ids.length + " people." : "Message sent to " + addrOf(r.ids[0]) + ".");
       }
       if (f.id === "replyForm") {
         const u = activeUser();
@@ -2211,6 +2310,7 @@ button {
       }
     }
     window.addEventListener("hashchange", handleHash);
+    window.addEventListener("hashchange", () => { if (location.hash === "#inbox" || location.hash === "#student-portal") render(); });
 
     render();
     handleHash();
