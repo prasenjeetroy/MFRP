@@ -917,6 +917,8 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: var(--c
 .sec { display: inline-flex; gap: 4px; }
 .sec span { font: 600 .68rem/1 var(--body); padding: 4px 6px; border-radius: 5px; background: rgba(110,231,183,.15); color: var(--mint); }
 .sec span.off { background: rgba(255,255,255,.06); color: var(--muted); }
+.sec span.warn { background: rgba(255,122,122,.15); color: var(--danger); }
+.keysetup { display: grid; gap: 12px; width: min(460px, 100%); text-align: left; }
 .ptable small.block { display: block; color: var(--muted); font-size: var(--fs-xs); }
 @media (max-width: 900px) { .acct { grid-template-columns: minmax(0, 1fr); } }
 

@@ -1034,14 +1034,14 @@ button {
   /* =======================================================
      7. Student Portal (index-11.html#student-portal)
         Accounts for students, parents, teachers and founders:
-        courses, badges, events, PIN and security key, plus the
+        courses, badges, events, PIN sign-in and security key, plus the
         inbox page (index-11.html#inbox) with firstname.lastname@
         st-portal.tech.databell.inbox.bdai addresses.
      -------------------------------------------------------
      PREVIEW MODE. Accounts and messages live in this browser's
      storage so the whole flow can be tried without a server.
      Before launch, replace `Accounts` with calls to your backend
-     and check passwords, PINs and codes on the server.
+     and check PINs, security keys and codes on the server.
      ======================================================= */
   const portalApp = $("#portalApp");
   if (portalApp) {
@@ -1051,10 +1051,10 @@ button {
       // Only a SHA-256 fingerprint of the founder code is kept here, never the code itself.
       // The full code is matched exactly (capitals and symbols count); spaces around it are ignored.
       founderCodeHash: "33f5d20345aaaa9f1c887235fd6469caa4485b3ab1f2f800716f6263bb50f0a0",
-      demoPassword: "demo1234",
+      demoPin: "1234", // example accounts only, until they choose their own PIN
       maxPinTries: 5,
     };
-    const DB_KEY = "bdai.portal.v4";
+    const DB_KEY = "bdai.portal.v5";
 
     // Every account gets an inbox address: firstname.lastname@st-portal.tech.databell.inbox.bdai
     const INBOX_DOMAIN = "st-portal.tech.databell.inbox.bdai";
@@ -1144,7 +1144,7 @@ button {
           s({ id: "u-ananya", role: "teacher", name: "Ms. Ananya Rao", username: "ananya", track: "ai" }),
           s({ id: "u-rohan", role: "teacher", name: "Mr. Rohan Mehta", username: "rohan", track: "create" }),
           s({ id: "u-leela", role: "teacher", name: "Ms. Leela Iyer", username: "leela", track: "tech" }),
-          s({ id: "u-mira", role: "student", name: "Mira Sharma", username: "mira", age: 11, track: "ai", teacherId: "u-ananya", demoPin: "1234",
+          s({ id: "u-mira", role: "student", name: "Mira Sharma", username: "mira", age: 11, track: "ai", teacherId: "u-ananya",
             courses: [{ id: "c-ml", done: 7 }, { id: "c-web", done: 3 }, { id: "c-anim", done: 4 }],
             badges: ["first-program", "digital-painter", "circuit-starter", "pattern-spotter", "team-player", "event-explorer"],
             events: ["e1", "e3"],
@@ -1264,7 +1264,7 @@ button {
       markRead(msgId) { const m = this.db.messages.find((x) => x.id === msgId); if (m && !m.read) { m.read = true; this.save(); } },
     };
 
-    // ----- secrets: passwords, PINs, security keys, founder code -----
+    // ----- secrets: PINs, security keys, founder code -----
     async function sha256(text) {
       if (window.crypto && window.crypto.subtle && window.TextEncoder) {
         const buf = await window.crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -1300,14 +1300,29 @@ button {
       if (!u.salt) Accounts.update(u.id, { salt: newSalt() });
       return Accounts.get(u.id).salt;
     }
-    async function checkPassword(u, pw) {
-      if (u.pwHash) return (await hashSecret(pw, u.salt)) === u.pwHash;
-      return !!u.demo && pw === CONFIG.demoPassword;
-    }
-    const hasPin = (u) => !!(u && (u.pinHash || u.demoPin));
+    // Everyone signs in with a PIN; a security key lets them choose a new one if they forget it.
+    const hasOwnPin = (u) => !!(u && u.pinHash);
+    const isPinLocked = (u) => (u.pinFails || 0) >= CONFIG.maxPinTries;
+    const validPin = (pin) => /^\d{4,6}$/.test(pin);
+    const easyPin = (pin) => /^(\d)\1+$/.test(pin) || "01234567890".includes(pin) || "09876543210".includes(pin);
     async function checkPin(u, pin) {
       if (u.pinHash) return (await hashSecret(pin, "pin:" + u.salt)) === u.pinHash;
-      return !!u.demoPin && pin === u.demoPin;
+      return !!u.demo && pin === CONFIG.demoPin;
+    }
+    async function setPin(u, pin, extra) {
+      Accounts.update(u.id, Object.assign({ pinHash: await hashSecret(pin, "pin:" + saltOf(u)), demo: false, pinFails: 0, tempPin: false, pinAt: todayISO() }, extra || {}));
+    }
+    async function makeKey(u) {
+      const key = randomCode(5, 4);
+      Accounts.update(u.id, { keyHash: await hashSecret(normKey(key), "key:" + saltOf(u)), keyAt: todayISO() });
+      return key;
+    }
+    // returns an error message, or "" when the new PIN is fine
+    function pinProblem(pin, again) {
+      if (!validPin(pin)) return "Use 4 to 6 numbers for your PIN.";
+      if (pin !== again) return "The two PINs don't match.";
+      if (easyPin(pin)) return "That PIN is too easy to guess. Avoid repeated or counting digits like 1111 or 1234.";
+      return "";
     }
     async function checkKey(u, key) {
       if (!u.keyHash) return false;
@@ -1333,16 +1348,12 @@ button {
     const freshUI = () => ({
       viewAsId: null, tab: null, kidId: null, studentId: null, founderQuery: "", confirmRemove: null,
       box: "in", msgId: null, composing: false, mailQuery: "",
-      locked: false, accountUnlocked: false, pinTries: 0, pinRecovery: false,
-      newKey: null, notice: null,
+      locked: false, pinTries: 0,
+      setupKey: null, newKey: null, keyPinAsk: false, notice: null,
     });
     const ui = Object.assign(freshUI(), { sessionId: null, authMode: "signin", signupRole: "student" });
     const restored = sessionStore.get();
-    if (restored && Accounts.get(restored)) {
-      ui.sessionId = restored;
-      const u = Accounts.get(restored);
-      ui.locked = !!(u.pinOnOpen && hasPin(u)); // "ask for PIN when the portal opens"
-    }
+    if (restored && Accounts.get(restored)) ui.sessionId = restored;
 
     const TABS = {
       student: [["home", "Learning"], ["courses", "Courses"], ["badges", "Badges"], ["events", "Events"], ["inbox", "Inbox"], ["account", "Account"]],
@@ -1370,7 +1381,8 @@ button {
     const trackName = (t) => (TRACK_INFO[t] ? TRACK_INFO[t].name : "—");
     const firstName = (u) => esc(String(u.name).replace(/^(Ms|Mr|Mrs|Dr)\.?\s+/i, "").split(" ")[0]);
     const nameOf = (id) => { const u = Accounts.get(id); return u ? u.name : "Removed account"; };
-    const secChips = (u) => '<span class="sec"><span class="' + (hasPin(u) ? "" : "off") + '">PIN</span><span class="' + (u.keyHash ? "" : "off") + '">Key</span></span>';
+    const secChips = (u) => '<span class="sec"><span class="' + (hasOwnPin(u) ? "" : "off") + '">' + (u.tempPin ? "Temp PIN" : "PIN") + "</span>" +
+      '<span class="' + (u.keyHash ? "" : "off") + '">Key</span>' + (isPinLocked(u) ? '<span class="warn">Locked</span>' : "") + "</span>";
     const enrolled = (s) => (s.courses || []).map((e) => ({ e, c: courseById(e.id) })).filter((x) => x.c);
     const lessonsDone = (s) => enrolled(s).reduce((a, x) => a + Math.min(x.e.done, x.c.lessons), 0);
     const finished = (x) => x.e.done >= x.c.lessons;
@@ -1570,72 +1582,73 @@ button {
       return '<div class="mail">' + side + list + '<section class="mail__read" aria-label="Message">' + banner + readerHTML(u, items, readOnly) + "</section></div>";
     }
 
-    // ----- account page: profile, password, PIN, security key -----
-    function keyRecoveryForm(formId, label) {
-      return '<form class="form form--narrow" id="' + formId + '" autocomplete="off">' +
-        '<div class="field field--full"><label for="' + formId + 'Key">Security key</label><input id="' + formId + 'Key" type="text" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" required></div>' +
-        '<p class="form__error field--full" id="' + formId + 'Error"></p>' +
-        '<button class="btn btn--primary field--full" type="submit">' + label + "</button></form>";
+    // ----- account page: profile, PIN, security key -----
+    const pinInput = (id, label) => '<div class="field"><label for="' + id + '">' + label + '</label><input id="' + id + '" class="pin-input" type="password" inputmode="numeric" maxlength="6" autocomplete="off" required></div>';
+    function keyRevealHTML(key, action, label) {
+      return '<p class="empty">This is your security key. It is shown only once. Write it down or copy it somewhere safe, like with a parent.</p>' +
+        '<div class="keybox" id="keyBox">' + esc(key) + "</div>" +
+        '<div class="feedback__row"><button class="tool tool--small" data-action="copy-key">Copy key</button></div>' +
+        '<label class="check" for="keySaved"><input type="checkbox" id="keySaved"><span>I saved my security key somewhere safe.</span></label>' +
+        '<p class="form__error" id="keyError"></p><button class="btn btn--primary btn--sm" data-action="' + action + '" style="width:fit-content">' + label + "</button>";
     }
-    function pinGateHTML(u) {
-      return '<div class="pane"><div class="lockcard"><div class="avatar" aria-hidden="true">' + initials(u.name) + "</div>" +
-        "<h3>Enter your PIN</h3><p class=\"empty\">Your account page is protected with a PIN.</p>" +
-        (ui.pinRecovery
-          ? keyRecoveryForm("keyPinForm", "Remove my PIN") + '<button class="linkbtn" data-action="pin-recovery" data-on="0">Back to PIN</button>'
-          : '<form class="form form--narrow" id="pinGateForm" autocomplete="off"><div class="field field--full"><label for="gatePin">PIN</label>' +
-            '<input id="gatePin" class="pin-input" type="password" inputmode="numeric" maxlength="6" required></div>' +
-            '<p class="form__error field--full" id="gateError"></p><button class="btn btn--primary field--full" type="submit">Open account page</button></form>' +
-            '<button class="linkbtn" data-action="pin-recovery" data-on="1">Forgot your PIN? Use your security key</button>') +
-        "</div></div>";
+    function keyCardHTML(u) {
+      if (ui.newKey) return keyRevealHTML(ui.newKey, "key-done", "Done");
+      if (ui.keyPinAsk) {
+        return '<p class="empty">Enter your PIN to ' + (u.keyHash ? "replace" : "create") + " your security key.</p>" +
+          '<form class="form" id="keyPinForm" autocomplete="off">' + pinInput("keyPin", "Your PIN") +
+          '<p class="form__error field--full" id="keyPinError"></p><div class="feedback__row field--full"><button class="tool" type="submit">' +
+          (u.keyHash ? "Replace key" : "Create key") + '</button><button class="tool tool--quiet" type="button" data-action="key-cancel">Cancel</button></div></form>';
+      }
+      return '<p><span class="status' + (u.keyHash ? " is-on" : "") + '">' + (u.keyHash ? "Set up " + fmtDate(u.keyAt) : "Not set up yet") + "</span></p>" +
+        '<p class="empty">Your security key lets you choose a new PIN if you forget yours. Replacing it makes the old key stop working.</p>' +
+        '<button class="tool" data-action="key-ask" style="width:fit-content">' + (u.keyHash ? "Replace security key" : "Create security key") + "</button>";
+    }
+    // step 2 of sign-up: the new account must save its key before the portal opens
+    function keySetupView(u) {
+      return '<div class="lockscreen"><div class="avatar" aria-hidden="true">' + initials(u.name) + "</div>" +
+        '<p class="eyebrow eyebrow--violet">Step 2 of 2</p><h3>Save your security key, ' + firstName(u) + ".</h3>" +
+        "<p>If you ever forget your PIN, this key is how you get back in.</p>" +
+        '<div class="keysetup">' + keyRevealHTML(ui.setupKey, "setup-done", "Open my portal") + "</div></div>";
+    }
+    // after the founder resets a PIN, the person must choose their own
+    function newPinView(u) {
+      return '<div class="lockscreen"><div class="avatar" aria-hidden="true">' + initials(u.name) + "</div>" +
+        "<h3>Choose a new PIN, " + firstName(u) + ".</h3><p>You signed in with a temporary PIN from the founder. Pick your own 4 to 6 digit PIN to continue.</p>" +
+        '<form class="form form--narrow" id="newPinForm" autocomplete="off">' + pinInput("npPin", "New PIN") + pinInput("npPin2", "Type it again") +
+        '<p class="form__error field--full" id="npError"></p><button class="btn btn--primary field--full" type="submit">Save PIN</button></form>' +
+        '<button class="linkbtn" data-action="signout">Sign out</button></div>';
     }
     function founderSecurityPane(u) {
+      const pinState = u.tempPin ? "temporary PIN from the founder" : hasOwnPin(u) ? "chosen by the user" + (u.pinAt ? " " + fmtDate(u.pinAt) : "") : "example PIN";
       return '<div class="pane"><h3 class="pane__title">Account and security</h3><div class="acct">' +
         '<div class="card"><p class="card__title">Profile</p><p><strong>' + esc(u.name) + "</strong> " + roleBadge(u.role) + "</p>" +
         '<p class="empty"><code>' + esc(u.inboxAddress) + "</code></p>" +
         '<p class="empty">@' + esc(u.username) + " · Joined " + fmtDate(u.createdAt) + "</p></div>" +
         '<div class="card"><p class="card__title">Security</p><ul class="seclist">' +
-        '<li><span class="status is-on">Password: ' + (u.pwHash ? "set by the user" : "example password") + "</span></li>" +
-        '<li><span class="status' + (hasPin(u) ? " is-on" : "") + '">PIN: ' + (hasPin(u) ? (u.pinOnOpen ? "on, also when the portal opens" : "on for the account page") : "off") + "</span></li>" +
-        '<li><span class="status' + (u.keyHash ? " is-on" : "") + '">Security key: ' + (u.keyHash ? "set up " + fmtDate(u.keyAt) : "not set up") + "</span></li></ul>" +
-        '<div class="feedback__row"><button class="tool tool--small" data-action="reset-pw" data-id="' + u.id + '">Reset password</button>' +
-        (hasPin(u) ? '<button class="tool tool--small tool--danger" data-action="clear-pin" data-id="' + u.id + '">Remove PIN</button>' : "") + "</div></div></div></div>";
+        '<li><span class="status' + (hasOwnPin(u) && !u.tempPin ? " is-on" : "") + '">PIN: ' + pinState + "</span></li>" +
+        '<li><span class="status' + (u.keyHash ? " is-on" : "") + '">Security key: ' + (u.keyHash ? "set up " + fmtDate(u.keyAt) : "not set up") + "</span></li>" +
+        '<li><span class="status' + (isPinLocked(u) ? "" : " is-on") + '">' + (isPinLocked(u) ? "Locked after " + CONFIG.maxPinTries + " wrong PINs" : "Wrong PIN tries: " + (u.pinFails || 0)) + "</span></li></ul>" +
+        '<div class="feedback__row"><button class="tool tool--small" data-action="reset-pin" data-id="' + u.id + '">Reset PIN</button></div>' +
+        '<p class="hint">Resetting gives a temporary PIN and unlocks the account. They choose their own PIN when they next sign in.</p></div></div></div>';
     }
     function accountPane(u) {
-      if (hasPin(u) && !ui.accountUnlocked) return pinGateHTML(u);
-      const keyCard = ui.newKey
-        ? '<p class="empty">This is your security key. It is shown only once, so write it down or copy it somewhere safe, like with a parent.</p>' +
-          '<div class="keybox" id="keyBox">' + esc(ui.newKey) + "</div>" +
-          '<div class="feedback__row"><button class="tool tool--small" data-action="copy-key">Copy key</button></div>' +
-          '<label class="check" for="keySaved"><input type="checkbox" id="keySaved"><span>I saved my security key somewhere safe.</span></label>' +
-          '<p class="form__error" id="keyError"></p><button class="btn btn--primary btn--sm" data-action="key-done" style="width:fit-content">Done</button>'
-        : '<p><span class="status' + (u.keyHash ? " is-on" : "") + '">' + (u.keyHash ? "Set up " + fmtDate(u.keyAt) : "Not set up yet") + "</span></p>" +
-          '<p class="empty">A security key lets you reset your password or PIN if you forget them.</p>' +
-          '<button class="tool" data-action="make-key" style="width:fit-content">' + (u.keyHash ? "Replace security key" : "Create security key") + "</button>";
-
       return '<div class="pane"><div class="pane__row"><h3 class="pane__title">Account</h3>' +
-        (hasPin(u) ? '<button class="tool tool--small" data-action="lock">Lock portal now</button>' : "") + "</div>" +
+        '<button class="tool tool--small" data-action="lock">Lock portal now</button></div>' +
         '<div class="acct">' +
         '<div class="card"><p class="card__title">Profile</p><form class="form" id="profileForm" autocomplete="off">' +
           '<div class="field field--full"><label for="pfName">Full name</label><input id="pfName" type="text" maxlength="40" value="' + esc(u.name) + '" required></div>' +
           '<p class="field--full empty">Inbox address <code>' + esc(u.inboxAddress) + "</code></p>" +
           '<p class="field--full empty">Username <code>@' + esc(u.username) + "</code> · " + roleBadge(u.role) + " · Joined " + fmtDate(u.createdAt) + "</p>" +
           '<button class="tool field--full" type="submit" style="width:fit-content">Save name</button></form></div>' +
-        '<div class="card"><p class="card__title">Password</p><form class="form" id="passwordForm" autocomplete="off">' +
-          '<div class="field field--full"><label for="pwOld">Current password</label><input id="pwOld" type="password" required autocomplete="current-password"></div>' +
-          '<div class="field"><label for="pwNew">New password</label><input id="pwNew" type="password" minlength="6" required autocomplete="new-password"></div>' +
-          '<div class="field"><label for="pwNew2">Type it again</label><input id="pwNew2" type="password" minlength="6" required autocomplete="new-password"></div>' +
-          '<p class="form__error field--full" id="pwError"></p><button class="tool field--full" type="submit" style="width:fit-content">Change password</button></form></div>' +
         '<div class="card"><p class="card__title">PIN</p>' +
-          '<p><span class="status' + (hasPin(u) ? " is-on" : "") + '">' + (hasPin(u) ? "PIN is on" : "No PIN yet") + "</span></p>" +
-          '<p class="empty">A 4 to 6 digit PIN protects this account page. You can also ask for it whenever the portal opens.</p>' +
+          '<p><span class="status' + (hasOwnPin(u) ? " is-on" : "") + '">' + (hasOwnPin(u) ? "Your PIN" + (u.pinAt ? " · set " + fmtDate(u.pinAt) : "") : "Example PIN in use. Choose your own.") + "</span></p>" +
+          '<p class="empty">You use your 4 to 6 digit PIN to sign in and to unlock the portal.</p>' +
           '<form class="form" id="pinForm" autocomplete="off">' +
-          '<div class="field"><label for="pinNew">' + (hasPin(u) ? "New PIN" : "PIN") + '</label><input id="pinNew" class="pin-input" type="password" inputmode="numeric" maxlength="6" required></div>' +
-          '<div class="field"><label for="pinNew2">Type it again</label><input id="pinNew2" class="pin-input" type="password" inputmode="numeric" maxlength="6" required></div>' +
-          '<label class="check field--full" for="pinOnOpen"><input type="checkbox" id="pinOnOpen"' + (u.pinOnOpen ? " checked" : "") + "><span>Also ask for my PIN when the portal opens</span></label>" +
+          '<div class="field field--full"><label for="pinOld">Current PIN</label><input id="pinOld" class="pin-input" type="password" inputmode="numeric" maxlength="6" autocomplete="off" required></div>' +
+          pinInput("pinNew", "New PIN") + pinInput("pinNew2", "Type it again") +
           '<p class="form__error field--full" id="pinError"></p>' +
-          '<div class="feedback__row field--full"><button class="tool" type="submit">' + (hasPin(u) ? "Change PIN" : "Turn on PIN") + "</button>" +
-          (hasPin(u) ? '<button class="tool tool--danger" type="button" data-action="remove-own-pin">Turn off PIN</button>' : "") + "</div></form></div>" +
-        '<div class="card"><p class="card__title">Security key</p>' + keyCard + "</div>" +
+          '<button class="tool field--full" type="submit" style="width:fit-content">Change PIN</button></form></div>' +
+        '<div class="card"><p class="card__title">Security key</p>' + keyCardHTML(u) + "</div>" +
         "</div></div>";
     }
 
@@ -1765,7 +1778,7 @@ button {
       const match = (u) => !q || u.name.toLowerCase().includes(q) || u.username.includes(q);
       const search = '<div class="filter-row"><label class="sr" for="founderSearch">Search people</label><input type="search" id="founderSearch" placeholder="Search by name or username" value="' + esc(ui.founderQuery) + '"></div>';
       const actions = (u) => '<span class="row-actions"><button class="tool tool--small" data-action="view-as" data-id="' + u.id + '">Open portal</button>' +
-        '<button class="tool tool--small" data-action="reset-pw" data-id="' + u.id + '">Reset password</button>' + removeBtn(u.id) + "</span>";
+        '<button class="tool tool--small" data-action="reset-pin" data-id="' + u.id + '">Reset PIN</button>' + removeBtn(u.id) + "</span>";
       const who = (u) => '<span class="who"><span class="avatar avatar--sm">' + initials(u.name) + "</span><span>" + esc(u.name) + "<small>@" + esc(u.username) + "</small></span></span>";
 
       if (tab === "students") {
@@ -1858,58 +1871,54 @@ button {
       ].map(([k, t, d]) => '<button type="button" role="radio" class="role-pick role-pick--' + k + '" data-action="signup-role" data-role="' + k + '" aria-checked="' + (r === k) + '" id="pick-' + k + '"><strong>' + t + "</strong><span>" + d + "</span></button>").join("");
 
       const left = ui.authMode === "recover"
-        ? '<div class="auth__panel"><h3>Reset your password</h3><p>Use the security key you saved on your Account page.</p>' +
+        ? '<div class="auth__panel"><h3>Forgot your PIN?</h3><p>Use the security key you saved when you created your account, then choose a new PIN.</p>' +
           '<form class="form" id="recoverForm" autocomplete="off">' +
           '<div class="field field--full"><label for="rcUser">Username</label><input id="rcUser" type="text" required></div>' +
           '<div class="field field--full"><label for="rcKey">Security key</label><input id="rcKey" type="text" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX" required></div>' +
-          '<div class="field field--full"><label for="rcPass">New password (6+ characters)</label><input id="rcPass" type="password" minlength="6" required autocomplete="new-password"></div>' +
+          pinInput("rcPin", "New PIN") + pinInput("rcPin2", "Type it again") +
           '<p class="form__error field--full" id="rcError"></p>' +
-          '<button class="btn btn--primary field--full" type="submit">Reset password and sign in</button></form>' +
+          '<button class="btn btn--primary field--full" type="submit">Save new PIN and sign in</button></form>' +
           '<button class="linkbtn" data-action="auth-mode" data-mode="signin">Back to sign in</button>' +
-          '<p class="hint">No security key? Ask the founder to reset your password.</p></div>'
+          '<p class="hint">No security key? Ask the founder to reset your PIN.</p></div>'
         : '<div class="auth__panel"><div class="auth__brand"><img src="' + BULB_SRC + '" alt="" width="56" height="56"><span><span class="bdai-word">BDAI</span> <span class="bdai-tag">Student Portal</span></span></div>' +
-          '<h3>Sign in</h3><p>Use the username and password you chose.</p>' +
+          "<h3>Sign in</h3><p>Use your username and PIN.</p>" +
           '<form class="form" id="signinForm" autocomplete="off">' +
           '<div class="field field--full"><label for="siUser">Username</label><input id="siUser" type="text" required autocomplete="username"></div>' +
-          '<div class="field field--full"><label for="siPass">Password</label><input id="siPass" type="password" required autocomplete="current-password"></div>' +
+          '<div class="field field--full"><label for="siPin">PIN</label><input id="siPin" class="pin-input" type="password" inputmode="numeric" maxlength="6" required autocomplete="off"></div>' +
           '<p class="form__error field--full" id="siError"></p>' +
           '<button class="btn btn--primary field--full" type="submit">Sign in</button></form>' +
-          '<button class="linkbtn" data-action="auth-mode" data-mode="recover">Forgot your password?</button>' +
+          '<button class="linkbtn" data-action="auth-mode" data-mode="recover">Forgot your PIN?</button>' +
           '<div class="demo-bar"><p class="demo-bar__label">Preview with an example account</p><div class="demo-bar__row">' +
           '<button class="role-chip role-chip--student" data-action="demo" data-user="mira">Student</button>' +
           '<button class="role-chip role-chip--parent" data-action="demo" data-user="priya">Parent</button>' +
           '<button class="role-chip role-chip--teacher" data-action="demo" data-user="ananya">Teacher</button>' +
           '<button class="role-chip role-chip--founder" data-action="demo" data-user="founder">Founder</button></div>' +
-          '<p class="hint">Example password: <code>' + CONFIG.demoPassword + "</code>. The example student's Account page PIN is <code>1234</code>.</p></div></div>";
+          '<p class="hint">Example accounts (<code>mira</code>, <code>priya</code>, <code>ananya</code>, <code>founder</code>) use the PIN <code>' + CONFIG.demoPin + "</code>.</p></div></div>";
 
       return '<div class="auth">' + left +
-        '<div class="auth__panel"><h3>Create an account</h3><p>Choose who you are. Each role gets its own portal.</p>' +
+        '<div class="auth__panel"><h3>Create an account</h3><p>Step 1 of 2: choose who you are and pick a PIN.</p>' +
           '<div class="roles" role="radiogroup" aria-label="Account type">' + roleCards + "</div>" +
           '<form class="form" id="signupForm" autocomplete="off">' +
           '<div class="field"><label for="suName">Full name</label><input id="suName" type="text" required maxlength="40"></div>' +
           '<div class="field"><label for="suUser">Username</label><input id="suUser" type="text" required maxlength="20" placeholder="letters and numbers"></div>' +
-          '<div class="field field--full"><label for="suPass">Password (6+ characters)</label><input id="suPass" type="password" required minlength="6" autocomplete="new-password"></div>' +
+          pinInput("suPin", "PIN (4 to 6 numbers)") + pinInput("suPin2", "Type it again") +
           '<div class="field" data-for="student"' + (r === "student" ? "" : " hidden") + '><label for="suAge">Age</label><input id="suAge" type="number" min="6" max="16"></div>' +
           '<div class="field" data-for="student teacher"' + (r === "student" || r === "teacher" ? "" : " hidden") + '><label for="suTrack">' + (r === "teacher" ? "Track you teach" : "Favourite track") + '</label><select id="suTrack">' + tracks + "</select></div>" +
           '<div class="field field--full" data-for="parent"' + (r === "parent" ? "" : " hidden") + '><label for="suChild">Child\'s username (optional)</label><input id="suChild" type="text" placeholder="You can link later too"></div>' +
           '<div class="field field--full" data-for="teacher"' + (r === "teacher" ? "" : " hidden") + '><label for="suInvite">Teacher invite code</label><input id="suInvite" type="text" placeholder="From the founder"></div>' +
           '<div class="field field--full" data-for="founder"' + (r === "founder" ? "" : " hidden") + '><label for="suFounder">Founder code</label><input id="suFounder" type="password" placeholder="Paste the full founder code" autocomplete="off"></div>' +
           '<p class="form__error field--full" id="suError"></p>' +
-          '<button class="btn btn--primary field--full" type="submit">Create ' + ROLE_LABEL[r].toLowerCase() + " account</button></form>" +
-          '<p class="hint">New students start with a course that fits their age and favourite track. After you sign up, open <strong>Account</strong> to add a PIN and a security key.</p></div>' +
+          '<button class="btn btn--primary field--full" type="submit">Next: get my security key</button></form>' +
+          '<p class="hint">Step 2 gives you a security key. Keep it safe: it is how you get back in if you forget your PIN.</p></div>' +
         "</div>";
     }
     function lockView(u) {
       return '<div class="lockscreen"><div class="avatar" aria-hidden="true">' + initials(u.name) + "</div>" +
-        "<h3>Welcome back, " + firstName(u) + ".</h3>" +
-        (ui.pinRecovery
-          ? "<p>Enter your security key to remove your PIN and open the portal.</p>" + keyRecoveryForm("keyPinForm", "Remove PIN and open") +
-            '<button class="linkbtn" data-action="pin-recovery" data-on="0">Back to PIN</button>'
-          : "<p>Your portal is locked. Enter your PIN to open it.</p>" +
-            '<form class="form form--narrow" id="unlockForm" autocomplete="off"><div class="field field--full"><label for="unlockPin">PIN</label>' +
-            '<input id="unlockPin" class="pin-input" type="password" inputmode="numeric" maxlength="6" required></div>' +
-            '<p class="form__error field--full" id="unlockError"></p><button class="btn btn--primary field--full" type="submit">Unlock</button></form>' +
-            '<button class="linkbtn" data-action="pin-recovery" data-on="1">Forgot your PIN? Use your security key</button>') +
+        "<h3>Welcome back, " + firstName(u) + ".</h3><p>Your portal is locked. Enter your PIN to open it.</p>" +
+        '<form class="form form--narrow" id="unlockForm" autocomplete="off"><div class="field field--full"><label for="unlockPin">PIN</label>' +
+        '<input id="unlockPin" class="pin-input" type="password" inputmode="numeric" maxlength="6" required></div>' +
+        '<p class="form__error field--full" id="unlockError"></p><button class="btn btn--primary field--full" type="submit">Unlock</button></form>' +
+        '<button class="linkbtn" data-action="forgot-pin">Forgot your PIN? Use your security key</button>' +
         '<button class="linkbtn" data-action="signout">Sign in as someone else</button></div>';
     }
 
@@ -1919,6 +1928,11 @@ button {
       if (!me) {
         portalApp.className = "portal portal--auth";
         portalApp.innerHTML = authView();
+        return;
+      }
+      if (ui.setupKey || me.tempPin) {
+        portalApp.className = "portal portal--auth";
+        portalApp.innerHTML = ui.setupKey ? keySetupView(me) : newPinView(me);
         return;
       }
       if (ui.locked) {
@@ -1990,7 +2004,7 @@ button {
       const isFounder = me && me.role === "founder";
       if (a !== "remove" && a !== "reset") ui.confirmRemove = null;
 
-      if (a === "tab") { ui.tab = el.dataset.tab; ui.msgId = null; ui.composing = false; ui.pinRecovery = false; render(); }
+      if (a === "tab") { ui.tab = el.dataset.tab; ui.msgId = null; ui.composing = false; ui.keyPinAsk = false; render(); }
       else if (a === "signout") signOut();
       else if (a === "demo") {
         if (!Accounts.byUsername(el.dataset.user)) Accounts.reset();
@@ -2060,39 +2074,34 @@ button {
         if (ui.confirmRemove !== "__reset") { ui.confirmRemove = "__reset"; render(); return; }
         ui.confirmRemove = null; Accounts.reset(); signIn("u-founder"); toast("Example accounts restored.");
       }
-      else if (a === "reset-pw" && isFounder) {
+      else if (a === "reset-pin" && isFounder) {
         const u = Accounts.get(el.dataset.id); if (!u) return;
-        const temp = randomCode(3, 4).toLowerCase();
-        Accounts.update(u.id, { pwHash: await hashSecret(temp, saltOf(u)), demo: false });
-        ui.notice = { text: "Temporary password for " + u.name + " (@" + u.username + "). Share it with them privately and ask them to change it on their Account page.", value: temp };
+        const digits = new Uint32Array(6);
+        if (window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(digits);
+        else for (let i = 0; i < 6; i++) digits[i] = Math.floor(Math.random() * 10);
+        const temp = Array.from(digits, (n) => n % 10).join("");
+        await setPin(u, temp, { tempPin: true });
+        ui.notice = { text: "Temporary PIN for " + u.name + " (@" + u.username + "). Share it with them privately. They will choose their own PIN when they sign in.", value: temp };
         render();
-      }
-      else if (a === "clear-pin" && isFounder) {
-        const u = Accounts.get(el.dataset.id); if (!u) return;
-        Accounts.update(u.id, { pinHash: null, demoPin: null, pinOnOpen: false });
-        render(); toast(u.name + "'s PIN was removed.");
       }
       else if (a === "copy-notice" && ui.notice) copyText(ui.notice.value, $("#noticeValue"));
       else if (a === "dismiss-notice") { ui.notice = null; render(); }
       // account
-      else if (a === "pin-recovery") { ui.pinRecovery = el.dataset.on === "1"; render(); focusEl(ui.pinRecovery ? "keyPinFormKey" : (ui.locked ? "unlockPin" : "gatePin")); }
-      else if (a === "lock") { ui.locked = true; ui.accountUnlocked = false; ui.pinTries = 0; ui.pinRecovery = false; render(); focusEl("unlockPin"); }
-      else if (a === "remove-own-pin") {
-        const u = activeUser();
-        Accounts.update(u.id, { pinHash: null, demoPin: null, pinOnOpen: false });
-        ui.accountUnlocked = false; render(); toast("PIN turned off.");
+      else if (a === "forgot-pin") {
+        const name = (Accounts.get(ui.sessionId) || {}).username || "";
+        signOut(); ui.authMode = "recover"; render();
+        const field = $("#rcUser"); if (field) field.value = name;
+        focusEl("rcKey");
       }
-      else if (a === "make-key") {
-        const u = activeUser();
-        const key = randomCode(5, 4);
-        Accounts.update(u.id, { keyHash: await hashSecret(normKey(key), "key:" + saltOf(u)), keyAt: todayISO() });
-        ui.newKey = key; render();
-      }
-      else if (a === "copy-key" && ui.newKey) copyText(ui.newKey, $("#keyBox"));
-      else if (a === "key-done") {
+      else if (a === "lock") { ui.locked = true; ui.pinTries = 0; render(); focusEl("unlockPin"); }
+      else if (a === "key-ask") { ui.keyPinAsk = true; render(); focusEl("keyPin"); }
+      else if (a === "key-cancel") { ui.keyPinAsk = false; render(); }
+      else if (a === "copy-key") { const k = ui.newKey || ui.setupKey; if (k) copyText(k, $("#keyBox")); }
+      else if (a === "key-done" || a === "setup-done") {
         const box = $("#keySaved");
         if (box && !box.checked) { $("#keyError").textContent = "Tick the box once your key is saved. You won't see it again."; return; }
-        ui.newKey = null; render(); toast("Security key is set up.");
+        ui.newKey = null; ui.setupKey = null; render();
+        toast(a === "setup-done" ? "All set. Welcome to your portal!" : "Your new security key is ready. The old one no longer works.");
       }
     });
 
@@ -2132,32 +2141,43 @@ button {
       if (f.id === "signinForm") {
         const u = Accounts.byUsername(val("siUser"));
         if (!u) return fail("siError", "We couldn't find that username. Check the spelling or create an account.");
-        if (!(await checkPassword(u, val("siPass")))) return fail("siError", "That password doesn't match. Try again.");
+        if (isPinLocked(u)) return fail("siError", "This account is locked after " + CONFIG.maxPinTries + " wrong PINs. Use “Forgot your PIN?” with your security key, or ask the founder.");
+        if (!(await checkPin(u, val("siPin")))) {
+          const fails = (u.pinFails || 0) + 1;
+          Accounts.update(u.id, { pinFails: fails });
+          $("#siPin").value = "";
+          return fail("siError", fails >= CONFIG.maxPinTries
+            ? "Wrong PIN. The account is now locked. Use “Forgot your PIN?” with your security key."
+            : "Wrong PIN. " + (CONFIG.maxPinTries - fails) + " tr" + (CONFIG.maxPinTries - fails === 1 ? "y" : "ies") + " left.");
+        }
+        Accounts.update(u.id, { pinFails: 0 });
         signIn(u.id); toast("Welcome back, " + u.name.split(" ")[0] + "!");
       }
 
       if (f.id === "recoverForm") {
         const u = Accounts.byUsername(val("rcUser"));
         if (!u) return fail("rcError", "We couldn't find that username.");
-        if (!u.keyHash) return fail("rcError", "This account has no security key yet. Ask the founder to reset your password.");
+        if (!u.keyHash) return fail("rcError", "This account has no security key yet. Ask the founder to reset your PIN.");
         if (!(await checkKey(u, val("rcKey")))) return fail("rcError", "That security key doesn't match this account.");
-        if (val("rcPass").length < 6) return fail("rcError", "Passwords need at least 6 characters.");
-        Accounts.update(u.id, { pwHash: await hashSecret(val("rcPass"), saltOf(u)), demo: false });
-        signIn(u.id); toast("Password reset. Welcome back!");
+        const problem = pinProblem(val("rcPin"), val("rcPin2"));
+        if (problem) return fail("rcError", problem);
+        await setPin(u, val("rcPin"));
+        signIn(u.id); toast("New PIN saved. Welcome back!");
       }
 
       if (f.id === "signupForm") {
         const role = ui.signupRole;
         const name = val("suName").trim();
         const username = val("suUser").trim().toLowerCase();
-        const pw = val("suPass");
+        const pin = val("suPin");
         if (name.length < 2) return fail("suError", "Please enter a full name.");
         if (!/^[a-z0-9_.-]{3,20}$/.test(username)) return fail("suError", "Usernames use 3 to 20 letters, numbers, dots, dashes or underscores.");
         if (Accounts.byUsername(username)) return fail("suError", "That username is taken. Try another one.");
-        if (pw.length < 6) return fail("suError", "Passwords need at least 6 characters.");
+        const problem = pinProblem(pin, val("suPin2"));
+        if (problem) return fail("suError", problem);
 
         const salt = newSalt();
-        const user = { id: "u-" + username + "-" + Date.now().toString(36), role, name, username, salt, pwHash: await hashSecret(pw, salt), createdAt: todayISO(), events: [] };
+        const user = { id: "u-" + username + "-" + Date.now().toString(36), role, name, username, salt, pinHash: await hashSecret(pin, "pin:" + salt), pinAt: todayISO(), pinFails: 0, createdAt: todayISO(), events: [] };
 
         if (role === "student") {
           const age = Number(val("suAge"));
@@ -2188,8 +2208,10 @@ button {
         }
         Accounts.add(user);
         const founder = Accounts.all("founder").find((x) => x.id !== user.id);
-        if (founder) Accounts.send(founder.id, [user.id], "Welcome to BDAI", "Hi " + name.split(" ")[0] + ", welcome to the BDAI Student Portal! Your inbox address is " + user.inboxAddress + ". Open Account to add a PIN and a security key, so your account stays safe.");
+        if (founder) Accounts.send(founder.id, [user.id], "Welcome to BDAI", "Hi " + name.split(" ")[0] + ", welcome to the BDAI Student Portal! Your inbox address is " + user.inboxAddress + ". Keep your security key somewhere safe: it is how you get back in if you forget your PIN.");
+        const key = await makeKey(user);
         signIn(user.id);
+        ui.setupKey = key; render();
         toast("Account created. Your inbox address is " + user.inboxAddress + ".");
       }
 
@@ -2271,47 +2293,39 @@ button {
         if (name.length < 2) return;
         Accounts.update(activeUser().id, { name }); render(); toast("Name saved.");
       }
-      if (f.id === "passwordForm") {
-        const u = activeUser();
-        if (!(await checkPassword(u, val("pwOld")))) return fail("pwError", "Your current password doesn't match.");
-        if (val("pwNew").length < 6) return fail("pwError", "New passwords need at least 6 characters.");
-        if (val("pwNew") !== val("pwNew2")) return fail("pwError", "The two new passwords don't match.");
-        Accounts.update(u.id, { pwHash: await hashSecret(val("pwNew"), saltOf(u)), demo: false });
-        render(); toast("Password changed.");
-      }
       if (f.id === "pinForm") {
         const u = activeUser();
-        const pin = val("pinNew");
-        if (!/^\d{4,6}$/.test(pin)) return fail("pinError", "Use 4 to 6 numbers for your PIN.");
-        if (pin !== val("pinNew2")) return fail("pinError", "The two PINs don't match.");
-        const onOpen = !!($("#pinOnOpen") && $("#pinOnOpen").checked);
-        Accounts.update(u.id, { pinHash: await hashSecret(pin, "pin:" + saltOf(u)), demoPin: null, pinOnOpen: onOpen });
-        ui.accountUnlocked = true; render();
-        toast(onOpen ? "PIN saved. You'll need it to open the portal and this page." : "PIN saved. You'll need it to open this page.");
+        if (!(await checkPin(u, val("pinOld")))) return fail("pinError", "Your current PIN doesn't match.");
+        const problem = pinProblem(val("pinNew"), val("pinNew2"));
+        if (problem) return fail("pinError", problem);
+        await setPin(u, val("pinNew"));
+        render(); toast("PIN changed.");
       }
-      if (f.id === "pinGateForm") {
+      if (f.id === "newPinForm") {
+        const u = Accounts.get(ui.sessionId);
+        const problem = pinProblem(val("npPin"), val("npPin2"));
+        if (problem) return fail("npError", problem);
+        await setPin(u, val("npPin"));
+        render(); toast("New PIN saved. Welcome back!");
+      }
+      if (f.id === "keyPinForm") {
         const u = activeUser();
-        if (await checkPin(u, val("gatePin"))) { ui.accountUnlocked = true; ui.pinTries = 0; render(); return; }
-        ui.pinTries++;
-        if (ui.pinTries >= CONFIG.maxPinTries) { signOut(); toast("Too many wrong PINs. Sign in with your password."); return; }
-        fail("gateError", "Wrong PIN. " + (CONFIG.maxPinTries - ui.pinTries) + " tries left.");
-        $("#gatePin").value = "";
+        if (!(await checkPin(u, val("keyPin")))) return fail("keyPinError", "That PIN doesn't match.");
+        ui.keyPinAsk = false;
+        ui.newKey = await makeKey(u);
+        render();
       }
       if (f.id === "unlockForm") {
         const u = Accounts.get(ui.sessionId);
         if (await checkPin(u, val("unlockPin"))) { ui.locked = false; ui.pinTries = 0; render(); toast("Unlocked."); return; }
         ui.pinTries++;
-        if (ui.pinTries >= CONFIG.maxPinTries) { signOut(); toast("Too many wrong PINs. Sign in with your password."); return; }
+        if (ui.pinTries >= CONFIG.maxPinTries) {
+          Accounts.update(u.id, { pinFails: CONFIG.maxPinTries });
+          signOut(); toast("Too many wrong PINs. The account is locked: use your security key to choose a new PIN.");
+          return;
+        }
         fail("unlockError", "Wrong PIN. " + (CONFIG.maxPinTries - ui.pinTries) + " tries left.");
         $("#unlockPin").value = "";
-      }
-      if (f.id === "keyPinForm") {
-        const u = ui.locked ? Accounts.get(ui.sessionId) : activeUser();
-        if (!u.keyHash) return fail("keyPinFormError", "This account has no security key. Sign in with your password, or ask the founder to remove your PIN.");
-        if (!(await checkKey(u, val("keyPinFormKey")))) return fail("keyPinFormError", "That security key doesn't match this account.");
-        Accounts.update(u.id, { pinHash: null, demoPin: null, pinOnOpen: false });
-        Object.assign(ui, { locked: false, accountUnlocked: true, pinRecovery: false, pinTries: 0 });
-        render(); toast("PIN removed. You can set a new one on your Account page.");
       }
     });
 
